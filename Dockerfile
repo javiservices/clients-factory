@@ -80,6 +80,8 @@ COPY --from=node-builder /app/public/build/ ./public/build/
 RUN chown -R www-data:www-data /var/www/html/var 2>/dev/null || true \
     && mkdir -p /var/www/html/var/cache /var/www/html/var/log \
     && chown -R www-data:www-data /var/www/html/var \
+    && mkdir -p /var/www/html/public/uploads/clients \
+    && chown -R www-data:www-data /var/www/html/public/uploads \
     && mkdir -p /run/nginx
 
 EXPOSE 80
