@@ -40,4 +40,22 @@ class SubscriptionRepository extends ServiceEntityRepository
     //            ->getOneOrNullResult()
     //        ;
     //    }
+
+    /** Suscripciones activas que vencen en los próximos $days días */
+    public function findExpiringSoon(int $days = 7): array
+    {
+        $now = new \DateTime();
+        $future = (new \DateTime())->modify('+' . $days . ' days');
+
+        return $this->createQueryBuilder('s')
+            ->where('s.isActive = :active')
+            ->andWhere('s.endDate BETWEEN :now AND :future')
+            ->andWhere('s.frozenAt IS NULL')
+            ->setParameter('active', true)
+            ->setParameter('now', $now)
+            ->setParameter('future', $future)
+            ->orderBy('s.endDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

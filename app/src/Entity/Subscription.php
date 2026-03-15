@@ -39,6 +39,9 @@ class Subscription
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $lastPaymentDate = null;
 
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $frozenAt = null;
+
     /**
      * @var Collection<int, BillingRecord>
      */
@@ -137,6 +140,23 @@ class Subscription
         $this->lastPaymentDate = $lastPaymentDate;
 
         return $this;
+    }
+
+    public function getFrozenAt(): ?\DateTimeInterface
+    {
+        return $this->frozenAt;
+    }
+
+    public function setFrozenAt(?\DateTimeInterface $frozenAt): static
+    {
+        $this->frozenAt = $frozenAt;
+
+        return $this;
+    }
+
+    public function isFrozen(): bool
+    {
+        return $this->frozenAt !== null;
     }
 
     /**

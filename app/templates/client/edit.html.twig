@@ -20,7 +20,7 @@
 
 <div class="card" style="max-width:860px">
     <div class="card-body">
-        {{ form_start(form) }}
+        {{ form_start(form, {'attr': {'enctype': 'multipart/form-data'}}) }}
 
             <p class="card-section-title">
                 <i class="bi bi-person" aria-hidden="true"></i>Información personal
@@ -93,6 +93,30 @@
                     {{ form_label(form.startDate) }}
                     {{ form_widget(form.startDate) }}
                     {{ form_errors(form.startDate) }}
+                </div>
+
+                {# ── Foto ── #}
+                <div class="col-12">
+                    <div class="p-3 rounded" style="background:var(--c-gray-50);border:1px solid var(--c-gray-200)">
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                            {% if client.photo %}
+                                <img src="{{ asset('uploads/clients/' ~ client.photo) }}"
+                                     alt="Foto actual"
+                                     class="rounded-circle object-fit-cover border"
+                                     style="width:56px;height:56px;border-width:2px!important;border-color:var(--c-gray-200)!important">
+                                <div class="small text-muted">Foto actual. Sube otra para reemplazarla.</div>
+                            {% else %}
+                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                                     style="width:56px;height:56px;background:var(--c-gray-100);color:var(--c-gray-400);font-size:1.5rem">
+                                    <i class="bi bi-person" aria-hidden="true"></i>
+                                </div>
+                                <div class="small text-muted">Sin foto. Sube una imagen del cliente.</div>
+                            {% endif %}
+                        </div>
+                        {{ form_label(form.photo) }}
+                        {{ form_widget(form.photo) }}
+                        {{ form_errors(form.photo) }}
+                    </div>
                 </div>
                 <div class="col-12 col-md-6">
                     {{ form_label(form.subscriptionType) }}

@@ -6,6 +6,7 @@ use App\Entity\Client;
 use App\Entity\Subscription;
 use App\Entity\SubscriptionType;
 use App\Form\ClientType;
+use App\Repository\AccessLogRepository;
 use App\Repository\ClientRepository;
 use App\Repository\SubscriptionRepository;
 use App\Service\InvoiceService;
@@ -13,6 +14,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -135,6 +137,26 @@ final class ClientController extends AbstractController
         $form->handleRequest($request);
     
         if ($form->isSubmitted() && $form->isValid()) {
+            // ── Foto del cliente ──────────────────────────────────────────
+            $photoFile = $form->get('photo')->getData();
+            if ($photoFile) {
+                $uploadsDir  = $this->getParameter('uploads_directory');
+                if (!is_dir($uploadsDir)) {
+                    mkdir($uploadsDir, 0775, true);
+                }
+                // Eliminar foto anterior si existe
+                if ($client->getPhoto()) {
+                    $old = $uploadsDir . '/' . $client->getPhoto();
+                    if (file_exists($old)) {
+                        unlink($old);
+                    }
+                }
+                $newFilename = uniqid('client_', true) . '.' . $photoFile->guessExtension();
+                $photoFile->move($uploadsDir, $newFilename);
+                $client->setPhoto($newFilename);
+            }
+            // ─────────────────────────────────────────────────────────────
+
             if (!$lastSubscription) {
                 $lastSubscription = new Subscription();
                 $lastSubscription->setClient($client);
@@ -231,6 +253,19 @@ final class ClientController extends AbstractController
     
         if ($form->isSubmitted() && $form->isValid()) {
             try {
+                // ── Foto del cliente ──────────────────────────────────────
+                $photoFile = $form->get('photo')->getData();
+                if ($photoFile) {
+                    $uploadsDir = $this->getParameter('uploads_directory');
+                    if (!is_dir($uploadsDir)) {
+                        mkdir($uploadsDir, 0775, true);
+                    }
+                    $newFilename = uniqid('client_', true) . '.' . $photoFile->guessExtension();
+                    $photoFile->move($uploadsDir, $newFilename);
+                    $client->setPhoto($newFilename);
+                }
+                // ─────────────────────────────────────────────────────────
+
                 // Obtener el SubscriptionType seleccionado del formulario
                 $subscriptionType = $form->get('subscriptionType')->getData();
                 
@@ -307,7 +342,7 @@ final class ClientController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_client_show', methods: ['GET'])]
-    public function show(Client $client): Response
+    public function show(Client $client, AccessLogRepository $accessLogRepo): Response
     {
         $lastSubscription = $client->getSubscriptions()->last() ?: null;
         $hasPaid = false;
@@ -326,11 +361,14 @@ final class ClientController extends AbstractController
             }
         }
 
+        $recentLogs = $accessLogRepo->findRecentByClient($client, 20);
+
         return $this->render('client/show.html.twig', [
-            'client' => $client,
-            'hasPaid' => $hasPaid,
+            'client'       => $client,
+            'hasPaid'      => $hasPaid,
             'paymentUntil' => $paymentUntil,
             'subscription' => $lastSubscription,
+            'recentLogs'   => $recentLogs,
         ]);
     }
 
@@ -442,6 +480,49 @@ final class ClientController extends AbstractController
         }
 
         return $this->redirectToRoute('app_client_index');
+    }
+
+    /** Exportar listado de clientes como CSV */
+    #[Route('/export-csv', name: 'app_client_export_csv', methods: ['GET'])]
+    public function exportCsv(ClientRepository $clientRepository): StreamedResponse
+    {
+        $clients = $clientRepository->findAll();
+
+        $response = new StreamedResponse(function () use ($clients) {
+            $handle = fopen('php://output', 'w');
+            // BOM para que Excel abra UTF-8 correctamente
+            fputs($handle, "\xEF\xBB\xBF");
+            // Cabecera
+            fputcsv($handle, ['ID', 'Nombre', 'Apellidos', 'DNI', 'Email', 'Teléfono', 'Localidad', 'Fecha alta', 'Código tarjeta', 'Tipo suscripción', 'Activo hasta', 'Último acceso'], ';');
+
+            foreach ($clients as $client) {
+                $sub     = $client->getSubscriptions()->last() ?: null;
+                $subType = $sub ? $sub->getSubscriptionType()->getName() : '';
+                $endDate = $sub ? $sub->getEndDate()?->format('d/m/Y') : '';
+
+                fputcsv($handle, [
+                    $client->getId(),
+                    $client->getName(),
+                    $client->getSurname(),
+                    $client->getIdNumber(),
+                    $client->getEmail(),
+                    $client->getPhone(),
+                    $client->getLocality(),
+                    $client->getStartDate()?->format('d/m/Y'),
+                    $client->getCardCode(),
+                    $subType,
+                    $endDate,
+                    $client->getLastAccess()?->format('d/m/Y H:i'),
+                ], ';');
+            }
+            fclose($handle);
+        });
+
+        $filename = 'clientes_' . date('Y-m-d') . '.csv';
+        $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
+        $response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
+
+        return $response;
     }
 
     #[Route('/backup/non-billable', name: 'app_client_backup_non_billable', methods: ['POST'])]

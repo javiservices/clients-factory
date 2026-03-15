@@ -55,6 +55,9 @@ class Client
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $lastAccess = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $photo = null;
+
     /**
      * @var Collection<int, Subscription>
      */
@@ -364,6 +367,18 @@ class Client
     public function setLastAccess(?\DateTimeInterface $lastAccess): static
     {
         $this->lastAccess = $lastAccess;
+
+        return $this;
+    }
+
+    public function getPhoto(): ?string
+    {
+        return $this->photo;
+    }
+
+    public function setPhoto(?string $photo): static
+    {
+        $this->photo = $photo;
 
         return $this;
     }

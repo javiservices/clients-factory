@@ -31,13 +31,28 @@
 
 <div class="row g-3">
 
-    {# ─── Personal info ─── #}
+    {# ─── Photo + Personal info ─── #}
     <div class="col-12 col-lg-6">
         <div class="card h-100">
             <div class="card-body">
                 <p class="card-section-title">
                     <i class="bi bi-person" aria-hidden="true"></i>Información personal
                 </p>
+                {% if client.photo %}
+                    <div class="text-center mb-3">
+                        <img src="{{ asset('uploads/clients/' ~ client.photo) }}"
+                             alt="Foto de {{ client.name }}"
+                             class="rounded-circle object-fit-cover border"
+                             style="width:96px;height:96px;border-color:var(--c-gray-200)!important;border-width:3px!important">
+                    </div>
+                {% else %}
+                    <div class="text-center mb-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                             style="width:96px;height:96px;background:var(--c-gray-100);font-size:2.5rem;color:var(--c-gray-400)">
+                            <i class="bi bi-person" aria-hidden="true"></i>
+                        </div>
+                    </div>
+                {% endif %}
                 <div class="row g-3">
                     <div class="col-6">
                         <div class="small" style="color:var(--c-gray-500)">Nombre</div>
@@ -97,9 +112,29 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                <p class="card-section-title">
-                    <i class="bi bi-credit-card" aria-hidden="true"></i>Membresía
-                </p>
+                <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                    <p class="card-section-title mb-0">
+                        <i class="bi bi-credit-card" aria-hidden="true"></i>Membresía
+                    </p>
+                    {% if subscription %}
+                        {% if subscription.frozen %}
+                            <form method="post" action="{{ path('app_subscription_unfreeze', {'id': subscription.id}) }}" class="d-inline">
+                                <input type="hidden" name="_token" value="{{ csrf_token('unfreeze' ~ subscription.id) }}">
+                                <button type="submit" class="btn btn-sm btn-warning">
+                                    <i class="bi bi-snow me-1"></i>Descongelar suscripción
+                                </button>
+                            </form>
+                        {% else %}
+                            <form method="post" action="{{ path('app_subscription_freeze', {'id': subscription.id}) }}" class="d-inline">
+                                <input type="hidden" name="_token" value="{{ csrf_token('freeze' ~ subscription.id) }}">
+                                <button type="submit" class="btn btn-sm btn-outline-info"
+                                        onclick="return confirm('¿Congelar la suscripción? Los días congelados se añadirán al vencimiento al descongelar.')">
+                                    <i class="bi bi-snow me-1"></i>Congelar suscripción
+                                </button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
                 <div class="row g-3">
                     <div class="col-6 col-md-3">
                         <div class="small" style="color:var(--c-gray-500)">Código de tarjeta</div>
@@ -112,7 +147,9 @@
                     <div class="col-6 col-md-3">
                         <div class="small" style="color:var(--c-gray-500)">Estado de pago</div>
                         <div class="mt-1">
-                            {% if hasPaid %}
+                            {% if subscription and subscription.frozen %}
+                                <span class="badge-status badge-pending"><span class="dot"></span>Congelada</span>
+                            {% elseif hasPaid %}
                                 <span class="badge-status badge-paid"><span class="dot"></span>Pagado</span>
                             {% else %}
                                 <span class="badge-status badge-pending"><span class="dot"></span>Pendiente</span>
@@ -123,10 +160,56 @@
                         <div class="small" style="color:var(--c-gray-500)">Pagado hasta</div>
                         <div class="fw-semibold">{{ paymentUntil ? paymentUntil|date('d/m/Y') : '—' }}</div>
                     </div>
+                    {% if subscription and subscription.frozen %}
+                        <div class="col-12">
+                            <div class="alert alert-warning d-flex align-items-center gap-2 mb-0 py-2">
+                                <i class="bi bi-snow fs-5"></i>
+                                <span>Suscripción congelada desde el <strong>{{ subscription.frozenAt|date('d/m/Y') }}</strong>.
+                                Al descongelar se extenderá el vencimiento por los días transcurridos.</span>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
+
+    {# ─── Access history ─── #}
+    {% if recentLogs is not empty %}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <p class="card-section-title">
+                    <i class="bi bi-clock-history" aria-hidden="true"></i>Historial de accesos recientes
+                </p>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Fecha y hora</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in recentLogs %}
+                                <tr>
+                                    <td class="text-nowrap">{{ log.accessTime|date('d/m/Y H:i:s') }}</td>
+                                    <td>
+                                        {% if log.status == 'success' %}
+                                            <span class="badge-status badge-paid"><span class="dot"></span>Acceso concedido</span>
+                                        {% else %}
+                                            <span class="badge-status badge-pending"><span class="dot"></span>Denegado</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
 </div>
 

@@ -9,6 +9,7 @@ use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -139,6 +140,18 @@ class ClientType extends AbstractType
                     'id' => 'cardCodeField'
                 ],
                 'label' => 'Código de tarjeta',
+                'label_attr' => [
+                    'class' => 'form-label small'
+                ]
+            ])
+            ->add('photo', FileType::class, [
+                'label' => 'Foto del cliente',
+                'mapped' => false,
+                'required' => false,
+                'attr' => [
+                    'class' => 'form-control',
+                    'accept' => 'image/*'
+                ],
                 'label_attr' => [
                     'class' => 'form-label small'
                 ]

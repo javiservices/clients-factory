@@ -27,14 +27,193 @@
     </div>
 </div>
 
-<div class="container">
-    <div id="turnstileClients" class="row justify-content-center">
+<div class="container-fluid px-3 px-md-4 pb-4">
+
+    {# ─── Acceso en tiempo real ─── #}
+    <div id="turnstileClients" class="row justify-content-center mb-4">
         <!-- El contenido se genera dinámicamente por JavaScript -->
     </div>
+
+    {# ─── Estadísticas ─── #}
+    <div class="row g-3 mb-4" id="statsCards">
+        <div class="col-6 col-md-3">
+            <div class="card text-center">
+                <div class="card-body py-3">
+                    <div class="fs-1 fw-bold" style="color:var(--c-primary)" id="statToday">—</div>
+                    <div class="small text-muted">Accesos hoy</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center">
+                <div class="card-body py-3">
+                    <div class="fs-1 fw-bold" style="color:var(--c-primary)" id="statTotal">—</div>
+                    <div class="small text-muted">Clientes activos</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center">
+                <div class="card-body py-3">
+                    <div class="fs-1 fw-bold text-warning" id="statExpiring">—</div>
+                    <div class="small text-muted">Vencen esta semana</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center">
+                <div class="card-body py-3">
+                    <div class="fs-1 fw-bold text-danger" id="statDenied">—</div>
+                    <div class="small text-muted">Accesos denegados</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        {# Accesos últimos 30 días #}
+        <div class="col-12 col-lg-8">
+            <div class="card h-100">
+                <div class="card-body">
+                    <p class="card-section-title mb-3">
+                        <i class="bi bi-bar-chart-line"></i>Accesos — últimos 30 días
+                    </p>
+                    <canvas id="chartByDay" height="90"></canvas>
+                </div>
+            </div>
+        </div>
+        {# Distribución horaria #}
+        <div class="col-12 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <p class="card-section-title mb-3">
+                        <i class="bi bi-clock"></i>Hora punta
+                    </p>
+                    <canvas id="chartByHour" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Suscripciones próximas a vencer #}
+    <div class="card" id="expiringCard" style="display:none">
+        <div class="card-body">
+            <p class="card-section-title mb-3" style="color:var(--c-warning,#f59e0b)">
+                <i class="bi bi-exclamation-triangle"></i>Suscripciones que vencen en 7 días
+            </p>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0" id="expiringTable">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Tipo</th>
+                            <th>Vence el</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="expiringBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
 
 {% block javascripts %}
     {{ parent() }}
     {{ encore_entry_script_tags('dashboard_js') }}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+    // ── Stats ────────────────────────────────────────────────────────────────
+    let chartByDay  = null;
+    let chartByHour = null;
+
+    async function loadStats() {
+        try {
+            const res  = await fetch('/api/stats');
+            const data = await res.json();
+
+            document.getElementById('statToday').textContent   = data.todayCount ?? 0;
+            document.getElementById('statTotal').textContent   = data.totalClients ?? 0;
+            document.getElementById('statExpiring').textContent = data.expiring?.length ?? 0;
+            const denied = data.byStatus?.denied ?? 0;
+            document.getElementById('statDenied').textContent  = denied;
+
+            // Gráfica de barras: accesos por día
+            const days   = Object.keys(data.accessesByDay || {});
+            const counts = Object.values(data.accessesByDay || {});
+
+            if (chartByDay) chartByDay.destroy();
+            chartByDay = new Chart(document.getElementById('chartByDay'), {
+                type: 'bar',
+                data: {
+                    labels: days.map(d => {
+                        const [y, m, day] = d.split('-');
+                        return `${day}/${m}`;
+                    }),
+                    datasets: [{
+                        label: 'Accesos',
+                        data: counts,
+                        backgroundColor: 'rgba(215,38,56,0.7)',
+                        borderColor: '#D72638',
+                        borderWidth: 1,
+                        borderRadius: 3,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+
+            // Gráfica de línea: distribución por hora
+            const hours = data.byHour || Array(24).fill(0);
+            if (chartByHour) chartByHour.destroy();
+            chartByHour = new Chart(document.getElementById('chartByHour'), {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => `${i}h`),
+                    datasets: [{
+                        label: 'Accesos',
+                        data: hours,
+                        borderColor: '#D72638',
+                        backgroundColor: 'rgba(215,38,56,0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 3,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+
+            // Tabla de próximos vencimientos
+            const expiring = data.expiring || [];
+            const tbody = document.getElementById('expiringBody');
+            if (expiring.length > 0) {
+                document.getElementById('expiringCard').style.display = '';
+                tbody.innerHTML = expiring.map(e => `
+                    <tr>
+                        <td><a href="/client/${e.clientId}" class="fw-semibold text-decoration-none">${e.clientName}</a></td>
+                        <td><span class="badge bg-secondary">${e.type}</span></td>
+                        <td class="text-danger fw-semibold">${e.endDate}</td>
+                        <td><a href="/client/${e.clientId}/edit" class="btn btn-xs btn-outline-primary btn-sm py-0 px-2">Renovar</a></td>
+                    </tr>
+                `).join('');
+            }
+
+        } catch (e) {
+            console.error('Error cargando estadísticas:', e);
+        }
+    }
+
+    loadStats();
+    setInterval(loadStats, 60000); // refresco cada minuto
+    </script>
 {% endblock %}
+
