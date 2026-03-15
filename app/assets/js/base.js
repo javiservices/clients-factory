@@ -1,81 +1,82 @@
-// Base JavaScript
-document.addEventListener('DOMContentLoaded', function() {
+// Base JavaScript (layout v2)
+document.addEventListener('DOMContentLoaded', function () {
     const sidebar = document.getElementById('sidebar');
-    const overlay = document.querySelector('.overlay');
-    const sidebarCollapse = document.getElementById('sidebarCollapse');
-    const closeSidebar = document.getElementById('closeSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
 
-    // Abrir sidebar
-    if (sidebarCollapse && sidebar && overlay) {
-        sidebarCollapse.addEventListener('click', function() {
-            sidebar.classList.add('active');
-            overlay.style.display = 'block';
+    if (sidebar && overlay) {
+        const openSidebar = () => {
+            sidebar.classList.add('open');
+            overlay.classList.add('show');
+        };
+
+        const closeSidebar = () => {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+        };
+
+        document.querySelectorAll('.btn-sidebar-toggle').forEach((btn) => {
+            btn.addEventListener('click', openSidebar);
         });
-    }
 
-    // Cerrar sidebar con el botón
-    if (closeSidebar && sidebar && overlay) {
-        closeSidebar.addEventListener('click', function() {
-            sidebar.classList.remove('active');
-            overlay.style.display = 'none';
-        });
-    }
+        overlay.addEventListener('click', closeSidebar);
 
-    // Cerrar sidebar cuando se hace clic en el overlay
-    if (overlay && sidebar) {
-        overlay.addEventListener('click', function() {
-            sidebar.classList.remove('active');
-            overlay.style.display = 'none';
-        });
-    }
-
-    // Cerrar sidebar en resize si está en modo desktop
-    window.addEventListener('resize', function() {
-        if (window.innerWidth >= 768 && sidebar && overlay) {
-            sidebar.classList.remove('active');
-            overlay.style.display = 'none';
-        }
-    });
-
-    // Cerrar sidebar al hacer clic en un enlace (opcional)
-    if (sidebar) {
-        const sidebarLinks = sidebar.querySelectorAll('.nav-link');
-        sidebarLinks.forEach(link => {
-            link.addEventListener('click', function() {
-                if (window.innerWidth < 768 && sidebar && overlay) {
-                    sidebar.classList.remove('active');
-                    overlay.style.display = 'none';
+        sidebar.querySelectorAll('.sidebar-link').forEach((link) => {
+            link.addEventListener('click', function () {
+                if (window.innerWidth < 992) {
+                    closeSidebar();
                 }
             });
         });
-    }
 
-    // Atajo de teclado para cambiar modo del sistema (Ctrl+Shift+H)
-    document.addEventListener('keydown', function(e) {
-        if (e.ctrlKey && e.shiftKey && e.key === 'H') {
-            e.preventDefault();
-            // Obtener el modo del sistema desde un atributo data o variable global
-            const currentMode = document.body.dataset.systemMode || 'normal';
-            const newMode = currentMode === 'hidden' ? 'normal' : 'hidden';
-            window.location.href = '/client/system/mode/' + newMode;
-        }
-    });
-
-    // Inicializar tooltip del botón flotante
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-
-    // Funcionalidad del botón flotante
-    const systemModeToggle = document.getElementById('system-mode-toggle');
-    if (systemModeToggle) {
-        systemModeToggle.addEventListener('click', function() {
-            const currentMode = document.body.dataset.systemMode || 'normal';
-            const newMode = currentMode === 'hidden' ? 'normal' : 'hidden';
-            window.location.href = '/client/system/mode/' + newMode;
+        window.addEventListener('resize', function () {
+            if (window.innerWidth >= 992) {
+                closeSidebar();
+            }
         });
     }
+
+    // Initialize Bootstrap tooltips if any
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+        new bootstrap.Tooltip(el);
+    });
+
+    const userMenu = document.querySelector('[data-user-menu]');
+    const userMenuTrigger = document.querySelector('[data-user-menu-trigger]');
+    const userMenuPanel = document.querySelector('[data-user-menu-panel]');
+
+    if (userMenu && userMenuTrigger && userMenuPanel) {
+        const closeUserMenu = () => {
+            userMenuPanel.classList.remove('show');
+            userMenuTrigger.setAttribute('aria-expanded', 'false');
+        };
+
+        userMenuTrigger.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const isOpen = userMenuPanel.classList.contains('show');
+            if (isOpen) {
+                closeUserMenu();
+                return;
+            }
+
+            userMenuPanel.classList.add('show');
+            userMenuTrigger.setAttribute('aria-expanded', 'true');
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!userMenu.contains(event.target)) {
+                closeUserMenu();
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closeUserMenu();
+            }
+        });
+    }
+
 });
 
 // Función para crear backup

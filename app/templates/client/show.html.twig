@@ -1,143 +1,153 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Cliente: {{ client.name }} {{ client.surname }}{% endblock %}
-{% block page_title %}Perfil del Cliente{% endblock %}
+{% block title %}{{ client.name }} {{ client.surname }} - GymAdmin{% endblock %}
+{% block page_title %}Ficha de cliente{% endblock %}
 
 {% block body %}
-    <div class="card border-0 shadow-sm">
-        <div class="card-body">
-            <!-- Cabecera con nombre e ID -->
-            <div class="mb-4">
-                <h3 class="card-title h4 mb-1">{{ client.name }} {{ client.surname }}</h3>
-                <p class="text-muted small mb-3">
-                    <i class="bi bi-person-badge me-1"></i>ID: {{ client.id }}
+
+{# ─── Page header ─── #}
+<div class="page-header">
+    <div class="page-header-left">
+        <a href="{{ path('app_client_index') }}" class="btn btn-sm btn-outline-secondary btn-icon"
+           aria-label="Volver a la lista de clientes">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+        </a>
+        <div>
+            <h2 class="page-header-title">{{ client.name }} {{ client.surname }}</h2>
+            <p class="page-header-sub">ID #{{ client.id }}</p>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ path('app_client_edit', {'id': client.id}) }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-pencil me-1" aria-hidden="true"></i>Editar
+        </a>
+        <button type="button" class="btn btn-sm btn-outline-danger"
+                data-bs-toggle="modal" data-bs-target="#deleteModal"
+                aria-label="Eliminar cliente">
+            <i class="bi bi-trash" aria-hidden="true"></i>
+        </button>
+    </div>
+</div>
+
+<div class="row g-3">
+
+    {# ─── Personal info ─── #}
+    <div class="col-12 col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <p class="card-section-title">
+                    <i class="bi bi-person" aria-hidden="true"></i>Información personal
                 </p>
-                
-                <!-- Botones de acción -->
-                <div class="btn-group w-100 d-md-none mb-3">
-                    <a href="{{ path('app_client_index') }}" 
-                       class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-arrow-left"></i>
-                    </a>
-                    <a href="{{ path('app_client_edit', {'id': client.id}) }}" 
-                       class="btn btn-sm btn-primary">
-                        <i class="bi bi-pencil-fill"></i>
-                    </a>
-                    <button type="button" 
-                            class="btn btn-sm btn-outline-danger" 
-                            data-bs-toggle="modal" 
-                            data-bs-target="#deleteModal">
-                        <i class="bi bi-trash-fill"></i>
-                    </button>
-                </div>
-
-                <!-- Botones versión desktop -->
-                <div class="d-none d-md-flex gap-2">
-                    <a href="{{ path('app_client_index') }}" 
-                       class="btn btn-outline-primary">
-                        <i class="bi bi-arrow-left me-2"></i>Volver
-                    </a>
-                    <a href="{{ path('app_client_edit', {'id': client.id}) }}" 
-                       class="btn btn-primary">
-                        <i class="bi bi-pencil-fill me-2"></i>Editar
-                    </a>
-                    <button type="button" 
-                            class="btn btn-outline-danger" 
-                            data-bs-toggle="modal" 
-                            data-bs-target="#deleteModal">
-                        <i class="bi bi-trash-fill me-2"></i>Eliminar
-                    </button>
-                </div>
-            </div>
-
-            <div class="row g-4">
-                <!-- Información Personal -->
-                <div class="col-12">
-                    <span class="border-bottom pb-2 mb-3 h6">
-                        <i class="bi bi-person me-1"></i>Información Personal
-                    </span>
-                    <div class="row g-3">
-                        <div class="col-6 col-lg-3">
-                            <div class="p-2 p-md-3 bg-light rounded-3">
-                                <small class="text-muted d-block">DNI</small>
-                                <strong class="small">{{ client.idNumber }}</strong>
-                            </div>
-                        </div>
-                        <div class="col-6 col-lg-3">
-                            <div class="p-2 p-md-3 bg-light rounded-3">
-                                <small class="text-muted d-block">F. Nacimiento</small>
-                                <strong class="small">{{ client.birthDate ? client.birthDate|date('d/m/Y') : '-' }}</strong>
-                            </div>
-                        </div>
-                        <div class="col-6 col-lg-3">
-                            <div class="p-2 p-md-3 bg-light rounded-3">
-                                <small class="text-muted d-block">Teléfono</small>
-                                <strong class="small">{{ client.phone }}</strong>
-                            </div>
-                        </div>
-                        <div class="col-6 col-lg-3">
-                            <div class="p-2 p-md-3 bg-light rounded-3">
-                                <small class="text-muted d-block">Tarjeta</small>
-                                <strong class="small">{{ client.cardCode }}</strong>
-                            </div>
-                        </div>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="small" style="color:var(--c-gray-500)">Nombre</div>
+                        <div class="fw-semibold">{{ client.name }}</div>
                     </div>
-                </div>
-
-                <!-- Dirección -->
-                <div class="col-12">
-                    <span class="border-bottom pb-2 mb-3 h6">
-                        <i class="bi bi-geo-alt me-1"></i>Dirección
-                    </span>
-                    <div class="p-2 p-md-3 bg-light rounded-3">
-                        <div class="row g-3">
-                            <div class="col-12 col-md-6">
-                                <small class="text-muted d-block">Dirección</small>
-                                <strong class="small">{{ client.address }}</strong>
-                            </div>
-                            <div class="col-6 col-md-3">
-                                <small class="text-muted d-block">Localidad</small>
-                                <strong class="small">{{ client.locality }}</strong>
-                            </div>
-                            <div class="col-6 col-md-3">
-                                <small class="text-muted d-block">C.P.</small>
-                                <strong class="small">{{ client.zipCode }}</strong>
-                            </div>
-                        </div>
+                    <div class="col-6">
+                        <div class="small" style="color:var(--c-gray-500)">Apellidos</div>
+                        <div class="fw-semibold">{{ client.surname }}</div>
                     </div>
-                </div>
-
-                <!-- Información de Membresía -->
-                <div class="col-12">
-                    <span class="border-bottom pb-2 mb-3 h6">
-                        <i class="bi bi-calendar-check me-1"></i>Información de Membresía
-                    </span>
-                    <div class="p-2 p-md-3 bg-light rounded-3">
-                        <small class="text-muted d-block">Fecha de Inicio</small>
-                        <strong class="small">{{ client.startDate ? client.startDate|date('d/m/Y') : '-' }}</strong>
+                    <div class="col-6">
+                        <div class="small" style="color:var(--c-gray-500)">DNI / NIF</div>
+                        <div class="fw-semibold">{{ client.idNumber ?: '—' }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="small" style="color:var(--c-gray-500)">Fecha de nacimiento</div>
+                        <div class="fw-semibold">{{ client.birthDate ? client.birthDate|date('d/m/Y') : '—' }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="small" style="color:var(--c-gray-500)">Teléfono</div>
+                        <div class="fw-semibold">{{ client.phone ?: '—' }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="small" style="color:var(--c-gray-500)">Email</div>
+                        <div class="fw-semibold small text-truncate">{{ client.email ?: '—' }}</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal de Confirmación de Eliminación -->
-    <div class="modal fade" id="deleteModal" tabindex="-1">
-        <div class="modal-dialog modal-sm modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <span class="modal-title h6">Confirmar eliminación</span>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="small">¿Estás seguro de que deseas eliminar a este cliente?</p>
-                    <p class="small text-danger mb-0">Esta acción no se puede deshacer.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    {{ include('client/_delete_form.html.twig') }}
+    {# ─── Address ─── #}
+    <div class="col-12 col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <p class="card-section-title">
+                    <i class="bi bi-geo-alt" aria-hidden="true"></i>Dirección
+                </p>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <div class="small" style="color:var(--c-gray-500)">Dirección</div>
+                        <div class="fw-semibold">{{ client.address ?: '—' }}</div>
+                    </div>
+                    <div class="col-7">
+                        <div class="small" style="color:var(--c-gray-500)">Localidad</div>
+                        <div class="fw-semibold">{{ client.locality ?: '—' }}</div>
+                    </div>
+                    <div class="col-5">
+                        <div class="small" style="color:var(--c-gray-500)">Código postal</div>
+                        <div class="fw-semibold">{{ client.zipCode ?: '—' }}</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    {# ─── Membership ─── #}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <p class="card-section-title">
+                    <i class="bi bi-credit-card" aria-hidden="true"></i>Membresía
+                </p>
+                <div class="row g-3">
+                    <div class="col-6 col-md-3">
+                        <div class="small" style="color:var(--c-gray-500)">Código de tarjeta</div>
+                        <div class="fw-semibold font-monospace">{{ client.cardCode ?: '—' }}</div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="small" style="color:var(--c-gray-500)">Fecha de alta</div>
+                        <div class="fw-semibold">{{ client.startDate ? client.startDate|date('d/m/Y') : '—' }}</div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="small" style="color:var(--c-gray-500)">Estado de pago</div>
+                        <div class="mt-1">
+                            {% if hasPaid %}
+                                <span class="badge-status badge-paid"><span class="dot"></span>Pagado</span>
+                            {% else %}
+                                <span class="badge-status badge-pending"><span class="dot"></span>Pendiente</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="small" style="color:var(--c-gray-500)">Pagado hasta</div>
+                        <div class="fw-semibold">{{ paymentUntil ? paymentUntil|date('d/m/Y') : '—' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{# ─── Delete modal ─── #}
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title fs-6" id="deleteModalLabel">Confirmar eliminación</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-1">¿Eliminar a <strong>{{ client.name }} {{ client.surname }}</strong>?</p>
+                <p class="small mb-0" style="color:var(--c-danger)">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                {{ include('client/_delete_form.html.twig') }}
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

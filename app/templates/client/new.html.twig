@@ -1,143 +1,140 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Nuevo Cliente{% endblock %}
-{% block page_title %}Nuevo Cliente{% endblock %}
+{% block title %}Nuevo cliente - GymAdmin{% endblock %}
+{% block page_title %}Nuevo cliente{% endblock %}
 
 {% block body %}
-    <div class="card border-0 shadow-sm">
-        <div class="card-body">
-            {{ form_start(form) }}
-                {# Información Personal #}
-                <div class="mb-4">
-                    <h5 class="card-title h6 border-bottom pb-2">
-                        <i class="bi bi-person me-2"></i>Información Personal
-                    </h5>
-                    <div class="row g-3">
-                        <div class="col-12 col-md-6">
-                            {{ form_label(form.name) }}
-                            {{ form_widget(form.name) }}
-                        </div>
-                        <div class="col-12 col-md-6">
-                            {{ form_label(form.surname) }}
-                            {{ form_widget(form.surname) }}
-                        </div>
-                        <div class="col-12 col-md-6">
-                            {{ form_label(form.idNumber) }}
-                            {{ form_widget(form.idNumber) }}
-                        </div>
-                        <div class="col-12 col-md-6">
-                            {{ form_label(form.birthDate) }}
-                            {{ form_widget(form.birthDate) }}
-                        </div>
-                    </div>
-                </div>
 
-                {# Información de Contacto #}
-                <div class="mb-4">
-                    <h5 class="card-title h6 border-bottom pb-2">
-                        <i class="bi bi-telephone me-2"></i>Información de Contacto
-                    </h5>
-                    <div class="row g-3">
-                        <div class="col-12 col-md-6">
-                            {{ form_label(form.phone) }}
-                            {{ form_widget(form.phone) }}
-                        </div>
-                        <div class="col-12 col-md-6">
-                            {{ form_label(form.email) }}
-                            {{ form_widget(form.email) }}
-                        </div>
-                        {# Eliminado el campo billable de aquí para camuflarlo abajo #}
-                        <div class="col-12">
-                            {{ form_label(form.address) }}
-                            {{ form_widget(form.address) }}
-                        </div>
-                        <div class="col-12 col-md-8">
-                            {{ form_label(form.locality) }}
-                            {{ form_widget(form.locality) }}
-                        </div>
-                        <div class="col-12 col-md-4">
-                            {{ form_label(form.zipCode) }}
-                            {{ form_widget(form.zipCode) }}
-                        </div>
-                    </div>
-                </div>
-
-                {# Información de Membresía #}
-                <div class="mb-4">
-                    <h5 class="card-title h6 border-bottom pb-2">
-                        <i class="bi bi-credit-card me-2"></i>Información de Membresía
-                    </h5>
-                    <div class="row g-3">
-                        <div class="col-12 col-md-6">
-                            {{ form_label(form.cardCode) }}
-                            {{ form_widget(form.cardCode) }}
-                            <div class="form-text">
-                                <i class="bi bi-info-circle me-1"></i>Haz clic para escanear una nueva tarjeta
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-6">
-                            {{ form_label(form.startDate) }}
-                            {{ form_widget(form.startDate) }}
-                        </div>
-                        <div class="col-12 col-md-6">
-                            {{ form_label(form.subscriptionType) }}
-                            {{ form_widget(form.subscriptionType) }}
-                        </div>
-                        <div class="col-12 col-md-6">
-                            <div class="card bg-light">
-                                <div class="card-body">
-                                    <div class="form-check mb-2">
-                                        {{ form_widget(form.isPaid) }}
-                                        {{ form_label(form.isPaid) }}
-                                    </div>
-                                    <div id="regularSubscriptionFields">
-                                        {{ form_label(form.paymentUntil) }}
-                                        {{ form_widget(form.paymentUntil) }}
-                                    </div>
-                                    <div id="dailyPassFields" style="display: none;">
-                                        {{ form_label(form.remainingPasses) }}
-                                        {{ form_widget(form.remainingPasses) }}
-                                        <div class="form-text">
-                                            <i class="bi bi-info-circle me-1"></i>Número de pases disponibles
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {# Botones de acción #}
-                <div class="d-flex gap-2 justify-content-end">
-                    <div class="form-check align-self-center me-auto" style="font-size:0.9em;color:#888;">
-                        {{ form_widget(form.billable) }}
-                        <label class="form-check-label" for="{{ form.billable.vars.id }}">Gestión externa</label>
-                    </div>
-                    <a href="{{ path('app_client_index') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x-lg me-2"></i>Cancelar
-                    </a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-lg me-2"></i>Guardar Cambios
-                    </button>
-                </div>
-
-            {{ form_end(form) }}
+<div class="page-header">
+    <div class="page-header-left">
+        <a href="{{ path('app_client_index') }}" class="btn btn-sm btn-outline-secondary btn-icon"
+           aria-label="Volver a clientes">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+        </a>
+        <div>
+            <h2 class="page-header-title">Nuevo cliente</h2>
+            <p class="page-header-sub">Completa los datos del nuevo socio</p>
         </div>
     </div>
+</div>
 
-    {# Toast para el lector de tarjetas #}
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        <div id="scannerToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header">
-                <i class="bi bi-credit-card me-2"></i>
-                <strong class="me-auto">Lector de Tarjetas</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+<div class="card" style="max-width:860px">
+    <div class="card-body">
+        {{ form_start(form) }}
+
+            <p class="card-section-title">
+                <i class="bi bi-person" aria-hidden="true"></i>Información personal
+            </p>
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                    {{ form_label(form.name) }}
+                    {{ form_widget(form.name) }}
+                    {{ form_errors(form.name) }}
+                </div>
+                <div class="col-12 col-md-6">
+                    {{ form_label(form.surname) }}
+                    {{ form_widget(form.surname) }}
+                    {{ form_errors(form.surname) }}
+                </div>
+                <div class="col-12 col-md-6">
+                    {{ form_label(form.idNumber) }}
+                    {{ form_widget(form.idNumber) }}
+                    {{ form_errors(form.idNumber) }}
+                </div>
+                <div class="col-12 col-md-6">
+                    {{ form_label(form.birthDate) }}
+                    {{ form_widget(form.birthDate) }}
+                    {{ form_errors(form.birthDate) }}
+                </div>
             </div>
-            <div class="toast-body">
-                Esperando lectura de tarjeta...
+
+            <p class="card-section-title">
+                <i class="bi bi-telephone" aria-hidden="true"></i>Contacto y dirección
+            </p>
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                    {{ form_label(form.phone) }}
+                    {{ form_widget(form.phone) }}
+                    {{ form_errors(form.phone) }}
+                </div>
+                <div class="col-12 col-md-6">
+                    {{ form_label(form.email) }}
+                    {{ form_widget(form.email) }}
+                    {{ form_errors(form.email) }}
+                </div>
+                <div class="col-12">
+                    {{ form_label(form.address) }}
+                    {{ form_widget(form.address) }}
+                    {{ form_errors(form.address) }}
+                </div>
+                <div class="col-12 col-md-8">
+                    {{ form_label(form.locality) }}
+                    {{ form_widget(form.locality) }}
+                    {{ form_errors(form.locality) }}
+                </div>
+                <div class="col-12 col-md-4">
+                    {{ form_label(form.zipCode) }}
+                    {{ form_widget(form.zipCode) }}
+                    {{ form_errors(form.zipCode) }}
+                </div>
             </div>
-        </div>
+
+            <p class="card-section-title">
+                <i class="bi bi-credit-card" aria-hidden="true"></i>Membresía
+            </p>
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                    {{ form_label(form.cardCode) }}
+                    {{ form_widget(form.cardCode) }}
+                    <div class="form-text"><i class="bi bi-info-circle me-1"></i>Haz clic para escanear una tarjeta</div>
+                    {{ form_errors(form.cardCode) }}
+                </div>
+                <div class="col-12 col-md-6">
+                    {{ form_label(form.startDate) }}
+                    {{ form_widget(form.startDate) }}
+                    {{ form_errors(form.startDate) }}
+                </div>
+                <div class="col-12 col-md-6">
+                    {{ form_label(form.subscriptionType) }}
+                    {{ form_widget(form.subscriptionType) }}
+                    {{ form_errors(form.subscriptionType) }}
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="p-3 rounded" style="background:var(--c-gray-50);border:1px solid var(--c-gray-200)">
+                        <div class="form-check mb-3">
+                            {{ form_widget(form.isPaid) }}
+                            {{ form_label(form.isPaid) }}
+                        </div>
+                        <div id="regularSubscriptionFields">
+                            {{ form_label(form.paymentUntil) }}
+                            {{ form_widget(form.paymentUntil) }}
+                            {{ form_errors(form.paymentUntil) }}
+                        </div>
+                        <div id="dailyPassFields" style="display:none">
+                            {{ form_label(form.remainingPasses) }}
+                            {{ form_widget(form.remainingPasses) }}
+                            <div class="form-text"><i class="bi bi-info-circle me-1"></i>Número de pases disponibles</div>
+                            {{ form_errors(form.remainingPasses) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-3 pt-2" style="border-top:1px solid var(--c-gray-100)">
+                <div class="form-check me-auto" style="opacity:.6;font-size:.85rem">
+                    {{ form_widget(form.billable) }}
+                    <label class="form-check-label" for="{{ form.billable.vars.id }}">Gestión externa</label>
+                </div>
+                <a href="{{ path('app_client_index') }}" class="btn btn-outline-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1" aria-hidden="true"></i>Guardar cliente
+                </button>
+            </div>
+
+        {{ form_end(form) }}
     </div>
+</div>
+
 {% endblock %}
 
 {% block javascripts %}

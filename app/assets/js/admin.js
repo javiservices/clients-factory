@@ -1,37 +1,16 @@
 // assets/js/admin.js
-document.addEventListener('DOMContentLoaded', function() {
-    // Toggle sidebar on mobile
-    const sidebarCollapse = document.getElementById('sidebarCollapse');
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.querySelector('.overlay');
-    
-    if (sidebarCollapse && sidebar && overlay) {
-        sidebarCollapse.addEventListener('click', function() {
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-        });
-    }
-
-    // Close sidebar when clicking on overlay
-    if (overlay && sidebar) {
-        overlay.addEventListener('click', function() {
-            sidebar.classList.remove('active');
-            this.classList.remove('active');
-        });
-    }
-
-    // Initialize tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl)
+document.addEventListener('DOMContentLoaded', function () {
+    // Initialize Bootstrap tooltips
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+        new bootstrap.Tooltip(el);
     });
 
-    // Add event listeners for delete buttons
+    // Generic delete confirmation modal hook (optional)
     const deleteConfirmModal = document.getElementById('deleteConfirmModal');
     if (deleteConfirmModal) {
-        document.querySelectorAll('.btn-action i.bi-trash').forEach(function(btn) {
-            btn.closest('.btn-action').addEventListener('click', function() {
-                var deleteModal = new bootstrap.Modal(deleteConfirmModal);
+        document.querySelectorAll('[data-delete-trigger="true"]').forEach(function (trigger) {
+            trigger.addEventListener('click', function () {
+                const deleteModal = new bootstrap.Modal(deleteConfirmModal);
                 deleteModal.show();
             });
         });

@@ -1,114 +1,119 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ subscription_type.id ? 'Editar' : 'Nuevo' }} Tipo de Suscripción{% endblock %}
-{% block page_title %}{{ subscription_type.id ? 'Editar' : 'Crear' }} Tipo de Suscripción{% endblock %}
+{% block title %}{{ subscription_type.id ? 'Editar' : 'Nueva' }} suscripción - GymAdmin{% endblock %}
+{% block page_title %}{{ subscription_type.id ? 'Editar' : 'Nueva' }} suscripción{% endblock %}
 
 {% block body %}
-    <div class="card border-0 shadow-sm">
-        <div class="card-body">
-            {{ form_start(form) }}
-                <div class="row g-4">
-                    <div class="col-12">
-                        <h5 class="card-title h6 border-bottom pb-2">
-                            <i class="bi bi-tag me-2"></i>Información Básica
-                        </h5>
-                        <div class="row g-3">
-                            <div class="col-12 col-md-6">
-                                {{ form_label(form.name) }}
-                                {{ form_widget(form.name) }}
-                                {{ form_help(form.name) }}
-                            </div>
-                            <div class="col-12 col-md-6">
-                                {{ form_label(form.price) }}
-                                {{ form_widget(form.price) }}
-                                {{ form_help(form.price) }}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-12">
-                        <h5 class="card-title h6 border-bottom pb-2">
-                            <i class="bi bi-calendar me-2"></i>Configuración de Duración
-                        </h5>
-                        <div class="row g-3">
-                            <div class="col-12 col-md-6">
-                                <div class="card bg-light">
-                                    <div class="card-body">
-                                        <div class="form-check mb-3">
-                                            {{ form_widget(form.isDailyPass) }}
-                                            {{ form_label(form.isDailyPass) }}
-                                            <div class="form-text">
-                                                Si se marca, se usará el campo "días" como cantidad de pases.
-                                            </div>
-                                        </div>
-
-                                        <div id="durationFields">
-                                            <div class="mb-3" id="monthsField">
-                                                {{ form_label(form.months) }}
-                                                {{ form_widget(form.months) }}
-                                                {{ form_help(form.months) }}
-                                            </div>
-                                            <div class="mb-3" id="daysField">
-                                                {{ form_label(form.days) }}
-                                                {{ form_widget(form.days) }}
-                                                {{ form_help(form.days) }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="d-flex gap-2 justify-content-end mt-4">
-                    <a href="{{ path('app_subscription_type_index') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x-lg me-2"></i>Cancelar
-                    </a>
-                    {% if subscription_type.id %}
-                        <button type="button" 
-                                class="btn btn-outline-danger"
-                                data-bs-toggle="modal"
-                                data-bs-target="#deleteModal">
-                            <i class="bi bi-trash me-2"></i>Eliminar
-                        </button>
-                    {% endif %}
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-lg me-2"></i>
-                        {{ subscription_type.id ? 'Guardar Cambios' : 'Crear Suscripción' }}
-                    </button>
-                </div>
-            {{ form_end(form) }}
+<div class="page-header">
+    <div class="page-header-left">
+        <a href="{{ path('app_subscription_type_index') }}" class="btn btn-sm btn-outline-secondary btn-icon"
+           aria-label="Volver a suscripciones">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+        </a>
+        <div>
+            <h2 class="page-header-title">{{ subscription_type.id ? 'Editar suscripción' : 'Nueva suscripción' }}</h2>
+            <p class="page-header-sub">Configura precio, duración o pases diarios</p>
         </div>
     </div>
+</div>
 
-    {% if subscription_type.id %}
-        <div class="modal fade" id="deleteModal" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Confirmar eliminación</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>¿Estás seguro de que deseas eliminar este tipo de suscripción?</p>
-                        <div class="alert alert-warning">
-                            <strong>Nombre:</strong> {{ subscription_type.name }}<br>
-                            <strong>Precio:</strong> {{ subscription_type.price }}€<br>
+<div class="card" style="max-width:860px">
+    <div class="card-body">
+        {{ form_start(form) }}
+
+            <p class="card-section-title">
+                <i class="bi bi-tag" aria-hidden="true"></i>Información básica
+            </p>
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                    {{ form_label(form.name) }}
+                    {{ form_widget(form.name) }}
+                    {{ form_help(form.name) }}
+                    {{ form_errors(form.name) }}
+                </div>
+                <div class="col-12 col-md-6">
+                    {{ form_label(form.price) }}
+                    {{ form_widget(form.price) }}
+                    {{ form_help(form.price) }}
+                    {{ form_errors(form.price) }}
+                </div>
+            </div>
+
+            <p class="card-section-title">
+                <i class="bi bi-calendar-event" aria-hidden="true"></i>Duración
+            </p>
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-lg-7">
+                    <div class="p-3 rounded" style="background:var(--c-gray-50);border:1px solid var(--c-gray-200)">
+                        <div class="form-check mb-3">
+                            {{ form_widget(form.isDailyPass) }}
+                            {{ form_label(form.isDailyPass) }}
+                            <div class="form-text">Si está activo, el campo días se interpreta como número de pases.</div>
                         </div>
-                        <p class="text-danger mb-0">
-                            <i class="bi bi-exclamation-circle me-2"></i>
-                            Esta acción no se puede deshacer.
-                        </p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        {{ include('subscription_type/_delete_form.html.twig') }}
+
+                        <div id="durationFields">
+                            <div class="mb-3" id="monthsField">
+                                {{ form_label(form.months) }}
+                                {{ form_widget(form.months) }}
+                                {{ form_help(form.months) }}
+                                {{ form_errors(form.months) }}
+                            </div>
+                            <div class="mb-0" id="daysField">
+                                {{ form_label(form.days) }}
+                                {{ form_widget(form.days) }}
+                                {{ form_help(form.days) }}
+                                {{ form_errors(form.days) }}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <div class="d-flex flex-wrap gap-2 justify-content-end pt-2" style="border-top:1px solid var(--c-gray-100)">
+                <a href="{{ path('app_subscription_type_index') }}" class="btn btn-outline-secondary">Cancelar</a>
+                {% if subscription_type.id %}
+                    <button type="button"
+                            class="btn btn-outline-danger"
+                            data-bs-toggle="modal"
+                            data-bs-target="#deleteModal">
+                        <i class="bi bi-trash me-1" aria-hidden="true"></i>Eliminar
+                    </button>
+                {% endif %}
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
+                    {{ subscription_type.id ? 'Guardar cambios' : 'Crear suscripción' }}
+                </button>
+            </div>
+        {{ form_end(form) }}
+    </div>
+</div>
+
+{% if subscription_type.id %}
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar eliminación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">¿Deseas eliminar esta suscripción?</p>
+                    <div class="small" style="color:var(--c-gray-600)">
+                        <strong>Nombre:</strong> {{ subscription_type.name }}<br>
+                        <strong>Precio:</strong> {{ subscription_type.price|number_format(2, ',', '.') }} €
+                    </div>
+                    <p class="mb-0 mt-3" style="color:var(--c-danger)">
+                        <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>Esta acción no se puede deshacer.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    {{ include('subscription_type/_delete_form.html.twig') }}
+                </div>
+            </div>
         </div>
-    {% endif %}
+    </div>
+{% endif %}
 {% endblock %}
 
 {% block javascripts %}

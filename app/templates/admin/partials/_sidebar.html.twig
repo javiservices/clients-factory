@@ -1,62 +1,58 @@
-<!-- Sidebar -->
-<nav id="sidebar" class="col-md-3 col-lg-2 bg-white shadow-sm p-0">
-    <div class="position-sticky vh-100 overflow-auto">
-        <!-- Header del Sidebar con botón de cierre -->
-        <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
-            <h4 class="text-primary mb-0">GymAdmin</h4>
-            <button type="button" 
-                    class="btn-close d-md-none" 
-                    id="closeSidebar"
-                    aria-label="Cerrar menú">
-            </button>
-        </div>
-        
-        <!-- Contenido del Sidebar -->
-        <div class="py-3">
-            <ul class="nav flex-column">
-                <li class="nav-item px-3">
-                    <a class="nav-link rounded-3 mb-1 {{ app.request.get('_route') == 'dashboard' ? 'active bg-primary text-white' : '' }}" 
-                       href="{{ path('dashboard') }}">
-                        <i class="bi bi-speedometer2 me-2"></i>
-                        Dashboard
-                    </a>
-                </li>
-                <li class="nav-item px-3">
-                    <a class="nav-link rounded-3 mb-1 {{ app.request.get('_route') starts with 'app_client_index' ? 'active bg-primary text-white' : '' }}" 
-                       href="{{ path('app_client_index') }}">
-                        <i class="bi bi-people me-2"></i>
-                        Clientes
-                    </a>
-                </li>
-                <li class="nav-item px-3">
-                    <a class="nav-link rounded-3 mb-1 {{ app.request.get('_route') starts with 'app_subscription_type_index' ? 'active bg-primary text-white' : '' }}" 
-                       href="{{ path('app_subscription_type_index') }}">
-                        <i class="bi bi-journal-text me-2"></i>
-                        Suscripciones
-                    </a>
-                </li>
-                <li class="nav-item px-3">
-                    <a class="nav-link rounded-3 mb-1 {{ app.request.get('_route') starts with 'logs_view' ? 'active bg-primary text-white' : '' }}" 
-                       href="{{ path('logs_view') }}">
-                        <i class="bi bi-bookmark-check me-2"></i>
-                        Registros
-                    </a>
-                </li>
-                {# <li class="nav-item px-3">
-                    <a class="nav-link rounded-3 mb-1 {{ app.request.get('_route') starts with 'invoice_' ? 'active bg-primary text-white' : '' }}" 
-                       href="{{ path('invoice_index') }}">
-                        <i class="bi bi-receipt me-2"></i>
-                        Facturas
-                    </a>
-                </li> #}
-                <li class="nav-item px-3">
-                    <a class="nav-link rounded-3 mb-1 {{ app.request.get('_route') starts with 'profile_' ? 'active bg-primary text-white' : '' }}" 
-                       href="{{ path('profile_edit') }}">
-                        <i class="bi bi-person-gear me-2"></i>
-                        Perfil
-                    </a>
-                </li>
-            </ul>
-        </div>
+{# ─── Sidebar ─── #}
+<aside id="sidebar" aria-label="Menú de navegación">
+    <a class="sidebar-brand" href="{{ path('dashboard') }}" aria-label="Ir al dashboard">
+        <span class="sidebar-brand-icon" aria-hidden="true"><i class="bi bi-lightning-charge-fill"></i></span>
+        <span class="sidebar-brand-text">GymAdmin</span>
+    </a>
+
+    <nav class="sidebar-nav" aria-label="Navegación principal">
+        <span class="sidebar-section-label">General</span>
+
+        <a class="sidebar-link {{ app.request.get('_route') == 'dashboard' ? 'active' : '' }}"
+           href="{{ path('dashboard') }}" aria-current="{{ app.request.get('_route') == 'dashboard' ? 'page' : 'false' }}">
+            <i class="bi bi-speedometer2" aria-hidden="true"></i>
+            Dashboard
+        </a>
+
+        <a class="sidebar-link {{ app.request.get('_route') starts with 'app_client' ? 'active' : '' }}"
+           href="{{ path('app_client_index') }}" aria-current="{{ app.request.get('_route') starts with 'app_client' ? 'page' : 'false' }}">
+            <i class="bi bi-people" aria-hidden="true"></i>
+            Clientes
+        </a>
+
+        <a class="sidebar-link {{ app.request.get('_route') starts with 'app_subscription_type' ? 'active' : '' }}"
+           href="{{ path('app_subscription_type_index') }}" aria-current="{{ app.request.get('_route') starts with 'app_subscription_type' ? 'page' : 'false' }}">
+            <i class="bi bi-journal-text" aria-hidden="true"></i>
+            Suscripciones
+        </a>
+
+        <a class="sidebar-link {{ app.request.get('_route') starts with 'logs' ? 'active' : '' }}"
+           href="{{ path('logs_view') }}" aria-current="{{ app.request.get('_route') starts with 'logs' ? 'page' : 'false' }}">
+            <i class="bi bi-bookmark-check" aria-hidden="true"></i>
+            Registros
+        </a>
+
+        <span class="sidebar-section-label">Cuenta</span>
+
+        <a class="sidebar-link {{ app.request.get('_route') starts with 'profile' ? 'active' : '' }}"
+           href="{{ path('profile_edit') }}" aria-current="{{ app.request.get('_route') starts with 'profile' ? 'page' : 'false' }}">
+            <i class="bi bi-person-gear" aria-hidden="true"></i>
+            Perfil
+        </a>
+
+        {% if app.session.get('system_mode') == 'hidden' %}
+        <a class="sidebar-link {{ app.request.get('_route') starts with 'app_backup' ? 'active' : '' }}"
+           href="{{ path('app_backup_index') }}" aria-current="{{ app.request.get('_route') starts with 'app_backup' ? 'page' : 'false' }}">
+            <i class="bi bi-database" aria-hidden="true"></i>
+            Backups
+        </a>
+        {% endif %}
+    </nav>
+
+    <div class="sidebar-footer">
+        <a class="sidebar-link sidebar-link-danger" href="{{ path('app_logout') }}">
+            <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+            Cerrar sesión
+        </a>
     </div>
-</nav>
+</aside>

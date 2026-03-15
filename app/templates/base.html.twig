@@ -3,108 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}GymAdmin - Panel de Administración{% endblock %}</title>
-    
+    <title>{% block title %}GymAdmin{% endblock %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
-    
+
     {% block stylesheets %}
         {{ encore_entry_link_tags('base') }}
-        {{ encore_entry_link_tags('admin') }}
+        {{ encore_entry_link_tags('admin_styles') }}
     {% endblock %}
 </head>
-<body class="bg-light">
-    <div class="container-fluid">
-        <div class="row">
-            {% include "admin/partials/_sidebar.html.twig" %}
+<body>
+    {# ─── Sidebar overlay (mobile) ─── #}
+    <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
 
-            <!-- Main Content -->
-            <main class="col-md-9 col-lg-10 ms-sm-auto px-md-4">
-                {% include "admin/partials/_header.html.twig" with {'page_title': block('page_title')|default('Panel de Administración')} %}
+    {# ─── Sidebar ─── #}
+    {% include "admin/partials/_sidebar.html.twig" %}
 
-                <!-- Content Area -->
-                {% block body %}{% endblock %}
-            </main>
+    {# ─── Main content ─── #}
+    <div class="main-content" id="mainContent">
+        {% include "admin/partials/_header.html.twig" with {'page_title': block('page_title')|default('Panel de Administración')} %}
+
+        <div class="page-content">
+            {% block body %}{% endblock %}
         </div>
     </div>
 
-    <!-- Overlay -->
-    <div class="overlay"></div>
-
-    <!-- Loading Spinner -->
-    <div class="position-fixed top-0 start-0 w-100 h-100 d-none justify-content-center align-items-center bg-white bg-opacity-75" style="z-index: 1060;" id="loadingSpinner">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Cargando...</span>
-        </div>
+    {# ─── Toast notifications ─── #}
+    <div class="toast-region" id="toastRegion" role="status" aria-live="polite" aria-atomic="true">
+        {% for type, messages in app.flashes(['success','danger','warning','info','error']) %}
+            {% for message in messages %}
+                {% set t = type == 'error' ? 'danger' : type %}
+                {% set icons = {'success':'check-circle-fill','danger':'x-circle-fill','warning':'exclamation-triangle-fill','info':'info-circle-fill'} %}
+                <div class="toast-item toast-{{ t }}" role="alert">
+                    <i class="bi bi-{{ icons[t]|default('info-circle-fill') }} toast-icon"></i>
+                    <span class="toast-body">{{ message }}</span>
+                    <button class="toast-close" aria-label="Cerrar"><i class="bi bi-x"></i></button>
+                </div>
+            {% endfor %}
+        {% endfor %}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.querySelector('.overlay');
-            const sidebarCollapse = document.getElementById('sidebarCollapse');
-            const closeSidebar = document.getElementById('closeSidebar');
+    document.addEventListener('DOMContentLoaded', function () {
+        const sidebar  = document.getElementById('sidebar');
+        const overlay  = document.getElementById('sidebarOverlay');
 
-            // Abrir sidebar
-            if (sidebarCollapse && sidebar && overlay) {
-                sidebarCollapse.addEventListener('click', function() {
-                    sidebar.classList.add('active');
-                    overlay.style.display = 'block';
-                });
-            }
+        function openSidebar()  { sidebar.classList.add('open');  overlay.classList.add('show'); }
+        function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('show'); }
 
-            // Cerrar sidebar con el botón
-            if (closeSidebar && sidebar && overlay) {
-                closeSidebar.addEventListener('click', function() {
-                    sidebar.classList.remove('active');
-                    overlay.style.display = 'none';
-                });
-            }
+        document.querySelectorAll('.btn-sidebar-toggle').forEach(btn => btn.addEventListener('click', openSidebar));
+        overlay.addEventListener('click', closeSidebar);
 
-            // Cerrar sidebar cuando se hace clic en el overlay
-            if (overlay && sidebar) {
-                overlay.addEventListener('click', function() {
-                    sidebar.classList.remove('active');
-                    overlay.style.display = 'none';
-                });
-            }
-
-            // Cerrar sidebar en resize si está en modo desktop
-            window.addEventListener('resize', function() {
-                if (window.innerWidth >= 768 && sidebar && overlay) {
-                    sidebar.classList.remove('active');
-                    overlay.style.display = 'none';
-                }
-            });
-
-            // Cerrar sidebar al hacer clic en un enlace (opcional)
-            if (sidebar) {
-                const sidebarLinks = sidebar.querySelectorAll('.nav-link');
-                sidebarLinks.forEach(link => {
-                    link.addEventListener('click', function() {
-                        if (window.innerWidth < 768 && sidebar && overlay) {
-                            sidebar.classList.remove('active');
-                            overlay.style.display = 'none';
-                        }
-                    });
-                });
-            }
-
-            // Atajo de teclado para cambiar modo del sistema (Ctrl+Shift+H)
-            document.addEventListener('keydown', function(e) {
-                if (e.ctrlKey && e.shiftKey && e.key === 'H') {
-                    e.preventDefault();
-                    const currentMode = '{{ app.session.get('system_mode') }}';
-                    const newMode = currentMode === 'hidden' ? 'normal' : 'hidden';
-                    window.location.href = '/client/system/mode/' + newMode;
-                }
+        sidebar.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', function () {
+                if (window.innerWidth < 992) closeSidebar();
             });
         });
-    </script>
+        window.addEventListener('resize', function () {
+            if (window.innerWidth >= 992) closeSidebar();
+        });
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+        // Toast auto-dismiss + close button
+        document.querySelectorAll('.toast-item').forEach(function (toast) {
+            const close = toast.querySelector('.toast-close');
+            if (close) close.addEventListener('click', () => toast.remove());
+            setTimeout(() => toast.remove(), 5000);
+        });
+
+        // Keyboard shortcut Ctrl+Shift+H → toggle hidden mode
+        document.addEventListener('keydown', function (e) {
+            if (e.ctrlKey && e.shiftKey && e.key === 'H') {
+                e.preventDefault();
+                const mode = '{{ app.session.get('system_mode') }}';
+                const next = mode === 'hidden' ? 'normal' : 'hidden';
+                window.location.href = '/client/system/mode/' + next;
+            }
+        });
+    });
+    </script>
 
     {% block javascripts %}
         {{ encore_entry_script_tags('base_js') }}

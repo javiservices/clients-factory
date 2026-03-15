@@ -1,69 +1,84 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Logs del {{ date|date('d-m-Y') }}{% endblock %}
-
-{% block page_title %}Logs del {{ date|date('d-m-Y') }}{% endblock %}
+{% block title %}Registros {{ date|date('d/m/Y') }} - GymAdmin{% endblock %}
+{% block page_title %}Registros de acceso{% endblock %}
 
 {% block body %}
-    <div class="card shadow-sm mb-4">
-        <div class="card-body">
-            <form method="get" action="{{ path('logs_view') }}">
-                <div class="row g-2">
-                    <div class="col-12 col-md-8">
-                        <div class="input-group">
-                            <span class="input-group-text bg-light">
-                                <i class="bi bi-calendar3"></i>
-                            </span>
-                            <input type="date" 
-                                   class="form-control" 
-                                   id="date" 
-                                   name="date" 
-                                   value="{{ date }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-4">
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="bi bi-search me-2"></i>Ver logs
-                        </button>
-                    </div>
-                </div>
-            </form>
+
+<div class="page-header">
+    <div class="page-header-left">
+        <div>
+            <h2 class="page-header-title">Registros de acceso</h2>
+            <p class="page-header-sub">{{ date|date('d/m/Y') }}</p>
         </div>
     </div>
+    {% if logs is not empty %}
+        <button class="btn btn-sm btn-outline-secondary" onclick="window.print()" type="button">
+            <i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir
+        </button>
+    {% endif %}
+</div>
 
-    {% if logs is empty %}
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle me-2"></i>No hay registros para esta fecha.
+{# ─── Date filter ─── #}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" action="{{ path('logs_view') }}" aria-label="Seleccionar fecha">
+            <div class="row g-2 align-items-end">
+                <div class="col-12 col-sm-8 col-md-5">
+                    <label class="form-label" for="date">Fecha</label>
+                    <div class="input-group">
+                        <span class="input-group-text" style="background:var(--c-gray-50)">
+                            <i class="bi bi-calendar3" aria-hidden="true"></i>
+                        </span>
+                        <input type="date" class="form-control" id="date" name="date" value="{{ date }}">
+                    </div>
+                </div>
+                <div class="col-12 col-sm-4 col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search me-1" aria-hidden="true"></i>Ver
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ─── Log table ─── #}
+{% if logs is empty %}
+    <div class="card">
+        <div class="empty-state">
+            <i class="bi bi-calendar-x empty-state-icon" aria-hidden="true"></i>
+            <p class="empty-state-title">Sin registros</p>
+            <p class="empty-state-desc">No hay registros de acceso para esta fecha.</p>
         </div>
-    {% else %}
+    </div>
+{% else %}
+    <div class="table-card">
+        <div class="table-card-header">
+            <h3 class="table-card-title">
+                <i class="bi bi-list-check me-1" aria-hidden="true"></i>
+                {{ logs|length }} registro{{ logs|length != 1 ? 's' : '' }}
+            </h3>
+        </div>
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
+            <table class="table table-hover mb-0" aria-label="Registros de acceso">
+                <thead>
                     <tr>
-                        <th class="text-nowrap">ID Cliente</th>
-                        <th class="text-nowrap">Nombre Cliente</th>
-                        <th class="text-nowrap">Hora de Acceso</th>
-                        <th class="text-nowrap">Estado</th>
+                        <th scope="col">ID</th>
+                        <th scope="col">Nombre</th>
+                        <th scope="col">Hora</th>
+                        <th scope="col">Estado</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for log in logs %}
                         <tr>
-                            <td data-label="ID Cliente" class="text-nowrap">
-                                <span class="d-inline d-md-none fw-bold me-2">ID:</span>
-                                {{ log.client_id }}
-                            </td>
-                            <td data-label="Nombre" class="text-nowrap">
-                                <span class="d-inline d-md-none fw-bold me-2">Nombre:</span>
-                                {{ log.client_name }}
-                            </td>
-                            <td data-label="Hora" class="text-nowrap">
-                                <span class="d-inline d-md-none fw-bold me-2">Hora:</span>
-                                {{ log.access_time }}
-                            </td>
-                            <td data-label="Estado" class="text-nowrap">
-                                <span class="d-inline d-md-none fw-bold me-2">Estado:</span>
-                                <span class="badge {{ log.status == 'success' ? 'bg-success' : 'bg-danger' }}">
+                            <td class="font-monospace small">{{ log.client_id }}</td>
+                            <td>{{ log.client_name }}</td>
+                            <td class="text-nowrap">{{ log.access_time }}</td>
+                            <td>
+                                <span class="badge-status {% if log.status == 'success' %}badge-paid{% else %}badge-pending{% endif %}">
+                                    <span class="dot" aria-hidden="true"></span>
                                     {{ log.status == 'success' ? 'Autorizado' : 'Denegado' }}
                                 </span>
                             </td>
@@ -72,19 +87,7 @@
                 </tbody>
             </table>
         </div>
+    </div>
+{% endif %}
 
-        <div class="d-flex justify-content-between align-items-center mt-3">
-            <small class="text-muted">
-                Total registros: {{ logs|length }}
-            </small>
-            <button class="btn btn-outline-primary btn-sm" onclick="window.print()">
-                <i class="bi bi-printer me-2"></i>Imprimir
-            </button>
-        </div>
-    {% endif %}
-{% endblock %}
-
-{% block stylesheets %}
-    {{ parent() }}
-    {{ encore_entry_link_tags('logs') }}
 {% endblock %}

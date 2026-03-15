@@ -309,8 +309,28 @@ final class ClientController extends AbstractController
     #[Route('/{id}', name: 'app_client_show', methods: ['GET'])]
     public function show(Client $client): Response
     {
+        $lastSubscription = $client->getSubscriptions()->last() ?: null;
+        $hasPaid = false;
+        $paymentUntil = null;
+
+        if ($lastSubscription) {
+            $paymentUntil = $lastSubscription->getEndDate();
+
+            if ($lastSubscription->isActive()) {
+                $lastPaymentDate = $lastSubscription->getLastPaymentDate();
+                $currentDate = new \DateTime();
+
+                if ($lastPaymentDate && $lastPaymentDate->format('Y-m') === $currentDate->format('Y-m')) {
+                    $hasPaid = true;
+                }
+            }
+        }
+
         return $this->render('client/show.html.twig', [
             'client' => $client,
+            'hasPaid' => $hasPaid,
+            'paymentUntil' => $paymentUntil,
+            'subscription' => $lastSubscription,
         ]);
     }
 
