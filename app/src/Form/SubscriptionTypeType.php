@@ -91,7 +91,6 @@ class SubscriptionTypeType extends AbstractType
                     'class' => 'form-label'
                 ],
                 'currency' => 'EUR',
-                'divisor' => 100,
                 'constraints' => [
                     new NotBlank(['message' => 'El precio es obligatorio']),
                     new Positive(['message' => 'El precio debe ser un valor positivo'])

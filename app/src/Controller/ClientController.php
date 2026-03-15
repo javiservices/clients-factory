@@ -203,7 +203,10 @@ final class ClientController extends AbstractController
                 }
             } else {
                 $lastSubscription->setIsActive(false);
-            }            try {
+                $this->addFlash('success', 'Cliente actualizado correctamente. Suscripción desactivada.');
+            }
+
+            try {
                 $entityManager->persist($client);
                 $entityManager->flush();
                 // El mensaje de éxito se muestra arriba en la lógica de facturación
@@ -342,12 +345,8 @@ final class ClientController extends AbstractController
             $lastSubscription = $subscriptions->last();
     
             if (!$lastSubscription) {
-                $lastSubscription = new Subscription();
-                $lastSubscription->setClient($client);
-                $lastSubscription->setStartDate(new \DateTime());
-                $lastSubscription->setSubscriptionType($client->getSubscriptionType());
-                
-                $entityManager->persist($lastSubscription);
+                $this->addFlash('error', 'Este cliente no tiene ninguna suscripción que renovar.');
+                return $this->redirectToRoute('app_client_index');
             }
     
             $subscriptionType = $lastSubscription->getSubscriptionType();
@@ -390,14 +389,19 @@ final class ClientController extends AbstractController
 
             $entityManager->persist($billingRecord);
 
-            // Generar factura inmediatamente para este registro de facturación
-            $invoice = $invoiceService->generateInvoiceForBillingRecord($billingRecord, $this->getUser());
-            $this->addFlash('success', 'Suscripción renovada y factura generada correctamente hasta el ' . $endDate->format('d/m/Y') . '. Factura: ' . $invoice->getInvoiceNumber());
-
             try {
                 $entityManager->flush();
             } catch (\Exception $e) {
-                $this->addFlash('error', 'Error al renovar la suscripción');
+                $this->addFlash('error', 'Error al renovar la suscripción: ' . $e->getMessage());
+                return $this->redirectToRoute('app_client_index');
+            }
+
+            // Generar factura inmediatamente para este registro de facturación
+            try {
+                $invoice = $invoiceService->generateInvoiceForBillingRecord($billingRecord, $this->getUser());
+                $this->addFlash('success', 'Suscripción renovada y factura generada correctamente hasta el ' . $endDate->format('d/m/Y') . '. Factura: ' . $invoice->getInvoiceNumber());
+            } catch (\Exception $e) {
+                $this->addFlash('warning', 'Suscripción renovada correctamente hasta el ' . $endDate->format('d/m/Y') . ', pero no se pudo generar la factura: ' . $e->getMessage());
             }
         }
     

@@ -150,19 +150,6 @@ class ClientType extends AbstractType
                 'required' => true,
                 'label' => 'Tipo de suscripción',
                 'attr' => [
-                    'class' => 'form-control'
-                ],
-                'label_attr' => [
-                    'class' => 'form-label small'
-                ]
-            ])
-            ->add('subscriptionType', EntityType::class, [
-                'class' => SubscriptionType::class,
-                'choice_label' => 'name',
-                'mapped' => false,
-                'required' => true,
-                'label' => 'Tipo de suscripción',
-                'attr' => [
                     'class' => 'form-control',
                     'data-subscription-type' => 'select' // Añadido para JS
                 ],

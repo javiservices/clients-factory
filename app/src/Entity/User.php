@@ -44,11 +44,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $locality = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?int $zipCode = null;
+    #[ORM\Column(length: 10, nullable: true)]
+    private ?string $zipCode = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?int $companyPhone = null;
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $companyPhone = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $companyProvince = null;
@@ -174,24 +174,24 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getZipCode(): ?int
+    public function getZipCode(): ?string
     {
         return $this->zipCode;
     }
 
-    public function setZipCode(?int $zipCode): static
+    public function setZipCode(?string $zipCode): static
     {
         $this->zipCode = $zipCode;
 
         return $this;
     }
 
-    public function getCompanyPhone(): ?int
+    public function getCompanyPhone(): ?string
     {
         return $this->companyPhone;
     }
 
-    public function setCompanyPhone(?int $companyPhone): static
+    public function setCompanyPhone(?string $companyPhone): static
     {
         $this->companyPhone = $companyPhone;
 
