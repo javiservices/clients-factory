@@ -29,13 +29,13 @@ class Client
     private ?string $locality = null;
 
     #[ORM\Column(nullable: true)]
-    private ?int $zip_code = null;
+    private ?string $zip_code = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $birth_date = null;
 
     #[ORM\Column(nullable: true)]
-    private ?int $phone = null;
+    private ?string $phone = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $email = null;
@@ -140,12 +140,12 @@ class Client
         return $this;
     }
 
-    public function getZipCode(): ?int
+    public function getZipCode(): ?string
     {
         return $this->zip_code;
     }
 
-    public function setZipCode(?int $zip_code): static
+    public function setZipCode(?string $zip_code): static
     {
         $this->zip_code = $zip_code;
 
@@ -164,12 +164,12 @@ class Client
         return $this;
     }
 
-    public function getPhone(): ?int
+    public function getPhone(): ?string
     {
         return $this->phone;
     }
 
-    public function setPhone(?int $phone): static
+    public function setPhone(?string $phone): static
     {
         $this->phone = $phone;
 
