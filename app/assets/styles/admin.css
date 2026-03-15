@@ -4,9 +4,9 @@
 
 /* ---------- Custom Properties ---------- */
 :root {
-  --c-primary:       #4F46E5;
-  --c-primary-dark:  #3730A3;
-  --c-primary-light: #EEF2FF;
+  --c-primary:       #D72638;
+  --c-primary-dark:  #A61B2A;
+  --c-primary-light: #FDECEF;
   --c-success:       #10B981;
   --c-success-light: #D1FAE5;
   --c-warning:       #F59E0B;
@@ -28,7 +28,7 @@
   --c-gray-900: #111827;
 
   --sidebar-w:    260px;
-  --sidebar-bg:   #1e293b;
+  --sidebar-bg:   #111111;
   --header-h:     60px;
 
   --radius-sm: 8px;
@@ -49,7 +49,7 @@
 
 body {
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background: var(--c-gray-100);
+  background: #ffffff;
   color: var(--c-gray-900);
   font-size: .9375rem;
   line-height: 1.6;
@@ -119,14 +119,14 @@ body {
   white-space: nowrap;
 }
 .sidebar-link:hover { color: rgba(255,255,255,.95); background: rgba(255,255,255,.07); }
-.sidebar-link.active { color: #a5b4fc; background: rgba(79,70,229,.15); }
+.sidebar-link.active { color: #ffffff; background: rgba(215,38,56,.22); }
 .sidebar-link.active::before {
   content: ''; position: absolute; left: 0; top: 20%; height: 60%;
   width: 3px; background: var(--c-primary); border-radius: 0 3px 3px 0;
 }
 .sidebar-link i { font-size: .9375rem; width: 1.125rem; text-align: center; flex-shrink: 0; }
-.sidebar-link.sidebar-link-danger { color: #fca5a5; }
-.sidebar-link.sidebar-link-danger:hover { background: rgba(239,68,68,.12); color: #fca5a5; }
+.sidebar-link.sidebar-link-danger { color: #ffb4bb; }
+.sidebar-link.sidebar-link-danger:hover { background: rgba(215,38,56,.18); color: #ffffff; }
 
 .sidebar-footer {
   padding: .75rem .625rem 1rem;
@@ -149,7 +149,7 @@ body {
 
 /* ---------- Topbar ---------- */
 .topbar {
-  background: #fff; height: var(--header-h);
+  background: #ffffff; height: var(--header-h);
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 1.375rem; position: sticky; top: 0; z-index: 1020;
   border-bottom: 1px solid var(--c-gray-200); box-shadow: var(--shadow-sm); flex-shrink: 0;
@@ -339,7 +339,7 @@ body {
   display: inline-flex; align-items: center; gap: .3rem;
   padding: .2rem .55rem; border-radius: 999px;
   font-size: .72rem; font-weight: 600;
-  background: var(--c-warning-light); color: #92400E;
+  background: #111111; color: #ffffff;
 }
 
 /* ---------- Toast notifications ---------- */
