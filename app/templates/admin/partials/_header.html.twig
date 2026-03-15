@@ -1,0 +1,40 @@
+{# templates/admin/partials/_header.html.twig #}
+<!-- Header -->
+<div class="bg-white shadow-sm mb-4">
+    <div class="d-flex justify-content-between align-items-center p-3">
+        <div class="d-flex align-items-center">
+            <button class="btn d-md-none me-2" type="button" id="sidebarCollapse">
+                <i class="bi bi-list"></i>
+            </button>
+            <h1 class="h3 mb-0">{{ page_title }}</h1>
+        </div>
+
+        <div class="dropdown">
+            <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="dropdownUser" data-bs-toggle="dropdown">
+                <i class="bi bi-person-circle fs-4 me-2"></i>
+                <span class="d-none d-sm-inline">{{ app.user ? app.user.email : "" }}</span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow">
+                <li><a class="dropdown-item" href="{{ path('profile_edit') }}"><i class="bi bi-person me-2"></i>Perfil</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item text-{{ app.session.get('system_mode') == 'hidden' ? 'warning' : 'muted' }}" 
+                       href="{{ path('app_client_system_mode', {'action': app.session.get('system_mode') == 'hidden' ? 'normal' : 'hidden'}) }}">
+                        <i class="bi bi-{{ app.session.get('system_mode') == 'hidden' ? 'eye-slash' : 'eye' }} me-2"></i>
+                        Modo {{ app.session.get('system_mode') == 'hidden' ? 'Normal' : 'Restringido' }}
+                    </a>
+                </li>
+                {% if app.session.get('system_mode') == 'hidden' %}
+                <li>
+                    <a class="dropdown-item text-danger" href="{{ path('app_backup_index') }}">
+                        <i class="bi bi-database me-2"></i>
+                        Gestión de Backups
+                    </a>
+                </li>
+                {% endif %}
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ path('app_logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión</a></li>
+            </ul>
+        </div>
+    </div>
+</div>

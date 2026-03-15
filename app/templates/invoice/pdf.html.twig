@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Factura {{ invoice.invoiceNumber }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+        }
+        .company-info {
+            margin-bottom: 20px;
+        }
+        .invoice-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .client-info {
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .totals {
+            text-align: right;
+            margin-top: 20px;
+        }
+        .total-row {
+            font-weight: bold;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Factura</h1>
+        <h2>{{ invoice.invoiceNumber }}</h2>
+    </div>
+
+    <div class="company-info">
+        <h3>Datos de la Empresa</h3>
+        <p><strong>{{ user.companyName }}</strong></p>
+        <p>NIF: {{ user.taxId }}</p>
+        {% if user.companyAddress %}
+        <p>{{ user.companyAddress }}</p>
+        {% endif %}
+    </div>
+
+    <div class="invoice-info">
+        <div>
+            <p><strong>Fecha de Emisión:</strong> {{ invoice.issueDate ? invoice.issueDate|date('d/m/Y') : 'N/A' }}</p>
+            <p><strong>Estado:</strong>
+                {% if invoice.status == 'issued' %}Emitida
+                {% elseif invoice.status == 'paid' %}Pagada
+                {% else %}{{ invoice.status }}{% endif %}
+            </p>
+        </div>
+        <div class="client-info">
+            <h3>Datos del Cliente</h3>
+            <p><strong>{{ invoice.client.name }} {{ invoice.client.surname }}</strong></p>
+            <p>NIF: {{ invoice.client.idNumber }}</p>
+            {% if invoice.client.address %}
+            <p>{{ invoice.client.address }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <h3>Detalle de Servicios</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Descripción</th>
+                <th>Período</th>
+                <th>Importe</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in invoice.billingRecords %}
+            <tr>
+                <td>{{ record.description }}</td>
+                <td>
+                    {% if record.periodStart and record.periodEnd %}
+                        {{ record.periodStart|date('d/m/Y') }} - {{ record.periodEnd|date('d/m/Y') }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>{{ record.amount|number_format(2, ',', '.') }} €</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <p><strong>Base Imponible:</strong> {{ invoice.netAmount|number_format(2, ',', '.') }} €</p>
+        <p><strong>IVA (21%):</strong> {{ invoice.taxAmount|number_format(2, ',', '.') }} €</p>
+        <p class="total-row"><strong>Total:</strong> {{ invoice.totalAmount|number_format(2, ',', '.') }} €</p>
+    </div>
+</body>
+</html>

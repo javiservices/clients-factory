@@ -1,0 +1,78 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Tipos de Suscripción{% endblock %}
+{% block page_title %}Tipos de Suscripción{% endblock %}
+
+{% block body %}
+    {% if subscription_types|length > 0 %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
+            {% for subscription_type in subscription_types %}
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title mb-0">{{ subscription_type.name }}</h5>
+                                <span class="badge {% if subscription_type.isDailyPass %}bg-info{% else %}bg-primary{% endif %}">
+                                    {{ subscription_type.isDailyPass ? 'Pase Diario' : 'Plan Regular' }}
+                                </span>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-6">
+                                    <div class="p-3 bg-light rounded-3 text-center">
+                                        <div class="text-muted small">Duración</div>
+                                        <div class="fw-bold">
+                                            {% if subscription_type.isDailyPass %}
+                                                {{ subscription_type.days }} pase{{ subscription_type.days > 1 ? 's' : '' }}
+                                            {% elseif subscription_type.months %}
+                                                {{ subscription_type.months }} mes{{ subscription_type.months > 1 ? 'es' : '' }}
+                                            {% elseif subscription_type.days %}
+                                                {{ subscription_type.days }} día{{ subscription_type.days > 1 ? 's' : '' }}
+                                            {% else %}
+                                                No definido
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-3 bg-light rounded-3 text-center">
+                                        <div class="text-muted small">Precio</div>
+                                        <div class="fw-bold">{{ subscription_type.price }}€</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{{ path('app_subscription_type_show', {'id': subscription_type.id}) }}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye-fill me-1"></i>Ver detalles
+                                </a>
+                                <a href="{{ path('app_subscription_type_edit', {'id': subscription_type.id}) }}" 
+                                   class="btn btn-primary btn-sm">
+                                    <i class="bi bi-pencil-fill me-1"></i>Editar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-calendar2-x text-muted fs-1 mb-3"></i>
+                <h5>No hay tipos de suscripción</h5>
+                <p class="text-muted mb-4">No se encontraron tipos de suscripción registrados.</p>
+                <a href="{{ path('app_subscription_type_new') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-lg me-2"></i>Crear primer tipo de suscripción
+                </a>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if subscription_types|length > 0 %}
+        <a href="{{ path('app_subscription_type_new') }}" class="btn btn-warning position-fixed bottom-0 end-0 m-4">
+            <i class="bi bi-plus-lg me-2"></i>Nueva Suscripción
+        </a>
+    {% endif %}
+{% endblock %}

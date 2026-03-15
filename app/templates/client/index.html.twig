@@ -1,0 +1,182 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Clientes{% endblock %}
+
+{% block page_title %}
+    Gestión de Clientes
+    {# {% if app.session.get('system_mode') == 'hidden' %}
+        <small class="text-warning ms-2">(Modo Restringido)</small>
+    {% endif %} #}
+{% endblock %}
+
+{% block body %}
+    {# Indicador de modo oculto #}
+    {# {% if app.session.get('system_mode') == 'hidden' %}
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <strong>Modo Restringido:</strong> Solo se muestran clientes facturables.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %} #}
+
+    {# Filtros en acordeón #}
+    <div class="accordion mb-4" id="filtersAccordion">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingFilters">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFilters" aria-expanded="true" aria-controls="collapseFilters">
+                    Filtros de clientes
+                </button>
+            </h2>
+            <div id="collapseFilters" class="accordion-collapse collapse show" aria-labelledby="headingFilters" data-bs-parent="#filtersAccordion">
+                <div class="accordion-body">
+                    <form method="get" action="{{ path('app_client_index') }}" class="row g-3 align-items-center">
+                        <div class="col-12 col-md-4">
+                            <input type="text" name="search" class="form-control" placeholder="Nombre o apellidos..." value="{{ search|default('') }}">
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <select name="paid" class="form-select">
+                                <option value="" {% if paid is not defined or paid == '' %}selected{% endif %}>Todos</option>
+                                <option value="1" {% if paid == '1' %}selected{% endif %}>Pagado</option>
+                                <option value="0" {% if paid == '0' %}selected{% endif %}>Pendiente</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <select name="perPage" class="form-select">
+                                <option value="12" {% if perPage|default(12) == 12 %}selected{% endif %}>12 por página</option>
+                                <option value="24" {% if perPage == 24 %}selected{% endif %}>24 por página</option>
+                                <option value="36" {% if perPage == 36 %}selected{% endif %}>36 por página</option>
+                                <option value="48" {% if perPage == 48 %}selected{% endif %}>48 por página</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-2 d-flex gap-2">
+                            <button class="btn btn-primary w-100" type="submit">Filtrar</button>
+                            {% if search|default('') or paid is defined or perPage is defined %}
+                                <a href="{{ path('app_client_index') }}" class="btn btn-outline-secondary w-100">Limpiar</a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Grid de clientes #}
+    {% if clients|length > 0 %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
+            {% for clientData in clients %}
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">{{ clientData.client.name }} {{ clientData.client.surname }}</h5>
+                            <span class="badge bg-{{ clientData.hasPaid ? 'success' : 'danger' }}">
+                                {{ clientData.hasPaid ? 'Pagado' : 'Pendiente' }}
+                            </span>
+                        </div>
+
+                        <div class="card-body">
+                            <p class="mb-1"><strong>ID:</strong> {{ clientData.client.id }}</p>
+                            <p class="mb-1"><strong>Teléfono:</strong> {{ clientData.client.phone }}</p>
+                            <p class="mb-1"><strong>Código de tarjeta:</strong> {{ clientData.client.cardCode }}</p>
+                            <p class="mb-1"><strong>Subscripción:</strong> {{ clientData.subscriptionType }}</p>
+                        </div>
+
+                        <div class="card-footer d-flex justify-content-end gap-2">
+                            <button type="button" 
+                                    class="btn btn-success btn-sm" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#renewModal{{ clientData.client.id }}"
+                                    title="Renovar">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                            <a href="{{ path('app_client_show', {'id': clientData.client.id}) }}" 
+                               class="btn btn-info btn-sm text-white">
+                                <i class="bi bi-eye-fill"></i>
+                            </a>
+                            <a href="{{ path('app_client_edit', {'id': clientData.client.id}) }}" 
+                               class="btn btn-primary btn-sm">
+                                <i class="bi bi-pencil-fill"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                {# Modal de confirmación de renovación para cada cliente #}
+                <div class="modal fade" id="renewModal{{ clientData.client.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Confirmar Renovación</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="text-center mb-4">
+                                    <i class="bi bi-arrow-clockwise text-success fs-1"></i>
+                                </div>
+                                <h5 class="text-center mb-3">
+                                    {{ clientData.client.name }} {{ clientData.client.surname }}
+                                </h5>
+                                <p class="text-center mb-0">
+                                    ¿Deseas renovar la suscripción de este cliente por un mes más?
+                                </p>
+                                <div class="alert alert-info mt-3 mb-0">
+                                    <small class="d-block"><strong>Tipo de suscripción:</strong> {{ clientData.subscriptionType }}</small>
+                                    <small class="d-block"><strong>Estado actual:</strong> 
+                                        <span class="badge bg-{{ clientData.hasPaid ? 'success' : 'danger' }}">
+                                            {{ clientData.hasPaid ? 'Pagado' : 'Pendiente' }}
+                                        </span>
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <form method="post" action="{{ path('app_client_renew', {'id': clientData.client.id}) }}" class="d-inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('renew' ~ clientData.client.id) }}">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="bi bi-arrow-clockwise me-2"></i>Confirmar Renovación
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center">
+            <i class="bi bi-people fs-1 text-muted mb-3"></i>
+            <h5>No se encontraron clientes</h5>
+            <p class="text-muted">Intenta con otros términos de búsqueda o añade un nuevo cliente.</p>
+        </div>
+    {% endif %}
+
+    {# Paginador #}
+    {% if totalPages is defined and totalPages > 1 %}
+        <nav aria-label="Paginador de clientes" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% for page in 1..totalPages %}
+                    <li class="page-item {% if page == currentPage %}active{% endif %}">
+                        <a class="page-link" href="{{ path('app_client_index', {
+                            search: search|default(''),
+                            paid: paid|default(''),
+                            page: page
+                        }) }}">{{ page }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </nav>
+    {% endif %}
+
+    {# Botón para añadir nuevo cliente #}
+    <a href="{{ path('app_client_new') }}" class="btn btn-warning position-fixed bottom-0 end-0 m-4">
+        <i class="bi bi-plus-lg me-2"></i>Nuevo Cliente
+    </a>
+
+    {# Enlace oculto para cambiar modo del sistema - muy discreto #}
+    <div class="position-fixed bottom-0 start-0 m-2" style="z-index: 1000;">
+        <a href="{{ path('app_client_system_mode', {'action': app.session.get('system_mode') == 'hidden' ? 'normal' : 'hidden'}) }}" 
+           class="text-muted small" 
+           style="text-decoration: none; opacity: 0.3;" 
+           title="Cambiar modo del sistema">
+            <i class="bi bi-gear"></i>
+        </a>
+    </div>
+{% endblock %}

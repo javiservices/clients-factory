@@ -1,0 +1,25 @@
+/* Base Styles */
+/* Mínimo CSS necesario que Bootstrap no cubre */
+@media (max-width: 767.98px) {
+    #sidebar {
+        margin-left: -100%;
+        position: fixed;
+        min-height: 100vh;
+        z-index: 1041;
+    }
+
+    #sidebar.active {
+        margin-left: 0;
+    }
+}
+
+.overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1040;
+}

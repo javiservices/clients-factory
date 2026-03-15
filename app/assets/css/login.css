@@ -1,0 +1,137 @@
+/* Login Styles */
+body {
+    height: 100vh;
+    background: linear-gradient(135deg, #1a1a1a 0%, #434343 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+}
+
+.login-container {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.login-header img {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 1rem;
+}
+
+.login-header h1 {
+    color: #ffffff;
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.form-floating {
+    margin-bottom: 1rem;
+}
+
+.form-floating input {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+.form-floating input:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #ff4d4d;
+    box-shadow: 0 0 0 0.25rem rgba(255, 77, 77, 0.25);
+    color: #ffffff;
+}
+
+.form-floating label {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.btn-login {
+    background: linear-gradient(45deg, #ff4d4d 0%, #f9cb28 100%);
+    border: none;
+    color: white;
+    padding: 0.8rem;
+    border-radius: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    width: 100%;
+    margin-top: 1rem;
+    transition: all 0.3s ease;
+}
+
+.btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 77, 77, 0.4);
+}
+
+.remember-me {
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.remember-me input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
+
+.alert {
+    background: rgba(220, 53, 69, 0.2);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    color: #ffffff;
+}
+
+.gym-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('https://cdns3.fitfit.fitness/es/media/items/540x280/1937-Vicente-Santamaria-Gym-3WrNF.jpg') no-repeat center center;
+    background-size: cover;
+    filter: brightness(0.3);
+    z-index: -1;
+}
+
+.animated-background {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg,
+        rgba(255, 77, 77, 0.2) 0%,
+        rgba(249, 203, 40, 0.2) 100%);
+    animation: gradient 15s ease infinite;
+    z-index: -1;
+}
+
+@keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}

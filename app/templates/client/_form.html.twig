@@ -1,0 +1,142 @@
+{{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
+
+    <!-- Información Personal -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="text-primary mb-3">
+                <i class="bi bi-person"></i> Información Personal
+            </h5>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form_label(form.name, 'Nombre', {'label_attr': {'class': 'form-label'}}) }}
+                {{ form_widget(form.name, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(form.name) }}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form_label(form.surname, 'Apellidos', {'label_attr': {'class': 'form-label'}}) }}
+                {{ form_widget(form.surname, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(form.surname) }}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form_label(form.birthDate, 'Fecha de nacimiento', {'label_attr': {'class': 'form-label'}}) }}
+                {{ form_widget(form.birthDate, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(form.birthDate) }}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form_label(form.idNumber, 'DNI/NIE', {'label_attr': {'class': 'form-label'}}) }}
+                {{ form_widget(form.idNumber, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(form.idNumber) }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Dirección -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="text-primary mb-3">
+                <i class="bi bi-geo-alt"></i> Dirección
+            </h5>
+        </div>
+        <div class="col-12">
+            <div class="mb-3">
+                {{ form_label(form.address, 'Dirección', {'label_attr': {'class': 'form-label'}}) }}
+                {{ form_widget(form.address, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(form.address) }}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form_label(form.locality, 'Localidad', {'label_attr': {'class': 'form-label'}}) }}
+                {{ form_widget(form.locality, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(form.locality) }}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form_label(form.zipCode, 'Código postal', {'label_attr': {'class': 'form-label'}}) }}
+                {{ form_widget(form.zipCode, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(form.zipCode) }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Información de Contacto -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="text-primary mb-3">
+                <i class="bi bi-telephone"></i> Información de Contacto
+            </h5>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form_label(form.phone, 'Teléfono', {'label_attr': {'class': 'form-label'}}) }}
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                    {{ form_widget(form.phone, {'attr': {'class': 'form-control'}}) }}
+                </div>
+                {{ form_errors(form.phone) }}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form_label(form.email, 'Email', {'label_attr': {'class': 'form-label'}}) }}
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                    {{ form_widget(form.email, {'attr': {'class': 'form-control', 'type': 'email'}}) }}
+                </div>
+                {{ form_errors(form.email) }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Información de Membresía -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="text-primary mb-3">
+                <i class="bi bi-credit-card"></i> Información de Membresía
+            </h5>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form_label(form.startDate, 'Fecha de alta', {'label_attr': {'class': 'form-label'}}) }}
+                {{ form_widget(form.startDate, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(form.startDate) }}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form_label(form.cardCode, 'Código de tarjeta', {'label_attr': {'class': 'form-label'}}) }}
+                {{ form_widget(form.cardCode, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(form.cardCode) }}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <div class="form-check">
+                    {{ form_widget(form.billable, {'attr': {'class': 'form-check-input'}}) }}
+                    {{ form_label(form.billable, 'Facturable', {'label_attr': {'class': 'form-check-label'}}) }}
+                </div>
+                {{ form_errors(form.billable) }}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <button class="btn btn-success me-2">
+                <i class="bi bi-check-lg me-2"></i>{{ button_label|default('Guardar Cambios') }}
+            </button>
+            <a href="{{ path('app_client_index') }}" class="btn btn-secondary">
+                <i class="bi bi-x-lg me-2"></i>Cancelar
+            </a>
+        </div>
+    </div>
+
+{{ form_end(form) }}

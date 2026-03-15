@@ -1,0 +1,157 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Factura {{ invoice.invoiceNumber }}{% endblock %}
+
+{% block page_title %}Factura {{ invoice.invoiceNumber }}{% endblock %}
+
+{% block body %}
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ path('invoice_index') }}">Facturas</a></li>
+                        <li class="breadcrumb-item active">{{ invoice.invoiceNumber }}</li>
+                    </ol>
+                </nav>
+            </div>
+            <div>
+                <a href="{{ path('invoice_download', {'id': invoice.id}) }}" class="btn btn-success me-2">
+                    <i class="bi bi-download"></i> Descargar XML
+                </a>
+                <a href="{{ path('invoice_download_pdf', {'id': invoice.id}) }}" class="btn btn-primary me-2">
+                    <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
+                </a>
+                <form method="post" action="{{ path('invoice_delete', {'id': invoice.id}) }}" class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta factura? Esta acción no se puede deshacer.');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ invoice.id) }}">
+                    <button class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Eliminar Factura
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Información General</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-5">Número:</dt>
+                                    <dd class="col-sm-7"><strong>{{ invoice.invoiceNumber }}</strong></dd>
+
+                                    <dt class="col-sm-5">Estado:</dt>
+                                    <dd class="col-sm-7">
+                                        {% if invoice.status == 'issued' %}
+                                            <span class="badge bg-success">Emitida</span>
+                                        {% elseif invoice.status == 'paid' %}
+                                            <span class="badge bg-info">Pagada</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Borrador</span>
+                                        {% endif %}
+                                    </dd>
+
+                                    <dt class="col-sm-5">Fecha emisión:</dt>
+                                    <dd class="col-sm-7">{{ invoice.issueDate ? invoice.issueDate|date('d/m/Y') : '-' }}</dd>
+
+                                    <dt class="col-sm-5">Fecha vencimiento:</dt>
+                                    <dd class="col-sm-7">{{ invoice.dueDate ? invoice.dueDate|date('d/m/Y') : '-' }}</dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-5">Período desde:</dt>
+                                    <dd class="col-sm-7">{{ invoice.periodStart ? invoice.periodStart|date('d/m/Y') : '-' }}</dd>
+
+                                    <dt class="col-sm-5">Período hasta:</dt>
+                                    <dd class="col-sm-7">{{ invoice.periodEnd ? invoice.periodEnd|date('d/m/Y') : '-' }}</dd>
+
+                                    <dt class="col-sm-5">Base imponible:</dt>
+                                    <dd class="col-sm-7">{{ invoice.netAmount|number_format(2, ',', '.') }} €</dd>
+
+                                    <dt class="col-sm-5">IVA (21%):</dt>
+                                    <dd class="col-sm-7">{{ invoice.taxAmount|number_format(2, ',', '.') }} €</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Total</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <h2 class="text-primary mb-0">{{ invoice.totalAmount|number_format(2, ',', '.') }} €</h2>
+                        <small class="text-muted">Importe total</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Empresa Emisora</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if user.companyName %}
+                            <dl class="row">
+                                <dt class="col-sm-4">Nombre:</dt>
+                                <dd class="col-sm-8">{{ user.companyName }}</dd>
+
+                                <dt class="col-sm-4">NIF:</dt>
+                                <dd class="col-sm-8">{{ user.taxId }}</dd>
+
+                                <dt class="col-sm-4">Dirección:</dt>
+                                <dd class="col-sm-8">{{ user.companyAddress ?: '-' }}</dd>
+                            </dl>
+                        {% else %}
+                            <p class="text-muted">No hay información de empresa configurada</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Cliente Receptor</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if invoice.client %}
+                            <dl class="row">
+                                <dt class="col-sm-4">Nombre:</dt>
+                                <dd class="col-sm-8">{{ invoice.client.name }} {{ invoice.client.surname }}</dd>
+
+                                <dt class="col-sm-4">NIF:</dt>
+                                <dd class="col-sm-8">{{ invoice.client.idNumber }}</dd>
+
+                                <dt class="col-sm-4">Dirección:</dt>
+                                <dd class="col-sm-8">{{ invoice.client.address ?: '-' }}</dd>
+
+                                <dt class="col-sm-4">Email:</dt>
+                                <dd class="col-sm-8">{{ invoice.client.email ?: '-' }}</dd>
+                            </dl>
+                        {% else %}
+                            <p class="text-muted">No hay información de cliente</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <a href="{{ path('invoice_index') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver al listado
+            </a>
+        </div>
+    </div>
+{% endblock %}

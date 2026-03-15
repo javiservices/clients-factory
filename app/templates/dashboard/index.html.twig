@@ -1,0 +1,329 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Resumen - Sistema de Facturación{% endblock %}
+
+{% block page_title %}
+    Resumen
+    {% if app.session.get('system_mode') == 'hidden' %}
+        <small class="text-warning ms-2">(Modo Restringido)</small>
+    {% endif %}
+{% endblock %}
+
+{% block body %}
+    {# Indicador de modo oculto #}
+    {% if app.session.get('system_mode') == 'hidden' %}
+        <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
+            <strong>Modo Restringido:</strong> Solo se muestran datos de clientes facturables.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
+
+    <div class="container-fluid mt-4">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <p class="text-muted mb-0">Vista general del sistema de facturación</p>
+            </div>
+            <div>
+                <small class="text-muted">{{ "now"|date("d/m/Y H:i") }}</small>
+            </div>
+        </div>
+
+        <!-- Estadísticas principales -->
+        <div class="row mb-4">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                    Total Facturas
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ totalInvoices }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-receipt fa-2x text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                    Total Clientes
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ totalClients }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-people fa-2x text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-warning shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                    Ingresos Totales
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ totalRevenue|number_format(2, ',', '.') }} €</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-cash-stack fa-2x text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ingresos del mes y estado de facturas -->
+        <div class="row mb-4">
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="bi bi-calendar-check me-2"></i>Ingresos del Mes Actual
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center">
+                            <h2 class="text-success mb-0">{{ monthlyRevenue|number_format(2, ',', '.') }} €</h2>
+                            <small class="text-muted">{{ "now"|date("F Y") }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="bi bi-bar-chart me-2"></i>Estado de Facturas
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-4 text-center mb-3">
+                                <div class="h4 text-success mb-0">{{ statusCounts.issued ?? 0 }}</div>
+                                <small class="text-muted">Emitidas</small>
+                            </div>
+                            <div class="col-sm-4 text-center mb-3">
+                                <div class="h4 text-info mb-0">{{ statusCounts.paid ?? 0 }}</div>
+                                <small class="text-muted">Pagadas</small>
+                            </div>
+                            <div class="col-sm-4 text-center mb-3">
+                                <div class="h4 text-warning mb-0">{{ statusCounts.draft ?? 0 }}</div>
+                                <small class="text-muted">Borradores</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Facturas recientes y clientes recientes -->
+        <div class="row">
+            {# <div class="col-lg-8 mb-4">
+                <div class="card shadow">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="bi bi-clock-history me-2"></i>Facturas Recientes
+                        </h6>
+                        <a href="{{ path('invoice_index') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-arrow-right"></i> Ver todas
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        {% if recentInvoices is empty %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-receipt fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No hay facturas recientes</p>
+                            </div>
+                        {% else %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Número</th>
+                                            <th>Cliente</th>
+                                            <th>Fecha</th>
+                                            <th>Total</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for invoice in recentInvoices %}
+                                            <tr>
+                                                <td>
+                                                    <strong>{{ invoice.invoiceNumber }}</strong>
+                                                </td>
+                                                <td>
+                                                    {% if invoice.client %}
+                                                        {{ invoice.client.name }} {{ invoice.client.surname }}
+                                                    {% else %}
+                                                        <em class="text-muted">Sin cliente</em>
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ invoice.issueDate ? invoice.issueDate|date('d/m/Y') : '-' }}</td>
+                                                <td><strong>{{ invoice.totalAmount|number_format(2, ',', '.') }} €</strong></td>
+                                                <td>
+                                                    {% if invoice.status == 'issued' %}
+                                                        <span class="badge bg-success">Emitida</span>
+                                                    {% elseif invoice.status == 'paid' %}
+                                                        <span class="badge bg-info">Pagada</span>
+                                                    {% else %}
+                                                        <span class="badge bg-warning">Borrador</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <a href="{{ path('invoice_show', {'id': invoice.id}) }}" class="btn btn-sm btn-outline-primary me-1">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    <a href="{{ path('invoice_download', {'id': invoice.id}) }}" class="btn btn-sm btn-outline-success">
+                                                        <i class="bi bi-download"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div> #}
+
+            <div class="col-lg-12 mb-4">
+                <div class="card shadow">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="bi bi-person-plus me-2"></i>Clientes Recientes
+                        </h6>
+                        <a href="{{ path('app_client_index') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-arrow-right"></i> Ver todos
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        {% if recentClients is empty %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-people fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No hay clientes recientes</p>
+                            </div>
+                        {% else %}
+                            {% for client in recentClients %}
+                                <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
+                                    <div class="flex-grow-1">
+                                        <div class="font-weight-bold">{{ client.name }} {{ client.surname }}</div>
+                                        <div class="small text-muted">
+                                            {% if client.email %}
+                                                <i class="bi bi-envelope me-1"></i>{{ client.email }}
+                                            {% else %}
+                                                <em>Sin email</em>
+                                            {% endif %}
+                                        </div>
+                                        <div class="small text-muted">
+                                            <i class="bi bi-calendar me-1"></i>
+                                            {% if client.startDate %}
+                                                Alta: {{ client.startDate|date('d/m/Y') }}
+                                            {% else %}
+                                                Fecha no disponible
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <a href="{{ path('app_client_show', {'id': client.id}) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accesos rápidos -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="bi bi-lightning me-2"></i>Accesos Rápidos
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {# <div class="col-md-3 col-sm-6 mb-3">
+                                <a href="{{ path('invoice_new') }}" class="btn btn-success btn-lg w-100">
+                                    <i class="bi bi-plus-circle me-2"></i>
+                                    Nueva Factura
+                                </a>
+                            </div> #}
+                            <div class="col-md-4 col-sm-6 mb-3">
+                                <a href="{{ path('app_client_new') }}" class="btn btn-primary btn-lg w-100">
+                                    <i class="bi bi-person-plus me-2"></i>
+                                    Nuevo Cliente
+                                </a>
+                            </div>
+                            <div class="col-md-4 col-sm-6 mb-3">
+                                <a href="{{ path('profile_edit') }}" class="btn btn-info btn-lg w-100">
+                                    <i class="bi bi-gear me-2"></i>
+                                    Configurar Empresa
+                                </a>
+                            </div>
+                            {# <div class="col-md-3 col-sm-6 mb-3">
+                                <a href="{{ path('invoice_index') }}" class="btn btn-warning btn-lg w-100">
+                                    <i class="bi bi-receipt me-2"></i>
+                                    Ver Facturas
+                                </a>
+                            </div> #}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .border-left-primary {
+            border-left: 0.25rem solid #4e73df !important;
+        }
+        .border-left-success {
+            border-left: 0.25rem solid #1cc88a !important;
+        }
+        .border-left-info {
+            border-left: 0.25rem solid #36b9cc !important;
+        }
+        .border-left-warning {
+            border-left: 0.25rem solid #f6c23e !important;
+        }
+        .text-primary {
+            color: #5a5c69 !important;
+        }
+        .text-gray-800 {
+            color: #5a5c69 !important;
+        }
+    </style>
+
+    {# Enlace oculto para cambiar modo del sistema - muy discreto #}
+    <div class="position-fixed bottom-0 start-0 m-2" style="z-index: 1000;">
+        <a href="{{ path('app_client_system_mode', {'action': app.session.get('system_mode') == 'hidden' ? 'normal' : 'hidden'}) }}" 
+           class="text-muted small" 
+           style="text-decoration: none; opacity: 0.3;" 
+           title="Cambiar modo del sistema">
+            <i class="bi bi-gear"></i>
+        </a>
+    </div>
+{% endblock %}

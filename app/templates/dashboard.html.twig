@@ -1,0 +1,40 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard - Control de Acceso{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    {{ encore_entry_link_tags('dashboard') }}
+{% endblock %}
+
+{% block body %}
+<div class="dashboard-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center">
+                <h1><i class="bi bi-speedometer2 me-3"></i>Dashboard de Control</h1>
+                <p>Monitoreo en tiempo real del acceso al gimnasio</p>
+                <div class="mt-3">
+                    <small class="text-white-50">
+                        <i class="bi bi-circle-fill text-success me-1" id="connectionStatus"></i>
+                        <span id="lastUpdate">Última actualización: nunca</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div id="turnstileClients" class="row justify-content-center">
+        <!-- El contenido se genera dinámicamente por JavaScript -->
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    {{ encore_entry_script_tags('dashboard_js') }}
+{% endblock %}
