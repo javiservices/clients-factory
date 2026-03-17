@@ -101,7 +101,7 @@ class ApiCardController extends AbstractController
             return $this->json(['success' => false, 'message' => 'Acceso muy frecuente, espera unos segundos'], 429);
         }
 
-        $client = $clientRepository->findOneBy(['card_code' => $cardId]);
+        $client = $clientRepository->findOneByCardCode($cardId);
 
         if (!$client) {
             return $this->json(['success' => false, 'message' => 'Tarjeta no autorizada'], 404);

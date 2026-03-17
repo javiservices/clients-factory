@@ -28,6 +28,20 @@ class ClientRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Busca un cliente por su código de tarjeta.
+     * Como card_code está cifrado en BD, cargamos todos y comparamos en PHP.
+     */
+    public function findOneByCardCode(string $cardCode): ?Client
+    {
+        foreach ($this->findAll() as $client) {
+            if ($client->getCardCode() === $cardCode) {
+                return $client;
+            }
+        }
+        return null;
+    }
+
     //    /**
     //     * @return Client[] Returns an array of Client objects
     //     */
