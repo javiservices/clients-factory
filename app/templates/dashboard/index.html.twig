@@ -222,7 +222,18 @@
                             </div>
                         {% else %}
                             {% for client in recentClients %}
-                                <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
+                                <div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom">
+                                    {% if client.photo %}
+                                        <img src="{{ asset('uploads/clients/' ~ client.photo) }}"
+                                             alt="Foto de {{ client.name }}"
+                                             class="rounded-circle flex-shrink-0"
+                                             style="width:40px;height:40px;object-fit:cover;">
+                                    {% else %}
+                                        <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center fw-bold"
+                                             style="width:40px;height:40px;background:var(--c-primary-light, #e8f0fe);color:var(--c-primary, #4e73df);font-size:.8rem;">
+                                            {{ client.name|slice(0,1)|upper }}{{ client.surname|slice(0,1)|upper }}
+                                        </div>
+                                    {% endif %}
                                     <div class="flex-grow-1">
                                         <div class="font-weight-bold">{{ client.name }} {{ client.surname }}</div>
                                         <div class="small text-muted">

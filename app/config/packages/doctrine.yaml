@@ -8,6 +8,11 @@ doctrine:
 
         profiling_collect_backtrace: '%kernel.debug%'
         use_savepoints: true
+
+        # Tipos personalizados para cifrado de datos personales (LOPD/RGPD)
+        types:
+            encrypted_string: App\Doctrine\Type\EncryptedStringType
+            encrypted_date:   App\Doctrine\Type\EncryptedDateType
     orm:
         auto_generate_proxy_classes: true
         enable_lazy_ghost_objects: true

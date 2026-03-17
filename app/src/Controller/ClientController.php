@@ -47,10 +47,11 @@ final class ClientController extends AbstractController
                ->setParameter('billable', true);
         }
 
-        // Filtrar los clientes según el término de búsqueda
-        if ($search) {
-            $qb->andWhere('c.name LIKE :search OR c.surname LIKE :search OR c.id = :id')
-               ->setParameter('search', '%' . $search . '%')
+        // Nota: Los campos name/surname están cifrados en BD (LOPD/RGPD),
+        // por lo que el filtrado por nombre se realiza en PHP tras descifrar.
+        // El filtrado por ID sí puede hacerse en SQL.
+        if ($search && is_numeric($search)) {
+            $qb->andWhere('c.id = :id')
                ->setParameter('id', (int) $search);
         }
 
@@ -58,6 +59,16 @@ final class ClientController extends AbstractController
         $qb->orderBy('c.id', 'DESC');
 
         $clients = $qb->getQuery()->getResult();
+
+        // Filtrado por nombre/apellidos en PHP (los campos están cifrados en BD)
+        if ($search && !is_numeric($search)) {
+            $searchLower = mb_strtolower($search);
+            $clients = array_filter($clients, function (Client $c) use ($searchLower): bool {
+                return str_contains(mb_strtolower((string) $c->getName()), $searchLower)
+                    || str_contains(mb_strtolower((string) $c->getSurname()), $searchLower);
+            });
+            $clients = array_values($clients);
+        }
 
         // Procesar cada cliente para determinar si ha pagado el mes
         $clientsWithPaymentStatus = [];

@@ -16,37 +16,39 @@ class Client
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
+    /** @Datos personales cifrados – LOPD-GDD (LO 3/2018) / RGPD (UE 2016/679) */
+    #[ORM\Column(type: 'encrypted_string')]
     private ?string $name = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(type: 'encrypted_string')]
     private ?string $surname = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(type: 'encrypted_string', nullable: true)]
     private ?string $address = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(type: 'encrypted_string', nullable: true)]
     private ?string $locality = null;
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column(type: 'encrypted_string', nullable: true)]
     private ?string $zip_code = null;
 
-    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    #[ORM\Column(type: 'encrypted_date', nullable: true)]
     private ?\DateTimeInterface $birth_date = null;
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column(type: 'encrypted_string', nullable: true)]
     private ?string $phone = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(type: 'encrypted_string', nullable: true)]
     private ?string $email = null;
 
-    #[ORM\Column(length: 15, nullable: true)]
+    /** DNI/NIF – dato especialmente sensible bajo normativa española */
+    #[ORM\Column(type: 'encrypted_string', nullable: true)]
     private ?string $id_number = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $start_date = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(type: 'encrypted_string', nullable: true)]
     private ?string $card_code = null;
 
     #[ORM\Column(type: 'boolean', options: ['default' => true])]

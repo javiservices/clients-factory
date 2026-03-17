@@ -74,9 +74,16 @@
 
                         {# Header row #}
                         <div class="d-flex align-items-center gap-3">
-                            <span class="client-avatar-sm flex-shrink-0" aria-hidden="true">
-                                {{ clientData.client.name|slice(0,1)|upper }}{{ clientData.client.surname|slice(0,1)|upper }}
-                            </span>
+                            {% if clientData.client.photo %}
+                                <img src="{{ asset('uploads/clients/' ~ clientData.client.photo) }}"
+                                     alt="Foto de {{ clientData.client.name }}"
+                                     class="client-avatar-sm flex-shrink-0"
+                                     style="object-fit:cover;border-radius:50%;">
+                            {% else %}
+                                <span class="client-avatar-sm flex-shrink-0" aria-hidden="true">
+                                    {{ clientData.client.name|slice(0,1)|upper }}{{ clientData.client.surname|slice(0,1)|upper }}
+                                </span>
+                            {% endif %}
                             <div class="flex-grow-1 min-width-0">
                                 <div class="fw-semibold text-truncate" style="color:var(--c-gray-900)">
                                     {{ clientData.client.name }} {{ clientData.client.surname }}
