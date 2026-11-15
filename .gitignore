@@ -12,6 +12,9 @@
 docker-compose.override.yml
 /app/public/uploads/
 /app/var/backups/
+*.xlsx
+*.xls
+clients_import.json
 ###< docker ###
 .env*
 !.env.default
