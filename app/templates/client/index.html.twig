@@ -45,8 +45,8 @@
                     <select id="perPage" name="perPage" class="form-select">
                         <option value="12" {% if perPage|default(12) == 12 %}selected{% endif %}>12</option>
                         <option value="24" {% if perPage == 24 %}selected{% endif %}>24</option>
-                        <option value="36" {% if perPage == 36 %}selected{% endif %}>36</option>
                         <option value="48" {% if perPage == 48 %}selected{% endif %}>48</option>
+                        <option value="96" {% if perPage == 96 %}selected{% endif %}>96</option>
                     </select>
                 </div>
                 <div class="col-12 col-sm-6 col-lg-4 d-flex gap-2">
@@ -179,29 +179,55 @@
 
 {# ─── Pagination ─── #}
 {% if totalPages is defined and totalPages > 1 %}
-    <nav aria-label="Paginación de clientes" class="mt-3">
-        <ul class="pagination justify-content-center flex-wrap">
-            {% if currentPage > 1 %}
+    <nav aria-label="Paginación de clientes" class="mt-4 mb-3">
+        <ul class="pagination justify-content-center align-items-center mb-0">
+            {# Botón Anterior #}
+            <li class="page-item {% if currentPage <= 1 %}disabled{% endif %}">
+                <a class="page-link" href="{{ path('app_client_index', {search: search|default(''), paid: paid|default(''), perPage: perPage|default(12), page: currentPage - 1}) }}" aria-label="Anterior" {% if currentPage <= 1 %}tabindex="-1" aria-disabled="true"{% endif %}>
+                    <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                </a>
+            </li>
+
+            {# Lógica de ventanas con elipsis #}
+            {% set nearbyPagesLimit = 2 %}
+            {% set startPage = max(1, currentPage - nearbyPagesLimit) %}
+            {% set endPage = min(totalPages, currentPage + nearbyPagesLimit) %}
+
+            {% if startPage > 1 %}
                 <li class="page-item">
-                    <a class="page-link" href="{{ path('app_client_index', {search: search|default(''), paid: paid|default(''), perPage: perPage|default(12), page: currentPage - 1}) }}" aria-label="Anterior">
-                        <i class="bi bi-chevron-left" aria-hidden="true"></i>
-                    </a>
+                    <a class="page-link" href="{{ path('app_client_index', {search: search|default(''), paid: paid|default(''), perPage: perPage|default(12), page: 1}) }}">1</a>
                 </li>
+                {% if startPage > 2 %}
+                    <li class="page-item disabled"><span class="page-link border-0">…</span></li>
+                {% endif %}
             {% endif %}
-            {% for page in 1..totalPages %}
+
+            {% for page in startPage..endPage %}
                 <li class="page-item {% if page == currentPage %}active{% endif %}">
                     <a class="page-link" href="{{ path('app_client_index', {search: search|default(''), paid: paid|default(''), perPage: perPage|default(12), page: page}) }}"
                        {% if page == currentPage %}aria-current="page"{% endif %}>{{ page }}</a>
                 </li>
             {% endfor %}
-            {% if currentPage < totalPages %}
+
+            {% if endPage < totalPages %}
+                {% if endPage < totalPages - 1 %}
+                    <li class="page-item disabled"><span class="page-link border-0">…</span></li>
+                {% endif %}
                 <li class="page-item">
-                    <a class="page-link" href="{{ path('app_client_index', {search: search|default(''), paid: paid|default(''), perPage: perPage|default(12), page: currentPage + 1}) }}" aria-label="Siguiente">
-                        <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                    </a>
+                    <a class="page-link" href="{{ path('app_client_index', {search: search|default(''), paid: paid|default(''), perPage: perPage|default(12), page: totalPages}) }}">{{ totalPages }}</a>
                 </li>
             {% endif %}
+
+            {# Botón Siguiente #}
+            <li class="page-item {% if currentPage >= totalPages %}disabled{% endif %}">
+                <a class="page-link" href="{{ path('app_client_index', {search: search|default(''), paid: paid|default(''), perPage: perPage|default(12), page: currentPage + 1}) }}" aria-label="Siguiente" {% if currentPage >= totalPages %}tabindex="-1" aria-disabled="true"{% endif %}>
+                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                </a>
+            </li>
         </ul>
+        <div class="text-center small text-muted mt-2">
+            Página {{ currentPage }} de {{ totalPages }}
+        </div>
     </nav>
 {% endif %}
 

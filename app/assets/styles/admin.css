@@ -303,6 +303,7 @@ body {
 }
 .pagination .page-link:hover { background: var(--c-primary-light); color: var(--c-primary); border-color: transparent; }
 .pagination .page-item.active .page-link { background: var(--c-primary) !important; border-color: var(--c-primary) !important; color: #fff; }
+.pagination .page-item.disabled .page-link { background: transparent !important; color: var(--c-gray-400) !important; border-color: transparent !important; }
 
 /* ---------- Dropdown ---------- */
 .topbar-user-menu { position: relative; }
