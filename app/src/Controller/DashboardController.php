@@ -69,7 +69,7 @@ class DashboardController extends AbstractController
         $byStatus      = $accessLogRepo->countByStatus();
         $todayCount    = $accessLogRepo->countToday();
         $expiring      = $subscriptionRepo->findExpiringSoon(7);
-        $totalClients  = count($clientRepo->findAll());
+        $totalClients  = $clientRepo->count([]);
 
         $expiringData = [];
         foreach ($expiring as $sub) {
