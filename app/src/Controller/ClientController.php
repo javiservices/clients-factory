@@ -48,25 +48,64 @@ final class ClientController extends AbstractController
         $startOfMonth = new \DateTime('first day of this month 00:00:00');
         $currentDate = new \DateTime();
 
-        // 1. Si hay búsqueda por texto, filtrar IDs con scan rápido de SQL + descifrado en memoria (~40ms)
+        // 1. Si hay búsqueda (texto o numérico), filtrar IDs con scan rápido de SQL + descifrado en memoria (~60ms)
         $matchedIds = null;
-        if ($search !== '' && !is_numeric($search)) {
-            $searchLower = mb_strtolower($search);
+        $exactId = null;
+        if ($search !== '') {
+            $cleanNumeric = ltrim($search, '#');
+            if (ctype_digit($cleanNumeric)) {
+                $exactId = (int) $cleanNumeric;
+            }
+
+            // Normalizar texto de búsqueda
+            $normalizedSearch = $this->normalizeSearchText($search);
+            $tokens = preg_split('/[\s,]+/', $normalizedSearch, -1, PREG_SPLIT_NO_EMPTY);
+
             $conn = $em->getConnection();
-            $rows = $conn->fetchAllAssociative('SELECT id, name, surname FROM client');
+            $rows = $conn->fetchAllAssociative('SELECT id, name, surname, id_number, phone, email FROM client');
             $matchedIds = [];
+
             foreach ($rows as $row) {
-                $name = $encryptionService->decrypt($row['name']);
-                $surname = $encryptionService->decrypt($row['surname']);
-                if (
-                    str_contains(mb_strtolower((string) $name), $searchLower) ||
-                    str_contains(mb_strtolower((string) $surname), $searchLower)
-                ) {
-                    $matchedIds[] = (int) $row['id'];
+                $id = (int) $row['id'];
+
+                // Si coincide exactamente con el ID numérico buscado, incluirlo prioritariamente
+                if ($exactId !== null && $id === $exactId) {
+                    $matchedIds[] = $id;
+                    continue;
+                }
+
+                $name = (string) EncryptionService::decryptValue($row['name']);
+                $surname = (string) EncryptionService::decryptValue($row['surname']);
+                $dni = (string) EncryptionService::decryptValue($row['id_number']);
+                $cleanDni = str_replace(['.', '-', ' '], '', $dni);
+                $phone = (string) EncryptionService::decryptValue($row['phone']);
+                $cleanPhone = str_replace(['.', '-', ' ', '+34'], '', $phone);
+                $email = (string) EncryptionService::decryptValue($row['email']);
+
+                $haystack = $this->normalizeSearchText(
+                    $id . ' #' . $id . ' ' .
+                    $name . ' ' .
+                    $surname . ' ' .
+                    $dni . ' ' . $cleanDni . ' ' .
+                    $phone . ' ' . $cleanPhone . ' ' .
+                    $email
+                );
+
+                $matched = true;
+                foreach ($tokens as $token) {
+                    $cleanToken = str_replace(['.', '-', '#'], '', $token);
+                    if (!str_contains($haystack, $token) && ($cleanToken === '' || !str_contains($haystack, $cleanToken))) {
+                        $matched = false;
+                        break;
+                    }
+                }
+
+                if ($matched) {
+                    $matchedIds[] = $id;
                 }
             }
 
-            // Si no hay coincidencias por texto, devolver vacío inmediatamente
+            // Si no hay coincidencias por búsqueda, devolver vacío inmediatamente
             if (empty($matchedIds)) {
                 return $this->render('client/index.html.twig', [
                     'clients' => [],
@@ -90,14 +129,9 @@ final class ClientController extends AbstractController
                ->setParameter('billable', true);
         }
 
-        if ($search !== '') {
-            if (is_numeric($search)) {
-                $qb->andWhere('c.id = :searchId')
-                   ->setParameter('searchId', (int) $search);
-            } elseif ($matchedIds !== null) {
-                $qb->andWhere('c.id IN (:matchedIds)')
-                   ->setParameter('matchedIds', $matchedIds);
-            }
+        if ($matchedIds !== null) {
+            $qb->andWhere('c.id IN (:matchedIds)')
+               ->setParameter('matchedIds', $matchedIds);
         }
 
         if ($paid === '1') {
@@ -116,10 +150,19 @@ final class ClientController extends AbstractController
         $offset = ($currentPage - 1) * $perPage;
 
         // 4. Obtener SOLO la página actual (12 a 96 registros) con carga ansiosa
-        $qb->select('c', 's', 'st')
-           ->orderBy('CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END', 'DESC')
-           ->addOrderBy('c.id', 'DESC')
-           ->setFirstResult($offset)
+        $qb->select('c', 's', 'st');
+
+        if ($exactId !== null) {
+            $qb->orderBy('CASE WHEN c.id = :exactId THEN 1 ELSE 0 END', 'DESC')
+               ->addOrderBy('CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END', 'DESC')
+               ->addOrderBy('c.id', 'DESC')
+               ->setParameter('exactId', $exactId);
+        } else {
+            $qb->orderBy('CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END', 'DESC')
+               ->addOrderBy('c.id', 'DESC');
+        }
+
+        $qb->setFirstResult($offset)
            ->setMaxResults($perPage);
 
         /** @var Client[] $clients */
@@ -729,5 +772,21 @@ final class ClientController extends AbstractController
             return '';
         }
         return str_replace(['\\', "'", "\n", "\r"], ['\\\\', "\\'", "\\n", "\\r"], $string);
+    }
+
+    /**
+     * Normaliza cadenas para búsqueda insensible a acentos, diacríticos y mayúsculas.
+     */
+    private function normalizeSearchText(string $text): string
+    {
+        $lower = mb_strtolower($text, 'UTF-8');
+        return strtr($lower, [
+            'á' => 'a', 'à' => 'a', 'ä' => 'a', 'â' => 'a', 'ã' => 'a', 'å' => 'a',
+            'é' => 'e', 'è' => 'e', 'ë' => 'e', 'ê' => 'e',
+            'í' => 'i', 'ì' => 'i', 'ï' => 'i', 'î' => 'i',
+            'ó' => 'o', 'ò' => 'o', 'ö' => 'o', 'ô' => 'o', 'õ' => 'o',
+            'ú' => 'u', 'ù' => 'u', 'ü' => 'u', 'û' => 'u',
+            'ñ' => 'n', 'ç' => 'c',
+        ]);
     }
 }

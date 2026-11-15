@@ -29,7 +29,7 @@
                     <div class="search-wrapper">
                         <i class="bi bi-search search-icon" aria-hidden="true"></i>
                         <input type="search" id="search" name="search" class="form-control"
-                               placeholder="Nombre, apellidos o ID..." value="{{ search|default('') }}" autocomplete="off">
+                               placeholder="Nombre, apellidos, DNI o ID..." value="{{ search|default('') }}" autocomplete="off">
                     </div>
                 </div>
                 <div class="col-6 col-sm-3 col-lg-2">
@@ -91,7 +91,7 @@
                                 <div class="small" style="color:var(--c-gray-500)">
                                     #{{ clientData.client.id }}
                                     {% if clientData.client.phone %}· {{ clientData.client.phone }}{% endif %}
-
+                                    {% if clientData.client.idNumber %}· {{ clientData.client.idNumber }}{% endif %}
                                 </div>
                             </div>
                             <span class="badge-status {% if clientData.hasPaid %}badge-paid{% else %}badge-pending{% endif %}" aria-label="{{ clientData.hasPaid ? 'Pagado' : 'Pendiente' }}">
