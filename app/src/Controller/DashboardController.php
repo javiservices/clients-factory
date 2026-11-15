@@ -15,6 +15,7 @@ use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 class DashboardController extends AbstractController
 {
     #[Route('/', name: 'dashboard', methods: ['GET'])]
+    #[Route('/dashboard', name: 'dashboard_alias', methods: ['GET'])]
     public function dashboard(): Response
     {
         return $this->render('dashboard.html.twig', [

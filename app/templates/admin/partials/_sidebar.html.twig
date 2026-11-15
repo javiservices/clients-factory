@@ -26,6 +26,12 @@
             Suscripciones
         </a>
 
+        <a class="sidebar-link {{ app.request.get('_route') starts with 'app_billing' ? 'active' : '' }}"
+           href="{{ path('app_billing_index') }}" aria-current="{{ app.request.get('_route') starts with 'app_billing' ? 'page' : 'false' }}">
+            <i class="bi bi-receipt" aria-hidden="true"></i>
+            Facturación
+        </a>
+
         <a class="sidebar-link {{ app.request.get('_route') starts with 'logs' ? 'active' : '' }}"
            href="{{ path('logs_view') }}" aria-current="{{ app.request.get('_route') starts with 'logs' ? 'page' : 'false' }}">
             <i class="bi bi-bookmark-check" aria-hidden="true"></i>

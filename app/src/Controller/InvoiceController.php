@@ -17,8 +17,7 @@ class InvoiceController extends AbstractController
     #[Route('/', name: 'invoice_index', methods: ['GET'])]
     public function index(Request $request, InvoiceRepository $invoiceRepository): Response
     {
-        // Facturación oculta - redirigir al dashboard
-        return $this->redirectToRoute('dashboard');
+        return $this->redirectToRoute('app_billing_index');
     }
 
     #[Route('/new', name: 'invoice_new', methods: ['GET', 'POST'])]
