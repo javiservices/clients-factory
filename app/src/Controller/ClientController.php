@@ -9,6 +9,7 @@ use App\Form\ClientType;
 use App\Repository\AccessLogRepository;
 use App\Repository\ClientRepository;
 use App\Repository\SubscriptionRepository;
+use App\Service\EncryptionService;
 use App\Service\InvoiceService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,95 +23,128 @@ use Symfony\Component\Routing\Attribute\Route;
 final class ClientController extends AbstractController
 {
     #[Route(name: 'app_client_index', methods: ['GET', 'POST'])]
-    public function index(Request $request, ClientRepository $clientRepository): Response
-    {
+    public function index(
+        Request $request,
+        ClientRepository $clientRepository,
+        EntityManagerInterface $em,
+        EncryptionService $encryptionService
+    ): Response {
         $session = $request->getSession();
         $systemMode = $session->get('system_mode');
 
         // Filtros
-        $search = $request->query->get('search', '');
+        $search = trim((string) $request->query->get('search', ''));
         $paid = $request->query->get('paid', null);
         $perPage = (int) $request->query->get('perPage', $session->get('perPage', 12));
-        $page = (int) $request->query->get('page', 1);
+        if ($perPage < 1) {
+            $perPage = 12;
+        }
+        $page = max(1, (int) $request->query->get('page', 1));
 
-        // Guardar perPage en sesión si el usuario lo cambia
         if ($request->query->has('perPage')) {
             $session->set('perPage', $perPage);
         }
 
-        // Construir la consulta base
-        $qb = $clientRepository->createQueryBuilder('c');
+        $startOfMonth = new \DateTime('first day of this month 00:00:00');
+        $currentDate = new \DateTime();
 
-        // Si estamos en modo oculto, solo mostrar clientes facturables
+        // 1. Si hay búsqueda por texto, filtrar IDs con scan rápido de SQL + descifrado en memoria (~40ms)
+        $matchedIds = null;
+        if ($search !== '' && !is_numeric($search)) {
+            $searchLower = mb_strtolower($search);
+            $conn = $em->getConnection();
+            $rows = $conn->fetchAllAssociative('SELECT id, name, surname FROM client');
+            $matchedIds = [];
+            foreach ($rows as $row) {
+                $name = $encryptionService->decrypt($row['name']);
+                $surname = $encryptionService->decrypt($row['surname']);
+                if (
+                    str_contains(mb_strtolower((string) $name), $searchLower) ||
+                    str_contains(mb_strtolower((string) $surname), $searchLower)
+                ) {
+                    $matchedIds[] = (int) $row['id'];
+                }
+            }
+
+            // Si no hay coincidencias por texto, devolver vacío inmediatamente
+            if (empty($matchedIds)) {
+                return $this->render('client/index.html.twig', [
+                    'clients' => [],
+                    'search' => $search,
+                    'paid' => $paid,
+                    'perPage' => $perPage,
+                    'currentPage' => 1,
+                    'totalPages' => 0,
+                ]);
+            }
+        }
+
+        // 2. Construir la consulta DQL con eager join de suscripciones activas
+        $qb = $clientRepository->createQueryBuilder('c');
+        $qb->leftJoin('c.subscriptions', 's', 'WITH', 's.isActive = true AND s.lastPaymentDate >= :startOfMonth')
+           ->leftJoin('s.subscriptionType', 'st')
+           ->setParameter('startOfMonth', $startOfMonth);
+
         if ($systemMode === 'hidden') {
             $qb->andWhere('c.billable = :billable')
                ->setParameter('billable', true);
         }
 
-        // Nota: Los campos name/surname están cifrados en BD (LOPD/RGPD),
-        // por lo que el filtrado por nombre se realiza en PHP tras descifrar.
-        // El filtrado por ID sí puede hacerse en SQL.
-        if ($search && is_numeric($search)) {
-            $qb->andWhere('c.id = :id')
-               ->setParameter('id', (int) $search);
+        if ($search !== '') {
+            if (is_numeric($search)) {
+                $qb->andWhere('c.id = :searchId')
+                   ->setParameter('searchId', (int) $search);
+            } elseif ($matchedIds !== null) {
+                $qb->andWhere('c.id IN (:matchedIds)')
+                   ->setParameter('matchedIds', $matchedIds);
+            }
         }
 
-        // Ordenar por id descendente
-        $qb->orderBy('c.id', 'DESC');
+        if ($paid === '1') {
+            $qb->andWhere('s.id IS NOT NULL');
+        } elseif ($paid === '0') {
+            $qb->andWhere('s.id IS NULL');
+        }
 
+        // 3. Conteo total en BD (consulta rápida sin joins innecesarios ni hidratación)
+        $countQb = clone $qb;
+        $countQb->select('COUNT(DISTINCT c.id)')->resetDQLPart('orderBy');
+        $totalClients = (int) $countQb->getQuery()->getSingleScalarResult();
+
+        $totalPages = max(1, (int) ceil($totalClients / $perPage));
+        $currentPage = min($page, $totalPages);
+        $offset = ($currentPage - 1) * $perPage;
+
+        // 4. Obtener SOLO la página actual (12 a 96 registros) con carga ansiosa
+        $qb->select('c', 's', 'st')
+           ->orderBy('CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END', 'DESC')
+           ->addOrderBy('c.id', 'DESC')
+           ->setFirstResult($offset)
+           ->setMaxResults($perPage);
+
+        /** @var Client[] $clients */
         $clients = $qb->getQuery()->getResult();
 
-        // Filtrado por nombre/apellidos en PHP (los campos están cifrados en BD)
-        if ($search && !is_numeric($search)) {
-            $searchLower = mb_strtolower($search);
-            $clients = array_filter($clients, function (Client $c) use ($searchLower): bool {
-                return str_contains(mb_strtolower((string) $c->getName()), $searchLower)
-                    || str_contains(mb_strtolower((string) $c->getSurname()), $searchLower);
-            });
-            $clients = array_values($clients);
-        }
-
-        // Procesar cada cliente para determinar si ha pagado el mes
+        // 5. Mapear únicamente los clientes de la página actual
         $clientsWithPaymentStatus = [];
         foreach ($clients as $client) {
-            $subscription = $client->getSubscriptions()->last(); // Obtener la última suscripción
+            $sub = $client->getSubscriptions()->last() ?: null;
             $hasPaid = false;
-            $subscriptionTypeName = $subscription ? $subscription->getSubscriptionType()->getName() : 'N/A';
-            if ($subscription && $subscription->isActive()) {
-                $lastPaymentDate = $subscription->getLastPaymentDate();
-                $currentDate = new \DateTime();
+            $subscriptionTypeName = $sub ? $sub->getSubscriptionType()?->getName() : '—';
+
+            if ($sub && $sub->isActive()) {
+                $lastPaymentDate = $sub->getLastPaymentDate();
                 if ($lastPaymentDate && $lastPaymentDate->format('Y-m') === $currentDate->format('Y-m')) {
                     $hasPaid = true;
                 }
             }
+
             $clientsWithPaymentStatus[] = [
                 'client' => $client,
                 'hasPaid' => $hasPaid,
                 'subscriptionType' => $subscriptionTypeName,
             ];
         }
-
-        // Filtrar por estado de pago si se selecciona
-        if ($paid !== null && $paid !== '') {
-            $clientsWithPaymentStatus = array_filter($clientsWithPaymentStatus, function($c) use ($paid) {
-                return $paid == '1' ? $c['hasPaid'] : !$c['hasPaid'];
-            });
-        }
-
-        // Ordenar: primero pagados, luego por id descendente
-        usort($clientsWithPaymentStatus, function($a, $b) {
-            if ($a['hasPaid'] === $b['hasPaid']) {
-                return $b['client']->getId() <=> $a['client']->getId();
-            }
-            return $a['hasPaid'] ? -1 : 1;
-        });
-
-        // Paginación
-        $totalClients = count($clientsWithPaymentStatus);
-        $totalPages = (int) ceil($totalClients / $perPage);
-        $currentPage = max(1, min($page, $totalPages));
-        $offset = ($currentPage - 1) * $perPage;
-        $clientsWithPaymentStatus = array_slice($clientsWithPaymentStatus, $offset, $perPage);
 
         return $this->render('client/index.html.twig', [
             'clients' => $clientsWithPaymentStatus,
