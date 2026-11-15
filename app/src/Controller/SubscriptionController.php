@@ -15,11 +15,9 @@ use Symfony\Component\Routing\Attribute\Route;
 final class SubscriptionController extends AbstractController
 {
     #[Route(name: 'app_subscription_index', methods: ['GET'])]
-    public function index(SubscriptionRepository $subscriptionRepository): Response
+    public function index(): Response
     {
-        return $this->render('subscription/index.html.twig', [
-            'subscriptions' => $subscriptionRepository->findAll(),
-        ]);
+        return $this->redirectToRoute('app_subscription_type_index');
     }
 
     /** Congela una suscripción: guarda la fecha de inicio de la congelación */

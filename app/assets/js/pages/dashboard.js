@@ -36,20 +36,25 @@ function renderClients(clients) {
             <i class="bi bi-pencil-square me-2"></i>Editar
         </a>`;
 
-        // Botón de renovar siempre visible
+        // Botón de renovar con token CSRF válido
         actions += `<form method="post" action="/client/${client.id}/renew" style="display:inline;">
+            <input type="hidden" name="_token" value="${client.csrfToken || ''}">
             <button type="submit" class="btn btn-dashboard btn-success-dashboard">
                 <i class="bi bi-arrow-repeat me-2"></i>Renovar
             </button>
         </form>`;
 
+        const avatarHtml = client.photoUrl
+            ? `<div class="text-center mb-3">
+                <img src="${client.photoUrl}" alt="${client.name}" class="rounded-circle object-fit-cover shadow-sm" style="width:76px;height:76px;border:3px solid var(--c-primary,#D72638);">
+               </div>`
+            : `<div class="client-avatar"><i class="bi bi-person-circle"></i></div>`;
+
         container.innerHTML += `
             <div class="col-12 col-lg-10 col-xl-8">
                 <div class="client-card updated">
                     <div class="client-info">
-                        <div class="client-avatar">
-                            <i class="bi bi-person-circle"></i>
-                        </div>
+                        ${avatarHtml}
 
                         <h2 class="client-name">${client.name} ${client.surname}</h2>
 

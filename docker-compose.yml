@@ -4,20 +4,29 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "127.0.0.1:4002:80"
     environment:
       - APP_ENV=${APP_ENV}
       - APP_SECRET=${APP_SECRET}
       - DATABASE_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
       - ADMIN_EMAIL=${ADMIN_EMAIL}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - APP_ENCRYPTION_KEY=${APP_ENCRYPTION_KEY}
+    volumes:
+      - ./app/.env:/var/www/html/.env
+      - ./app/public/uploads:/var/www/html/public/uploads
+      - ./app/var/backups:/var/www/html/var/backups
+    restart: unless-stopped
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     networks:
       - symfony_network
 
   mysql:
     image: mysql:8.0
+    ports:
+      - "127.0.0.1:3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./.docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
@@ -26,6 +35,12 @@ services:
       - MYSQL_DATABASE=${MYSQL_DATABASE}
       - MYSQL_USER=${MYSQL_USER}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
     networks:
       - symfony_network
 
@@ -35,3 +50,6 @@ volumes:
 networks:
   symfony_network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 198.19.0.0/24

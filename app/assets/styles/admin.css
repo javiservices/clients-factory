@@ -281,9 +281,9 @@ body {
 .btn-primary:hover, .btn-primary:focus { background: var(--c-primary-dark) !important; border-color: var(--c-primary-dark) !important; }
 
 .btn-icon {
-  width: 30px; height: 30px; padding: 0 !important;
+  width: 36px; height: 36px; padding: 0 !important;
   display: inline-flex; align-items: center; justify-content: center;
-  border-radius: var(--radius-sm) !important; font-size: .8125rem;
+  border-radius: var(--radius-sm) !important; font-size: .875rem;
 }
 
 /* ---------- Search wrapper ---------- */
@@ -386,7 +386,14 @@ body {
 .accordion-button:not(.collapsed) { color: var(--c-primary) !important; background: var(--c-primary-light) !important; }
 
 /* ---------- Focus visible (accessibility) ---------- */
-:focus-visible { outline: 3px solid rgba(79,70,229,.35) !important; outline-offset: 2px !important; }
+:focus-visible { outline: 3px solid rgba(215,38,56,.4) !important; outline-offset: 2px !important; }
+
+/* ---------- Card reader input glow ---------- */
+.card-code-highlight {
+  border-color: var(--c-success) !important;
+  box-shadow: 0 0 0 4px var(--c-success-light) !important;
+  transition: border-color .2s ease, box-shadow .2s ease !important;
+}
 
 /* ---------- Responsive ---------- */
 @media (max-width: 991.98px) {

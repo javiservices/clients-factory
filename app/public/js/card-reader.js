@@ -1,31 +1,48 @@
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("Esperando lectura de tarjeta...");
+// public/js/card-reader.js
+(function() {
+    const cardCodeField = document.getElementById('cardCodeField') || document.getElementById('client_cardCode');
+    if (!cardCodeField) return;
+
+    let isFetching = false;
 
     const fetchCardId = async () => {
+        if (isFetching) return;
+        isFetching = true;
         try {
             const response = await fetch('/api/card-read', { method: 'GET' });
+            if (!response.ok) {
+                isFetching = false;
+                return;
+            }
             const data = await response.json();
 
             if (data.success && data.card_id) {
-                const cardCodeField = document.getElementById('client_cardCode');
-                if (cardCodeField) {
-                    cardCodeField.value = data.card_id; // Actualiza el campo con el ID de la tarjeta
-                    console.log("ID de tarjeta actualizado: " + data.card_id);
-                    
-                    // Después de usar el ID, lo limpiamos del caché
-                    await fetch('/api/card-read/clear', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
-                }
+                cardCodeField.value = data.card_id;
+                cardCodeField.classList.add('card-code-highlight');
+                cardCodeField.dispatchEvent(new Event('input', { bubbles: true }));
+                cardCodeField.dispatchEvent(new Event('change', { bubbles: true }));
+
+                setTimeout(() => {
+                    cardCodeField.classList.remove('card-code-highlight');
+                }, 1800);
+
+                await fetch('/api/card-read/clear', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
             }
         } catch (error) {
             console.error('Error al obtener el ID de la tarjeta:', error);
+        } finally {
+            isFetching = false;
         }
     };
 
-    // Iniciar el polling para verificar nuevas tarjetas cada 2 segundos
-    setInterval(fetchCardId, 2000);
-});
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setInterval(fetchCardId, 1500);
+        });
+    } else {
+        setInterval(fetchCardId, 1500);
+    }
+})();

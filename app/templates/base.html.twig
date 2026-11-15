@@ -17,6 +17,9 @@
     {% endblock %}
 </head>
 <body>
+    {# ─── Skip link (Accessibility) ─── #}
+    <a href="#mainContent" class="visually-hidden-focusable btn btn-sm btn-primary position-absolute m-2" style="z-index:9999;">Saltar al contenido principal</a>
+
     {# ─── Sidebar overlay (mobile) ─── #}
     <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
 
@@ -51,24 +54,6 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const sidebar  = document.getElementById('sidebar');
-        const overlay  = document.getElementById('sidebarOverlay');
-
-        function openSidebar()  { sidebar.classList.add('open');  overlay.classList.add('show'); }
-        function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('show'); }
-
-        document.querySelectorAll('.btn-sidebar-toggle').forEach(btn => btn.addEventListener('click', openSidebar));
-        overlay.addEventListener('click', closeSidebar);
-
-        sidebar.querySelectorAll('.sidebar-link').forEach(link => {
-            link.addEventListener('click', function () {
-                if (window.innerWidth < 992) closeSidebar();
-            });
-        });
-        window.addEventListener('resize', function () {
-            if (window.innerWidth >= 992) closeSidebar();
-        });
-
         // Toast auto-dismiss + close button
         document.querySelectorAll('.toast-item').forEach(function (toast) {
             const close = toast.querySelector('.toast-close');

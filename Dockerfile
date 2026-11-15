@@ -11,7 +11,7 @@ RUN npm i --prefer-offline
 COPY app/webpack.config.js ./
 COPY app/assets/ ./assets/
 
-RUN npm run dev
+RUN npm run build
 
 ###############################################################################
 # Stage 2: Composer — install PHP dependencies
@@ -23,8 +23,8 @@ ENV APP_ENV=dev
 WORKDIR /app
 
 COPY app/composer.json app/composer.lock* ./
-RUN composer update
 RUN composer install \
+    --ignore-platform-reqs \
     --no-scripts \
     --no-interaction \
     --prefer-dist

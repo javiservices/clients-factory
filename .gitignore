@@ -10,6 +10,8 @@
 ###> docker ###
 /mysql_data/
 docker-compose.override.yml
+/app/public/uploads/
+/app/var/backups/
 ###< docker ###
 .env*
 !.env.default

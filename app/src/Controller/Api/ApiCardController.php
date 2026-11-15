@@ -21,7 +21,7 @@ class ApiCardController extends AbstractController
     private const CACHE_USED_KEY = 'card_id_used';
     private const RATE_LIMIT_KEY = 'rate_limit_ip_';
     private const PASSBACK_KEY   = 'passback_card_';
-    private const RATE_LIMIT_MAX = 60;  // peticiones por minuto por IP
+    private const RATE_LIMIT_MAX = 300; // peticiones por minuto por IP
     private const PASSBACK_TTL   = 5;   // segundos mínimos entre accesos del mismo card
 
     public function __construct(private EntityManagerInterface $entityManager)
@@ -53,9 +53,7 @@ class ApiCardController extends AbstractController
         }
 
         $item->set($count + 1);
-        if (!$item->isHit()) {
-            $item->expiresAfter(60);
-        }
+        $item->expiresAfter(60);
         $this->cache->save($item);
         return true;
     }

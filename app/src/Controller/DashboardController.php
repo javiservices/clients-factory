@@ -10,6 +10,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
 class DashboardController extends AbstractController
 {
@@ -22,7 +23,10 @@ class DashboardController extends AbstractController
     }
 
     #[Route('/api/turnstile-clients', name: 'app_api_turnstile_clients', methods: ['GET'])]
-    public function apiTurnstileClients(EntityManagerInterface $em): Response
+    public function apiTurnstileClients(
+        EntityManagerInterface $em,
+        CsrfTokenManagerInterface $csrfTokenManager
+    ): Response
     {
         $since  = new \DateTime('-10 minutes');
         $client = $em->createQuery('
@@ -44,6 +48,7 @@ class DashboardController extends AbstractController
                 'lastAccess' => $client->getLastAccess()?->format('c'),
                 'hasPaid'    => $client->getSubscriptions()->last() && $client->getSubscriptions()->last()->isActive(),
                 'photoUrl'   => $client->getPhoto() ? '/uploads/clients/' . $client->getPhoto() : null,
+                'csrfToken'  => $csrfTokenManager->getToken('renew' . $client->getId())->getValue(),
             ];
         }
 

@@ -122,7 +122,7 @@ final class ClientController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/edit', name: 'app_client_edit', methods: ['GET', 'POST'])]
+    #[Route('/{id}/edit', name: 'app_client_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
     public function edit(
         Request $request,
         Client $client,
@@ -352,7 +352,7 @@ final class ClientController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'app_client_show', methods: ['GET'])]
+    #[Route('/{id}', name: 'app_client_show', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function show(Client $client, AccessLogRepository $accessLogRepo): Response
     {
         $lastSubscription = $client->getSubscriptions()->last() ?: null;
@@ -383,7 +383,7 @@ final class ClientController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'app_client_delete', methods: ['POST'])]
+    #[Route('/{id}', name: 'app_client_delete', methods: ['POST'], requirements: ['id' => '\d+'])]
     public function delete(Request $request, Client $client, EntityManagerInterface $entityManager): Response
     {
         if ($this->isCsrfTokenValid('delete'.$client->getId(), $request->request->get('_token'))) {
@@ -402,7 +402,7 @@ final class ClientController extends AbstractController
         return $this->redirectToRoute('app_client_index', [], Response::HTTP_SEE_OTHER);
     }
 
-    #[Route('/{id}/renew', name: 'app_client_renew', methods: ['POST'])]
+    #[Route('/{id}/renew', name: 'app_client_renew', methods: ['POST'], requirements: ['id' => '\d+'])]
     public function renew(
         Request $request,
         Client $client,
