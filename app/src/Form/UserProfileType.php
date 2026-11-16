@@ -122,6 +122,30 @@ class UserProfileType extends AbstractType
                     'class' => 'form-label'
                 ],
                 'required' => false
+            ])
+            ->add('companyIban', TextType::class, [
+                'attr' => [
+                    'class' => 'form-control font-monospace',
+                    'placeholder' => 'ES00 0000 0000 0000 0000 0000',
+                    'maxlength' => '34'
+                ],
+                'label' => 'IBAN de la Empresa (Para Remesas SEPA)',
+                'label_attr' => [
+                    'class' => 'form-label'
+                ],
+                'required' => false
+            ])
+            ->add('companyBic', TextType::class, [
+                'attr' => [
+                    'class' => 'form-control font-monospace',
+                    'placeholder' => 'XXXXXXXXXXX',
+                    'maxlength' => '11'
+                ],
+                'label' => 'BIC / SWIFT',
+                'label_attr' => [
+                    'class' => 'form-label'
+                ],
+                'required' => false
             ]);
     }
 

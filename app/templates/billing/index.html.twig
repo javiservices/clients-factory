@@ -67,11 +67,16 @@
             <p class="page-header-sub">Historial de cobros y exportación para gestoría externa</p>
         </div>
     </div>
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
         <a href="{{ path('app_billing_export_csv', {start_date: startDate, end_date: endDate, search: search}) }}"
-           class="btn btn-success"
+           class="btn btn-outline-success"
            title="Descargar listado en formato CSV para Microsoft Excel">
             <i class="bi bi-file-earmark-excel me-1" aria-hidden="true"></i>Exportar CSV
+        </a>
+        <a href="{{ path('app_billing_export_sepa', {start_date: startDate, end_date: endDate, search: search}) }}"
+           class="btn btn-primary"
+           title="Generar remesa bancaria en XML SEPA ISO 20022 pain.008.001.02 (Norma 19 de adeudos directos)">
+            <i class="bi bi-file-earmark-code me-1" aria-hidden="true"></i>Remesa SEPA (XML)
         </a>
     </div>
 </div>
@@ -104,7 +109,7 @@
             </div>
             <div class="min-w-0 flex-grow-1" style="min-width:0;">
                 <div class="stat-card-value text-truncate">{{ totalItems }}</div>
-                <div class="stat-card-label text-truncate">Cobros emitidos</div>
+                <div class="stat-card-label text-truncate">{{ recordsWithIban }} con IBAN (SEPA)</div>
             </div>
         </div>
     </div>
@@ -225,6 +230,15 @@
                             </td>
                             <td>
                                 <span class="font-monospace text-secondary">{{ item.clientIdNumber ?: '—' }}</span>
+                                {% if item.clientIban %}
+                                    <div class="small font-monospace text-success text-truncate" style="font-size:0.75rem;max-width:140px;" title="{{ item.clientIban }}">
+                                        <i class="bi bi-bank me-1"></i>{{ item.clientIban }}
+                                    </div>
+                                {% else %}
+                                    <div class="small text-warning" style="font-size:0.72rem;">
+                                        <i class="bi bi-exclamation-circle me-1"></i>Sin IBAN
+                                    </div>
+                                {% endif %}
                             </td>
                             <td>
                                 <span class="small text-secondary">{{ item.clientPhone ?: '—' }}</span>

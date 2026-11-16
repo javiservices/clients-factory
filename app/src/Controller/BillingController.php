@@ -6,6 +6,7 @@ use App\Entity\BillingRecord;
 use App\Entity\Client;
 use App\Repository\BillingRecordRepository;
 use App\Service\EncryptionService;
+use App\Service\SepaXmlService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -77,6 +78,7 @@ class BillingController extends AbstractController
         $filteredItems = [];
         $totalAmount = 0.0;
         $uniqueClients = [];
+        $recordsWithIban = 0;
 
         $searchNormalized = $this->normalizeSearchText($search);
         $searchTokens = preg_split('/[\s,]+/', $searchNormalized, -1, PREG_SPLIT_NO_EMPTY);
@@ -118,6 +120,9 @@ class BillingController extends AbstractController
             $amount = (float) $record->getAmount();
             $totalAmount += $amount;
             $uniqueClients[$client->getId()] = true;
+            if (!empty($client->getIban())) {
+                $recordsWithIban++;
+            }
 
             $filteredItems[] = [
                 'record'         => $record,
@@ -126,6 +131,7 @@ class BillingController extends AbstractController
                 'clientSurname'  => $clientSurname,
                 'clientIdNumber' => $clientIdNumber,
                 'clientPhone'    => $clientPhone,
+                'clientIban'     => $client->getIban(),
                 'amount'         => $amount,
             ];
         }
@@ -145,6 +151,7 @@ class BillingController extends AbstractController
             'totalItems'           => $totalItems,
             'totalAmount'          => $totalAmount,
             'distinctClientsCount' => $distinctClientsCount,
+            'recordsWithIban'      => $recordsWithIban,
             'averageAmount'        => $averageAmount,
             'startDate'            => $startDateStr,
             'endDate'              => $endDateStr,
@@ -224,6 +231,7 @@ class BillingController extends AbstractController
                 'DNI / NIF',
                 'Teléfono',
                 'Localidad',
+                'IBAN',
                 'Fecha de Cobro',
                 'Concepto / Plan',
                 'Periodo Desde',
@@ -245,17 +253,20 @@ class BillingController extends AbstractController
                 $dni = (string) $client->getIdNumber();
                 $phone = (string) $client->getPhone();
                 $locality = (string) $client->getLocality();
+                $iban = (string) $client->getIban();
 
                 // Filtrado por búsqueda de texto si se especificó
                 if (!empty($searchTokens)) {
                     $cleanDni = str_replace(['.', '-', ' '], '', $dni);
                     $cleanPhone = str_replace(['.', '-', ' ', '+34'], '', $phone);
+                    $cleanIban = str_replace(['.', '-', ' '], '', $iban);
                     $haystack = $this->normalizeSearchText(
                         $client->getId() . ' ' .
                         $name . ' ' .
                         $surname . ' ' .
                         $dni . ' ' . $cleanDni . ' ' .
                         $phone . ' ' . $cleanPhone . ' ' .
+                        $iban . ' ' . $cleanIban . ' ' .
                         $record->getDescription()
                     );
 
@@ -286,6 +297,7 @@ class BillingController extends AbstractController
                     $dni,
                     $phone,
                     $locality,
+                    $iban,
                     $billingDateFormatted,
                     $concept,
                     $periodStartFormatted,
@@ -303,6 +315,144 @@ class BillingController extends AbstractController
         $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
 
         return $response;
+    }
+
+    /**
+     * Exportación de remesa bancaria en formato XML SEPA ISO 20022 pain.008.001.02 (Norma 19 / Adeudo Directo CORE).
+     * Solo incluye clientes con 'Gestión externa' activa (billable = true) que dispongan de cuenta IBAN válida.
+     */
+    #[Route('/export/sepa', name: 'app_billing_export_sepa', methods: ['GET'])]
+    public function exportSepa(
+        Request $request,
+        EntityManagerInterface $em,
+        SepaXmlService $sepaXmlService
+    ): Response {
+        try {
+            $defaultStart = (new \DateTime('first day of this month 00:00:00'))->format('Y-m-d');
+            $defaultEnd   = (new \DateTime('last day of this month 23:59:59'))->format('Y-m-d');
+
+            $startDateStr = $request->query->get('start_date', $defaultStart);
+            $endDateStr   = $request->query->get('end_date', $defaultEnd);
+            $search       = trim((string) $request->query->get('search', ''));
+
+            try {
+                $startDate = new \DateTime($startDateStr . ' 00:00:00');
+            } catch (\Exception) {
+                $startDate = new \DateTime($defaultStart . ' 00:00:00');
+                $startDateStr = $defaultStart;
+            }
+
+            try {
+                $endDate = new \DateTime($endDateStr . ' 23:59:59');
+            } catch (\Exception) {
+                $endDate = new \DateTime($defaultEnd . ' 23:59:59');
+                $endDateStr = $defaultEnd;
+            }
+
+            $qb = $em->createQueryBuilder();
+            $qb->select('b', 'c', 's', 'st')
+               ->from(BillingRecord::class, 'b')
+               ->join('b.client', 'c')
+               ->leftJoin('b.subscription', 's')
+               ->leftJoin('s.subscriptionType', 'st')
+               ->where('b.billingDate >= :start')
+               ->andWhere('b.billingDate <= :end')
+               ->andWhere('c.billable = :billable')
+               ->setParameter('start', $startDate)
+               ->setParameter('end', $endDate)
+               ->setParameter('billable', true)
+               ->orderBy('b.billingDate', 'ASC')
+               ->addOrderBy('c.id', 'ASC');
+
+            /** @var BillingRecord[] $records */
+            $records = $qb->getQuery()->getResult();
+
+            $searchNormalized = $this->normalizeSearchText($search);
+            $searchTokens = preg_split('/[\s,]+/', $searchNormalized, -1, PREG_SPLIT_NO_EMPTY);
+
+            /** @var \App\Entity\User|null $currentUser */
+            $userRepo = $em->getRepository(\App\Entity\User::class);
+            $currentUser = $userRepo->findOneBy([]);
+
+            $creditor = [
+                'name' => $currentUser?->getCompanyName() ?: 'GIMNASIO SANTA MARIA',
+                'cif'  => $currentUser?->getTaxId() ?: 'B00000000',
+                'iban' => $currentUser?->getCompanyIban() ?: '',
+                'bic'  => $currentUser?->getCompanyBic() ?: 'NOTPROVIDED',
+            ];
+
+            $transactions = [];
+            foreach ($records as $record) {
+                $client = $record->getClient();
+                if (!$client->isBillable()) {
+                    continue;
+                }
+
+                $iban = $client->getIban();
+                if (empty($iban)) {
+                    continue; // Solo emitir para clientes con IBAN registrado
+                }
+
+                $name = (string) $client->getName();
+                $surname = (string) $client->getSurname();
+                $dni = (string) $client->getIdNumber();
+                $phone = (string) $client->getPhone();
+
+                if (!empty($searchTokens)) {
+                    $cleanDni = str_replace(['.', '-', ' '], '', $dni);
+                    $cleanPhone = str_replace(['.', '-', ' ', '+34'], '', $phone);
+                    $cleanIban = str_replace(['.', '-', ' '], '', $iban);
+                    $haystack = $this->normalizeSearchText(
+                        $client->getId() . ' ' . $name . ' ' . $surname . ' ' .
+                        $dni . ' ' . $cleanDni . ' ' . $phone . ' ' . $cleanPhone . ' ' .
+                        $iban . ' ' . $cleanIban . ' ' .
+                        $record->getDescription()
+                    );
+
+                    $matched = true;
+                    foreach ($searchTokens as $token) {
+                        $cleanToken = str_replace(['.', '-', '#'], '', $token);
+                        if (!str_contains($haystack, $token) && ($cleanToken === '' || !str_contains($haystack, $cleanToken))) {
+                            $matched = false;
+                            break;
+                        }
+                    }
+                    if (!$matched) {
+                        continue;
+                    }
+                }
+
+                $amount = (float) $record->getAmount();
+                if ($amount <= 0.001) {
+                    continue;
+                }
+
+                $concept = $record->getDescription() ?: ($record->getSubscription()?->getSubscriptionType()?->getName() ?? 'Cuota gimnasio');
+
+                $transactions[] = [
+                    'id' => $record->getId(),
+                    'amount' => $amount,
+                    'client_id' => $client->getId(),
+                    'client_name' => trim($name . ' ' . $surname),
+                    'client_iban' => $iban,
+                    'mandate_date' => $client->getStartDate() ?? $record->getBillingDate(),
+                    'concept' => $concept,
+                ];
+            }
+
+            $xml = $sepaXmlService->generateDirectDebitXml($creditor, $transactions);
+
+            $filename = sprintf('remesa_sepa_pain_008_%s_a_%s.xml', $startDateStr, $endDateStr);
+
+            $response = new Response($xml);
+            $response->headers->set('Content-Type', 'application/xml; charset=UTF-8');
+            $response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
+            $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+            return $response;
+        } catch (\Throwable $e) {
+            return new Response('ERROR: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 500, ['Content-Type' => 'text/plain']);
+        }
     }
 
     /**

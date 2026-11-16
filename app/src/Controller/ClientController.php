@@ -13,6 +13,7 @@ use App\Service\EncryptionService;
 use App\Service\InvoiceService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -791,6 +792,130 @@ final class ClientController extends AbstractController
             return '';
         }
         return str_replace(['\\', "'", "\n", "\r"], ['\\\\', "\\'", "\\n", "\\r"], $string);
+    }
+
+    /**
+     * Endpoint para el Buscador Rápido Global del header.
+     * Permite localizar clientes en tiempo real por nombre, DNI, teléfono o ID con atajo de teclado Ctrl+K.
+     */
+    #[Route('/quick-search', name: 'app_client_quick_search', methods: ['GET'])]
+    public function quickSearch(
+        Request $request,
+        EntityManagerInterface $em,
+        ClientRepository $clientRepository
+    ): JsonResponse {
+        $q = trim((string) $request->query->get('q', ''));
+        if (mb_strlen($q) < 2) {
+            return $this->json([]);
+        }
+
+        $cleanNumeric = ltrim($q, '#');
+        $exactId = ctype_digit($cleanNumeric) ? (int) $cleanNumeric : null;
+
+        $normalizedQuery = $this->normalizeSearchText($q);
+        $tokens = preg_split('/[\s,]+/', $normalizedQuery, -1, PREG_SPLIT_NO_EMPTY);
+
+        $conn = $em->getConnection();
+        $rows = $conn->fetchAllAssociative('SELECT id, name, surname, id_number, phone, photo FROM client');
+
+        $matchedIds = [];
+        $priorityIds = [];
+
+        foreach ($rows as $row) {
+            $id = (int) $row['id'];
+            if ($exactId !== null && $id === $exactId) {
+                $priorityIds[] = $id;
+                continue;
+            }
+
+            $name = (string) EncryptionService::decryptValue($row['name']);
+            $surname = (string) EncryptionService::decryptValue($row['surname']);
+            $dni = (string) EncryptionService::decryptValue($row['id_number']);
+            $cleanDni = str_replace(['.', '-', ' '], '', $dni);
+            $phone = (string) EncryptionService::decryptValue($row['phone']);
+            $cleanPhone = str_replace(['.', '-', ' ', '+34'], '', $phone);
+
+            $haystack = $this->normalizeSearchText(
+                $id . ' #' . $id . ' ' .
+                $name . ' ' . $surname . ' ' .
+                $dni . ' ' . $cleanDni . ' ' .
+                $phone . ' ' . $cleanPhone
+            );
+
+            $matches = true;
+            foreach ($tokens as $token) {
+                $cleanToken = str_replace(['.', '-', '#'], '', $token);
+                if (!str_contains($haystack, $token) && ($cleanToken === '' || !str_contains($haystack, $cleanToken))) {
+                    $matches = false;
+                    break;
+                }
+            }
+
+            if ($matches) {
+                $matchedIds[] = $id;
+            }
+
+            if (count($priorityIds) + count($matchedIds) >= 15) {
+                break;
+            }
+        }
+
+        $allIds = array_slice(array_merge($priorityIds, $matchedIds), 0, 10);
+        if (empty($allIds)) {
+            return $this->json([]);
+        }
+
+        $clients = $clientRepository->findBy(['id' => $allIds]);
+        $clientsById = [];
+        foreach ($clients as $c) {
+            $clientsById[$c->getId()] = $c;
+        }
+
+        $currentDate = new \DateTime();
+        $results = [];
+        foreach ($allIds as $cid) {
+            if (!isset($clientsById[$cid])) {
+                continue;
+            }
+            /** @var Client $client */
+            $client = $clientsById[$cid];
+
+            $activeSubscription = null;
+            foreach ($client->getSubscriptions() as $sub) {
+                if ($sub->isActive()) {
+                    $activeSubscription = $sub;
+                    break;
+                }
+            }
+
+            $hasPaid = false;
+            $subType = '—';
+            if ($activeSubscription && $activeSubscription->isActive()) {
+                $lastPaymentDate = $activeSubscription->getLastPaymentDate();
+                if ($lastPaymentDate && $lastPaymentDate->format('Y-m') === $currentDate->format('Y-m')) {
+                    $hasPaid = true;
+                }
+                $subType = $activeSubscription->getSubscriptionType()?->getName() ?? 'Activa';
+            }
+
+            $firstInitial = mb_substr((string) $client->getName(), 0, 1, 'UTF-8');
+            $secondInitial = mb_substr((string) $client->getSurname(), 0, 1, 'UTF-8');
+            $initials = mb_strtoupper($firstInitial . $secondInitial, 'UTF-8');
+
+            $results[] = [
+                'id'               => $client->getId(),
+                'name'             => trim($client->getName() . ' ' . $client->getSurname()),
+                'idNumber'         => $client->getIdNumber(),
+                'phone'            => $client->getPhone(),
+                'photoUrl'         => $client->getPhoto() ? '/uploads/clients/' . $client->getPhoto() : null,
+                'initials'         => $initials ?: 'C',
+                'hasPaid'          => $hasPaid,
+                'subscriptionType' => $subType,
+                'url'              => $this->generateUrl('app_client_show', ['id' => $client->getId()]),
+            ];
+        }
+
+        return $this->json($results);
     }
 
     /**

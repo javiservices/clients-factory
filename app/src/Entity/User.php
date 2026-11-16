@@ -59,6 +59,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $companyEmail = null;
 
+    #[ORM\Column(length: 34, nullable: true)]
+    private ?string $companyIban = null;
+
+    #[ORM\Column(length: 11, nullable: true)]
+    private ?string $companyBic = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -139,6 +145,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     public function getTaxId(): ?string
+    {
+        return $this->taxId;
+    }
+
+    public function getCompanyCif(): ?string
     {
         return $this->taxId;
     }
@@ -230,6 +241,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setCompanyEmail(?string $companyEmail): static
     {
         $this->companyEmail = $companyEmail;
+
+        return $this;
+    }
+
+    public function getCompanyIban(): ?string
+    {
+        return $this->companyIban;
+    }
+
+    public function setCompanyIban(?string $companyIban): static
+    {
+        $this->companyIban = $companyIban ? strtoupper(str_replace([' ', '-', '.'], '', $companyIban)) : null;
+
+        return $this;
+    }
+
+    public function getCompanyBic(): ?string
+    {
+        return $this->companyBic;
+    }
+
+    public function setCompanyBic(?string $companyBic): static
+    {
+        $this->companyBic = $companyBic ? strtoupper(trim($companyBic)) : null;
 
         return $this;
     }

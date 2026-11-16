@@ -77,6 +77,12 @@
                     {{ form_widget(form.zipCode) }}
                     {{ form_errors(form.zipCode) }}
                 </div>
+                <div class="col-12">
+                    {{ form_label(form.iban) }}
+                    {{ form_widget(form.iban) }}
+                    {{ form_errors(form.iban) }}
+                    <div class="form-text">Cuenta bancaria para remesas SEPA (Norma 19 / XML ISO 20022). Formato español: ES...</div>
+                </div>
             </div>
 
             <p class="card-section-title">

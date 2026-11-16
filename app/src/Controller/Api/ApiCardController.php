@@ -163,6 +163,39 @@ class ApiCardController extends AbstractController
 
         $this->logAccess($client, 'success');
 
+        $warning = false;
+        $warningMessage = null;
+        $daysRemaining = null;
+
+        if ($activeSubscription->getSubscriptionType()->isDailyPass()) {
+            $remPasses = $activeSubscription->getRemainingPasses();
+            if ($remPasses <= 2) {
+                $warning = true;
+                $warningMessage = ($remPasses === 1)
+                    ? 'AVISO: ¡Te queda solo 1 pase disponible!'
+                    : sprintf('AVISO: Te quedan %d pases disponibles', $remPasses);
+            }
+        } else {
+            $endDate = $activeSubscription->getEndDate();
+            if ($endDate) {
+                $today = new \DateTime('today');
+                $endDay = (clone $endDate)->setTime(0, 0, 0);
+                $diff = (int) $today->diff($endDay)->format('%r%a');
+                $daysRemaining = max(0, $diff);
+
+                if ($diff <= 3 && $diff >= 0) {
+                    $warning = true;
+                    if ($diff === 0) {
+                        $warningMessage = 'AVISO: Tu cuota vence HOY. Recuerda renovarla.';
+                    } elseif ($diff === 1) {
+                        $warningMessage = 'AVISO: Tu cuota vence MAÑANA. Recuerda renovarla.';
+                    } else {
+                        $warningMessage = sprintf('AVISO: Tu cuota vence en %d días. Recuerda renovarla.', $diff);
+                    }
+                }
+            }
+        }
+
         $message = $activeSubscription->getSubscriptionType()->isDailyPass()
             ? sprintf('Bienvenido/a, %s. Pases restantes: %d', $client->getName(), $activeSubscription->getRemainingPasses())
             : sprintf('Bienvenido/a, %s', $client->getName());
@@ -170,9 +203,12 @@ class ApiCardController extends AbstractController
         $photoUrl = $client->getPhoto() ? '/uploads/clients/' . $client->getPhoto() : null;
 
         return $this->json([
-            'success'      => true,
-            'message'      => $message,
-            'client'       => [
+            'success'         => true,
+            'message'         => $message,
+            'warning'         => $warning,
+            'warning_message' => $warningMessage,
+            'days_remaining'  => $daysRemaining,
+            'client'          => [
                 'id'       => $client->getId(),
                 'name'     => $client->getName(),
                 'surname'  => $client->getSurname(),
@@ -249,6 +285,7 @@ class ApiCardController extends AbstractController
         }
 
         $cards = [];
+        $today = new \DateTime('today');
         foreach ($clientRepository->findAll() as $client) {
             if (!$client->getCardCode()) {
                 continue;
@@ -263,11 +300,25 @@ class ApiCardController extends AbstractController
             if (!$activeSub || $activeSub->isFrozen()) {
                 continue;
             }
+
+            $isDailyPass = $activeSub->getSubscriptionType()->isDailyPass();
+            $remPasses = $activeSub->getRemainingPasses();
+            $endDate = $activeSub->getEndDate();
+
+            if ($isDailyPass && $remPasses <= 0) {
+                continue;
+            }
+            if (!$isDailyPass && $endDate && (clone $endDate)->setTime(23, 59, 59) < $today) {
+                continue;
+            }
+
             $cards[] = [
-                'card_code' => $client->getCardCode(),
-                'client_id' => $client->getId(),
-                'name'      => $client->getName() . ' ' . $client->getSurname(),
-                'end_date'  => $activeSub->getEndDate()?->format('Y-m-d'),
+                'card_code'        => $client->getCardCode(),
+                'client_id'        => $client->getId(),
+                'name'             => trim($client->getName() . ' ' . $client->getSurname()),
+                'end_date'         => $endDate?->format('Y-m-d'),
+                'is_daily_pass'    => $isDailyPass,
+                'remaining_passes' => $remPasses,
             ];
         }
 

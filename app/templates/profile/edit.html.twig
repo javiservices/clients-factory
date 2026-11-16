@@ -83,6 +83,17 @@
                     {{ form_widget(form.companyCountry, {'attr': {'class': 'form-control'}}) }}
                     {{ form_errors(form.companyCountry) }}
                 </div>
+                <div class="col-12 col-md-8">
+                    {{ form_label(form.companyIban, 'Cuenta Bancaria de la Empresa (IBAN para emisión de remesas)', {'label_attr': {'class': 'form-label'}}) }}
+                    {{ form_widget(form.companyIban, {'attr': {'class': 'form-control font-monospace'}}) }}
+                    {{ form_errors(form.companyIban) }}
+                    <div class="form-text">Cuenta donde se abonarán las remesas bancarias SEPA XML.</div>
+                </div>
+                <div class="col-12 col-md-4">
+                    {{ form_label(form.companyBic, 'Código BIC / SWIFT', {'label_attr': {'class': 'form-label'}}) }}
+                    {{ form_widget(form.companyBic, {'attr': {'class': 'form-control font-monospace'}}) }}
+                    {{ form_errors(form.companyBic) }}
+                </div>
             </div>
 
             <div class="d-flex flex-wrap gap-2 justify-content-end pt-3" style="border-top:1px solid var(--c-gray-100)">

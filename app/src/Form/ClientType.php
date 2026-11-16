@@ -122,6 +122,18 @@ class ClientType extends AbstractType
                     'class' => 'form-label small'
                 ]
             ])
+            ->add('iban', TextType::class, [
+                'attr' => [
+                    'class' => 'form-control font-monospace',
+                    'placeholder' => 'ES00 0000 0000 0000 0000 0000',
+                    'maxlength' => '34'
+                ],
+                'label' => 'Cuenta Bancaria (IBAN)',
+                'label_attr' => [
+                    'class' => 'form-label small'
+                ],
+                'required' => false
+            ])
             ->add('startDate', DateType::class, [
                 'widget' => 'single_text',
                 'attr' => [

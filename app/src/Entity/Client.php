@@ -51,6 +51,9 @@ class Client
     #[ORM\Column(type: 'encrypted_string', nullable: true)]
     private ?string $card_code = null;
 
+    #[ORM\Column(type: 'encrypted_string', nullable: true)]
+    private ?string $iban = null;
+
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
     private bool $billable = true;
 
@@ -232,6 +235,18 @@ class Client
     public function setCardCode(?string $card_code): static
     {
         $this->card_code = $card_code;
+
+        return $this;
+    }
+
+    public function getIban(): ?string
+    {
+        return $this->iban;
+    }
+
+    public function setIban(?string $iban): static
+    {
+        $this->iban = $iban ? strtoupper(str_replace([' ', '-', '.'], '', $iban)) : null;
 
         return $this;
     }

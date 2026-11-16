@@ -112,6 +112,16 @@
                         <div class="small" style="color:var(--c-gray-500)">Código postal</div>
                         <div class="fw-semibold">{{ client.zipCode ?: '—' }}</div>
                     </div>
+                    <div class="col-12">
+                        <div class="small" style="color:var(--c-gray-500)">Cuenta bancaria (IBAN)</div>
+                        <div class="fw-semibold font-monospace">
+                            {% if client.iban %}
+                                <i class="bi bi-bank me-1 text-primary"></i>{{ client.iban }}
+                            {% else %}
+                                <span class="text-muted fw-normal">No especificado</span>
+                            {% endif %}
+                        </div>
+                    </div>
                     <div class="col-12 pt-2 border-top">
                         <div class="small mb-1" style="color:var(--c-gray-500)">Gestión Externa (Facturación gestoría)</div>
                         {% if client.billable %}
