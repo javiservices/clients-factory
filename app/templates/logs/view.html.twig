@@ -12,11 +12,16 @@
             <p class="page-header-sub">{{ date|date('d/m/Y') }}</p>
         </div>
     </div>
-    {% if logs is not empty %}
-        <button class="btn btn-sm btn-outline-secondary" onclick="window.print()" type="button">
-            <i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir
-        </button>
-    {% endif %}
+    <div class="d-flex align-items-center gap-2">
+        <a href="{{ path('logs_export_csv', {date: date}) }}" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-file-earmark-excel me-1" aria-hidden="true"></i>Exportar CSV
+        </a>
+        {% if logs is not empty %}
+            <button class="btn btn-sm btn-outline-secondary" onclick="window.print()" type="button">
+                <i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir
+            </button>
+        {% endif %}
+    </div>
 </div>
 
 {# ─── Date filter ─── #}

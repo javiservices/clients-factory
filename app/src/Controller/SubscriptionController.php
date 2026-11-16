@@ -73,5 +73,26 @@ final class SubscriptionController extends AbstractController
         $clientId = $subscription->getClient()?->getId();
         return $this->redirectToRoute('app_client_show', ['id' => $clientId]);
     }
+
+    /** Ajusta los pases restantes de una suscripción de tipo pase diario */
+    #[Route('/{id}/passes', name: 'app_subscription_adjust_passes', methods: ['POST'])]
+    public function adjustPasses(
+        Request $request,
+        Subscription $subscription,
+        EntityManagerInterface $em
+    ): Response {
+        if ($this->isCsrfTokenValid('adjust_passes' . $subscription->getId(), $request->request->get('_token'))) {
+            $passes = max(0, (int) $request->request->get('passes', 0));
+            $subscription->setRemainingPasses($passes);
+            if ($passes > 0) {
+                $subscription->setIsActive(true);
+            }
+            $em->flush();
+            $this->addFlash('success', sprintf('Pases actualizados a %d correctamente.', $passes));
+        }
+
+        $clientId = $subscription->getClient()?->getId();
+        return $this->redirectToRoute('app_client_show', ['id' => $clientId]);
+    }
 }
 

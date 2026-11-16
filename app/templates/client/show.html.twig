@@ -6,7 +6,7 @@
 {% block body %}
 
 {# ─── Page header ─── #}
-<div class="page-header">
+<div class="page-header mb-4">
     <div class="page-header-left">
         <a href="{{ path('app_client_index') }}" class="btn btn-sm btn-outline-secondary btn-icon"
            aria-label="Volver a la lista de clientes">
@@ -14,16 +14,25 @@
         </a>
         <div>
             <h2 class="page-header-title">{{ client.name }} {{ client.surname }}</h2>
-            <p class="page-header-sub">ID #{{ client.id }}</p>
+            <p class="page-header-sub">Cliente #{{ client.id }}</p>
         </div>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex align-items-center gap-2">
+        {% if subscription %}
+            <form method="post" action="{{ path('app_client_renew', {'id': client.id}) }}" class="d-inline">
+                <input type="hidden" name="_token" value="{{ csrf_token('renew' ~ client.id) }}">
+                <button type="submit" class="btn btn-sm btn-success"
+                        onclick="return confirm('¿Confirmas la renovación de la cuota para {{ client.name }}?')">
+                    <i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Renovar cuota
+                </button>
+            </form>
+        {% endif %}
         <a href="{{ path('app_client_edit', {'id': client.id}) }}" class="btn btn-primary btn-sm">
             <i class="bi bi-pencil me-1" aria-hidden="true"></i>Editar
         </a>
-        <button type="button" class="btn btn-sm btn-outline-danger"
+        <button type="button" class="btn btn-sm btn-outline-danger btn-icon"
                 data-bs-toggle="modal" data-bs-target="#deleteModal"
-                aria-label="Eliminar cliente">
+                aria-label="Eliminar cliente" title="Eliminar cliente">
             <i class="bi bi-trash" aria-hidden="true"></i>
         </button>
     </div>
@@ -60,11 +69,11 @@
                     </div>
                     <div class="col-6">
                         <div class="small" style="color:var(--c-gray-500)">Apellidos</div>
-                        <div class="fw-semibold">{{ client.surname }}</div>
+                        <div class="fw-semibold">{{ client.surname ?: '—' }}</div>
                     </div>
                     <div class="col-6">
                         <div class="small" style="color:var(--c-gray-500)">DNI / NIF</div>
-                        <div class="fw-semibold">{{ client.idNumber ?: '—' }}</div>
+                        <div class="fw-semibold font-monospace">{{ client.idNumber ?: '—' }}</div>
                     </div>
                     <div class="col-6">
                         <div class="small" style="color:var(--c-gray-500)">Fecha de nacimiento</div>
@@ -83,12 +92,12 @@
         </div>
     </div>
 
-    {# ─── Address ─── #}
+    {# ─── Address & Fiscal ─── #}
     <div class="col-12 col-lg-6">
         <div class="card h-100">
             <div class="card-body">
                 <p class="card-section-title">
-                    <i class="bi bi-geo-alt" aria-hidden="true"></i>Dirección
+                    <i class="bi bi-geo-alt" aria-hidden="true"></i>Dirección y Clasificación
                 </p>
                 <div class="row g-3">
                     <div class="col-12">
@@ -103,6 +112,18 @@
                         <div class="small" style="color:var(--c-gray-500)">Código postal</div>
                         <div class="fw-semibold">{{ client.zipCode ?: '—' }}</div>
                     </div>
+                    <div class="col-12 pt-2 border-top">
+                        <div class="small mb-1" style="color:var(--c-gray-500)">Gestión Externa (Facturación gestoría)</div>
+                        {% if client.billable %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                <i class="bi bi-check-circle-fill me-1"></i>Habilitado (Incluido en remesas)
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary px-2 py-1">
+                                <i class="bi bi-dash-circle me-1"></i>No habilitado (Excluido de facturación externa)
+                            </span>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -114,52 +135,102 @@
             <div class="card-body">
                 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                     <p class="card-section-title mb-0">
-                        <i class="bi bi-credit-card" aria-hidden="true"></i>Membresía
+                        <i class="bi bi-credit-card" aria-hidden="true"></i>Membresía y Acceso
                     </p>
-                    {% if subscription %}
-                        {% if subscription.frozen %}
-                            <form method="post" action="{{ path('app_subscription_unfreeze', {'id': subscription.id}) }}" class="d-inline">
-                                <input type="hidden" name="_token" value="{{ csrf_token('unfreeze' ~ subscription.id) }}">
-                                <button type="submit" class="btn btn-sm btn-warning">
-                                    <i class="bi bi-snow me-1"></i>Descongelar suscripción
-                                </button>
-                            </form>
-                        {% else %}
-                            <form method="post" action="{{ path('app_subscription_freeze', {'id': subscription.id}) }}" class="d-inline">
-                                <input type="hidden" name="_token" value="{{ csrf_token('freeze' ~ subscription.id) }}">
-                                <button type="submit" class="btn btn-sm btn-outline-info"
-                                        onclick="return confirm('¿Congelar la suscripción? Los días congelados se añadirán al vencimiento al descongelar.')">
-                                    <i class="bi bi-snow me-1"></i>Congelar suscripción
-                                </button>
-                            </form>
+                    <div class="d-flex align-items-center gap-2">
+                        {% if subscription %}
+                            {% if subscription.frozen %}
+                                <form method="post" action="{{ path('app_subscription_unfreeze', {'id': subscription.id}) }}" class="d-inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('unfreeze' ~ subscription.id) }}">
+                                    <button type="submit" class="btn btn-sm btn-warning">
+                                        <i class="bi bi-snow me-1"></i>Descongelar
+                                    </button>
+                                </form>
+                            {% else %}
+                                <form method="post" action="{{ path('app_subscription_freeze', {'id': subscription.id}) }}" class="d-inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('freeze' ~ subscription.id) }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-info"
+                                            onclick="return confirm('¿Congelar la suscripción? Los días congelados se añadirán al vencimiento al descongelar.')">
+                                        <i class="bi bi-snow me-1"></i>Congelar
+                                    </button>
+                                </form>
+                            {% endif %}
                         {% endif %}
-                    {% endif %}
+                    </div>
                 </div>
+
                 <div class="row g-3">
+                    {# Plan actual #}
                     <div class="col-6 col-md-3">
-                        <div class="small" style="color:var(--c-gray-500)">Código de tarjeta</div>
-                        <div class="fw-semibold font-monospace">{{ client.cardCode ?: '—' }}</div>
+                        <div class="small" style="color:var(--c-gray-500)">Plan actual</div>
+                        <div class="fw-bold mt-1" style="color:var(--c-gray-900);">
+                            {{ subscription ? subscription.subscriptionType.name : 'Sin suscripción' }}
+                        </div>
+                        {% if subscription %}
+                            <div class="mt-1">
+                                <span class="badge-status badge-info-tag">
+                                    {{ subscription.subscriptionType.isDailyPass ? 'Pase Diario / Bono' : 'Mensualidad' }}
+                                </span>
+                            </div>
+                        {% endif %}
                     </div>
+
+                    {# Pases restantes si es bono #}
+                    {% if subscription and subscription.subscriptionType.isDailyPass %}
+                        <div class="col-6 col-md-3">
+                            <div class="small" style="color:var(--c-gray-500)">Pases restantes</div>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <span class="badge bg-primary fs-6">{{ subscription.remainingPasses ?? 0 }}</span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                        data-bs-toggle="modal" data-bs-target="#passesModal" style="font-size:0.75rem;">
+                                    <i class="bi bi-pencil me-1"></i>Ajustar
+                                </button>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {# Código de tarjeta RFID #}
                     <div class="col-6 col-md-3">
-                        <div class="small" style="color:var(--c-gray-500)">Fecha de alta</div>
-                        <div class="fw-semibold">{{ client.startDate ? client.startDate|date('d/m/Y') : '—' }}</div>
+                        <div class="small" style="color:var(--c-gray-500)">Tarjeta RFID</div>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            {% if client.cardCode %}
+                                <span class="font-monospace fw-semibold">{{ client.cardCode }}</span>
+                            {% else %}
+                                <span class="badge bg-warning-subtle text-warning">Sin tarjeta</span>
+                            {% endif %}
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                    data-bs-toggle="modal" data-bs-target="#cardModal" style="font-size:0.75rem;">
+                                <i class="bi bi-credit-card-2-front me-1"></i>Asignar
+                            </button>
+                        </div>
                     </div>
+
+                    {# Estado de pago #}
                     <div class="col-6 col-md-3">
-                        <div class="small" style="color:var(--c-gray-500)">Estado de pago</div>
+                        <div class="small" style="color:var(--c-gray-500)">Estado de membresía</div>
                         <div class="mt-1">
                             {% if subscription and subscription.frozen %}
                                 <span class="badge-status badge-pending"><span class="dot"></span>Congelada</span>
                             {% elseif hasPaid %}
-                                <span class="badge-status badge-paid"><span class="dot"></span>Pagado</span>
+                                <span class="badge-status badge-paid"><span class="dot"></span>Al corriente</span>
                             {% else %}
                                 <span class="badge-status badge-pending"><span class="dot"></span>Pendiente</span>
                             {% endif %}
                         </div>
                     </div>
+
+                    {# Pagado hasta #}
                     <div class="col-6 col-md-3">
                         <div class="small" style="color:var(--c-gray-500)">Pagado hasta</div>
-                        <div class="fw-semibold">{{ paymentUntil ? paymentUntil|date('d/m/Y') : '—' }}</div>
+                        <div class="fw-semibold mt-1">{{ paymentUntil ? paymentUntil|date('d/m/Y') : '—' }}</div>
                     </div>
+
+                    {# Fecha de alta #}
+                    <div class="col-6 col-md-3">
+                        <div class="small" style="color:var(--c-gray-500)">Fecha de alta</div>
+                        <div class="fw-semibold mt-1">{{ client.startDate ? client.startDate|date('d/m/Y') : '—' }}</div>
+                    </div>
+
                     {% if subscription and subscription.frozen %}
                         <div class="col-12">
                             <div class="alert alert-warning d-flex align-items-center gap-2 mb-0 py-2">
@@ -196,7 +267,7 @@
                                     <td class="text-nowrap">{{ log.accessTime|date('d/m/Y H:i:s') }}</td>
                                     <td>
                                         {% if log.status == 'success' %}
-                                            <span class="badge-status badge-paid"><span class="dot"></span>Acceso concedido</span>
+                                            <span class="badge-status badge-paid"><span class="dot"></span>Acceso autorizado</span>
                                         {% else %}
                                             <span class="badge-status badge-pending"><span class="dot"></span>Denegado</span>
                                         {% endif %}
@@ -212,6 +283,70 @@
     {% endif %}
 
 </div>
+
+{# ─── Modal Asignar Tarjeta RFID ─── #}
+<div class="modal fade" id="cardModal" tabindex="-1" aria-labelledby="cardModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{{ path('app_client_assign_card', {'id': client.id}) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cardModalLabel">
+                        <i class="bi bi-credit-card-2-front me-2"></i>Asignar Tarjeta RFID
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">
+                        Pasa la tarjeta por el lector o escribe el código UID manualmente.
+                    </p>
+                    <input type="hidden" name="_token" value="{{ csrf_token('assign_card' ~ client.id) }}">
+                    <div class="mb-3">
+                        <label for="cardCodeField" class="form-label">Código UID de la tarjeta</label>
+                        <input type="text" class="form-control font-monospace" id="cardCodeField"
+                               name="card_code" value="{{ client.cardCode }}" placeholder="Ej: 1641, A3B4C5..." autocomplete="off">
+                    </div>
+                    <div class="alert alert-info py-2 small mb-0">
+                        <i class="bi bi-info-circle me-1"></i>Para desvincular la tarjeta, deja el campo vacío y pulsa guardar.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar tarjeta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# ─── Modal Ajustar Pases ─── #}
+{% if subscription and subscription.subscriptionType.isDailyPass %}
+<div class="modal fade" id="passesModal" tabindex="-1" aria-labelledby="passesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{{ path('app_subscription_adjust_passes', {'id': subscription.id}) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fs-6" id="passesModalLabel">
+                        <i class="bi bi-ticket-perforated me-1"></i>Ajustar pases
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="_token" value="{{ csrf_token('adjust_passes' ~ subscription.id) }}">
+                    <div class="mb-3">
+                        <label for="passesInput" class="form-label">Saldo de pases restantes</label>
+                        <input type="number" class="form-control" id="passesInput" name="passes"
+                               min="0" max="999" value="{{ subscription.remainingPasses ?? 0 }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-sm btn-primary">Guardar pases</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 {# ─── Delete modal ─── #}
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
@@ -233,4 +368,40 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+    // Polling lector de tarjetas si el modal de asignación está abierto
+    document.addEventListener('DOMContentLoaded', function () {
+        const cardField = document.getElementById('cardCodeField');
+        if (!cardField) return;
+
+        let pollingInterval = null;
+        const cardModal = document.getElementById('cardModal');
+
+        if (cardModal) {
+            cardModal.addEventListener('shown.bs.modal', function () {
+                pollingInterval = setInterval(async function () {
+                    try {
+                        const res = await fetch('/api/card-read');
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        if (data.success && data.card_id) {
+                            cardField.value = data.card_id;
+                            cardField.classList.add('is-valid');
+                            setTimeout(() => cardField.classList.remove('is-valid'), 2000);
+                            await fetch('/api/card-read/clear', { method: 'POST' });
+                        }
+                    } catch (e) {}
+                }, 1200);
+            });
+
+            cardModal.addEventListener('hidden.bs.modal', function () {
+                if (pollingInterval) clearInterval(pollingInterval);
+            });
+        }
+    });
+    </script>
 {% endblock %}

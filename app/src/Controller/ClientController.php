@@ -551,7 +551,26 @@ final class ClientController extends AbstractController
             }
         }
     
+        $referer = $request->headers->get('referer');
+        if ($referer && str_contains($referer, '/client/' . $client->getId())) {
+            return $this->redirectToRoute('app_client_show', ['id' => $client->getId()]);
+        }
         return $this->redirectToRoute('app_client_index');
+    }
+
+    #[Route('/{id}/assign-card', name: 'app_client_assign_card', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function assignCard(Request $request, Client $client, EntityManagerInterface $em): Response
+    {
+        if ($this->isCsrfTokenValid('assign_card' . $client->getId(), $request->request->get('_token'))) {
+            $cardCode = trim((string) $request->request->get('card_code', ''));
+            $client->setCardCode($cardCode !== '' ? $cardCode : null);
+            $em->flush();
+            $this->addFlash('success', $cardCode !== '' ? 'Tarjeta asignada correctamente.' : 'Tarjeta desvinculada.');
+        } else {
+            $this->addFlash('error', 'Token de seguridad inválido.');
+        }
+
+        return $this->redirectToRoute('app_client_show', ['id' => $client->getId()]);
     }
 
     #[Route('/system/mode/{action}', name: 'app_client_system_mode', methods: ['GET'], requirements: ['action' => 'normal|hidden'])]
