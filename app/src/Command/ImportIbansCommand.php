@@ -72,3 +72,4 @@ class ImportIbansCommand extends Command
         return Command::SUCCESS;
     }
 }
+
