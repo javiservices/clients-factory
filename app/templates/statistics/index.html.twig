@@ -1,0 +1,328 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Estadísticas y Premios - Santa María Gym{% endblock %}
+{% set page_title = 'Estadísticas de Asistencia' %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+    .stats-card-hero {
+        background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+        border: 2px solid #F59E0B;
+        border-radius: 16px;
+        color: #FFFFFF;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    }
+    .stats-card-hero::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .trophy-badge {
+        width: 72px;
+        height: 72px;
+        background: linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%);
+        color: #78350F;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+    }
+    .metric-pill {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        padding: 12px 18px;
+    }
+    .badge-medal-1 { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; font-weight: 700; }
+    .badge-medal-2 { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; font-weight: 700; }
+    .badge-medal-3 { background: #FFEDD5; color: #9A3412; border: 1px solid #FDBA74; font-weight: 700; }
+    .table-ranking tr { transition: background-color 0.15s ease; }
+    .table-ranking tr:hover { background-color: var(--c-gray-50, #F8FAFC); }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+
+    {# ─── Barra de Filtros y Encabezado ─── #}
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-warning text-dark px-2.5 py-1.5 rounded-pill fw-semibold">
+                    <i class="bi bi-trophy-fill me-1"></i>Ranking de Rentabilidad
+                </span>
+                <span class="text-muted small">Actualizado en tiempo real</span>
+            </div>
+            <h2 class="h3 fw-bold text-dark mt-1 mb-0">Estadísticas y Premios a Socios</h2>
+        </div>
+
+        {# Píldoras de filtro #}
+        <div class="d-flex align-items-center gap-2 bg-white p-1.5 rounded-3 border shadow-sm">
+            <span class="small text-muted px-2"><i class="bi bi-funnel me-1"></i>Ámbito:</span>
+            <a href="{{ path('app_statistics_index', {'scope': 'all'}) }}"
+               class="btn btn-sm {{ scope == 'all' ? 'btn-dark' : 'btn-light' }} rounded-2">
+                Todos los tiempos
+            </a>
+            <a href="{{ path('app_statistics_index', {'scope': 'active'}) }}"
+               class="btn btn-sm {{ scope == 'active' ? 'btn-dark' : 'btn-light' }} rounded-2">
+                Solo cuota activa
+            </a>
+        </div>
+    </div>
+
+    {# ─── HERO: El Ganador del Diploma / Socio Más Rentable ─── #}
+    {% if topProfitable %}
+    <div class="stats-card-hero p-4 p-md-5 mb-5">
+        <div class="row align-items-center gy-4">
+            <div class="col-12 col-lg-8">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="trophy-badge flex-shrink-0">
+                        <i class="bi bi-trophy-fill"></i>
+                    </div>
+                    <div>
+                        <div class="text-warning text-uppercase fw-bold letter-spacing-1 small">
+                            🏆 Premio Oficial de la Gerencia
+                        </div>
+                        <h3 class="h2 fw-bold text-white mb-0">
+                            {{ topProfitable.name }} {{ topProfitable.surname }}
+                        </h3>
+                        <div class="text-white-50 small mt-0.5">
+                            Socio #{{ topProfitable.id }} • {{ topProfitable.totalAccesses == 0 ? '👻 El Socio Fantasma Definitivo' : '💎 Socio Mecenas' }}
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-light opacity-90 mb-4" style="max-width: 620px; font-size: 0.95rem; line-height: 1.5;">
+                    Ha pagado religiosamente un total de <strong>{{ topProfitable.totalPaid|number_format(2, ',', '.') }} €</strong>
+                    registrando exactamente <strong>{{ topProfitable.totalAccesses }} visitas</strong> al gimnasio.
+                    Máxima rentabilidad para el club con un 0% de desgaste de maquinaria.
+                </p>
+
+                <div class="d-flex flex-wrap gap-3">
+                    <div class="metric-pill">
+                        <div class="text-white-50 small">Total Aportado</div>
+                        <div class="fs-4 fw-bold text-warning">{{ topProfitable.totalPaid|number_format(2, ',', '.') }} €</div>
+                    </div>
+                    <div class="metric-pill">
+                        <div class="text-white-50 small">Visitas Realizadas</div>
+                        <div class="fs-4 fw-bold text-white">{{ topProfitable.totalAccesses }} accesos</div>
+                    </div>
+                    <div class="metric-pill">
+                        <div class="text-white-50 small">Coste / Visita</div>
+                        <div class="fs-4 fw-bold text-success">{{ topProfitable.costPerVisit|number_format(2, ',', '.') }} €</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-4 text-lg-end">
+                <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.05); border: 1px dashed rgba(245, 158, 11, 0.4);">
+                    <div class="small text-warning fw-semibold mb-2">
+                        <i class="bi bi-award me-1"></i>Diploma de Honor Listo
+                    </div>
+                    <a href="{{ path('app_statistics_diploma', {'id': topProfitable.id}) }}"
+                       class="btn btn-warning btn-lg fw-bold w-100 text-dark shadow d-inline-flex align-items-center justify-content-center gap-2"
+                       style="background: linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%); border: none;">
+                        <i class="bi bi-printer-fill fs-5"></i>
+                        <span>Generar Diploma Oficial</span>
+                    </a>
+                    <div class="text-white-50 small mt-2">
+                        Listo para imprimir o descargar en PDF
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ─── Métricas Globales del Gimnasio ─── #}
+    <div class="row g-3 mb-5">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-3 h-100 p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-medium">Visitas Registradas</span>
+                    <span class="badge bg-primary-subtle text-primary p-2 rounded-circle"><i class="bi bi-door-open fs-6"></i></span>
+                </div>
+                <div class="fs-3 fw-bold text-dark">{{ (globalStats.total_gym_accesses ?? 0)|number_format(0, ',', '.') }}</div>
+                <div class="text-muted small mt-1">Accesos acumulados</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-3 h-100 p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-medium">Socios Donantes (0 visitas)</span>
+                    <span class="badge bg-warning-subtle text-warning p-2 rounded-circle"><i class="bi bi-ghost fs-6"></i></span>
+                </div>
+                <div class="fs-3 fw-bold text-dark">{{ (globalStats.zero_access_paying ?? 0)|number_format(0, ',', '.') }}</div>
+                <div class="text-muted small mt-1">Pagaron y nunca vinieron</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-3 h-100 p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-medium">Recaudación Total</span>
+                    <span class="badge bg-success-subtle text-success p-2 rounded-circle"><i class="bi bi-currency-euro fs-6"></i></span>
+                </div>
+                <div class="fs-3 fw-bold text-dark">{{ (globalStats.total_gym_revenue ?? 0)|number_format(0, ',', '.') }} €</div>
+                <div class="text-muted small mt-1">En cuotas acumuladas</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-3 h-100 p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-medium">Media de Visitas</span>
+                    <span class="badge bg-info-subtle text-info p-2 rounded-circle"><i class="bi bi-activity fs-6"></i></span>
+                </div>
+                <div class="fs-3 fw-bold text-dark">{{ (globalStats.avg_accesses_active ?? 0)|number_format(1, ',', '.') }}</div>
+                <div class="text-muted small mt-1">Por socio asistente</div>
+            </div>
+        </div>
+    </div>
+
+    {# ─── Tablas: TOP Rentables vs TOP Asiduos ─── #}
+    <div class="row g-4">
+        {# Columna Izquierda: Ranking Socios Más Rentables (Fantasma) #}
+        <div class="col-12 col-xl-7">
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+                    <div>
+                        <h4 class="h5 fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-ghost text-warning"></i>
+                            <span>TOP Socios Fantasma (Más Rentables)</span>
+                        </h4>
+                        <span class="text-muted small">Ordenados por menos visitas y mayor importe abonado</span>
+                    </div>
+                    <span class="badge bg-light text-secondary border">TOP 20</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-ranking align-middle mb-0">
+                        <thead class="table-light text-uppercase text-secondary" style="font-size: 0.72rem; letter-spacing: 0.5px;">
+                            <tr>
+                                <th class="ps-4" style="width: 60px;">#</th>
+                                <th>Cliente</th>
+                                <th class="text-end">Aportado</th>
+                                <th class="text-center">Visitas</th>
+                                <th class="text-end">Coste / Visita</th>
+                                <th class="text-end pe-4">Diploma</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for client in profitableClients %}
+                            <tr>
+                                <td class="ps-4">
+                                    {% if loop.index == 1 %}
+                                        <span class="badge badge-medal-1 rounded-circle p-2">🥇</span>
+                                    {% elseif loop.index == 2 %}
+                                        <span class="badge badge-medal-2 rounded-circle p-2">🥈</span>
+                                    {% elseif loop.index == 3 %}
+                                        <span class="badge badge-medal-3 rounded-circle p-2">🥉</span>
+                                    {% else %}
+                                        <span class="text-muted fw-bold">#{{ loop.index }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ path('app_client_show', {'id': client.id}) }}" class="fw-semibold text-dark text-decoration-none">
+                                        {{ client.name }} {{ client.surname }}
+                                    </a>
+                                    <div class="text-muted small font-monospace">#{{ client.id }}</div>
+                                </td>
+                                <td class="text-end fw-bold text-dark">
+                                    {{ client.totalPaid|number_format(2, ',', '.') }} €
+                                </td>
+                                <td class="text-center">
+                                    {% if client.totalAccesses == 0 %}
+                                        <span class="badge bg-danger-subtle text-danger fw-semibold px-2 py-1 rounded-pill">0 accesos</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark border px-2 py-1 rounded-pill">{{ client.totalAccesses }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <strong class="text-success">{{ client.costPerVisit|number_format(2, ',', '.') }} €</strong>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <a href="{{ path('app_statistics_diploma', {'id': client.id}) }}"
+                                       class="btn btn-sm btn-outline-warning text-dark fw-medium d-inline-flex align-items-center gap-1"
+                                       title="Ver diploma de {{ client.name }}">
+                                        <i class="bi bi-award"></i>
+                                        <span>Diploma</span>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">No se encontraron clientes para este filtro.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {# Columna Derecha: TOP Socios Más Asiduos #}
+        <div class="col-12 col-xl-5">
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+                    <div>
+                        <h4 class="h5 fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-fire text-danger"></i>
+                            <span>TOP Socios Más Fieles (Más Asiduos)</span>
+                        </h4>
+                        <span class="text-muted small">Los que más amortizan las instalaciones</span>
+                    </div>
+                    <span class="badge bg-light text-secondary border">TOP 10</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-ranking align-middle mb-0">
+                        <thead class="table-light text-uppercase text-secondary" style="font-size: 0.72rem; letter-spacing: 0.5px;">
+                            <tr>
+                                <th class="ps-4" style="width: 50px;">#</th>
+                                <th>Cliente</th>
+                                <th class="text-center">Accesos</th>
+                                <th class="text-end pe-4">Coste / Visita</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for client in frequentClients %}
+                            <tr>
+                                <td class="ps-4 text-muted fw-bold">#{{ loop.index }}</td>
+                                <td>
+                                    <a href="{{ path('app_client_show', {'id': client.id}) }}" class="fw-semibold text-dark text-decoration-none">
+                                        {{ client.name }} {{ client.surname }}
+                                    </a>
+                                    <div class="text-muted small font-monospace">#{{ client.id }}</div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary-subtle text-primary fw-bold px-2.5 py-1 rounded-pill">
+                                        {{ client.totalAccesses|number_format(0, ',', '.') }}
+                                    </span>
+                                </td>
+                                <td class="text-end pe-4 text-muted">
+                                    {{ client.costPerVisit|number_format(2, ',', '.') }} €
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">No hay registros de accesos.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

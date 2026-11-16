@@ -63,6 +63,12 @@ class Client
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $photo = null;
 
+    #[ORM\Column(type: Types::INTEGER, options: ['default' => 0])]
+    private int $totalAccesses = 0;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => '0.00'])]
+    private string $totalPaid = '0.00';
+
     /**
      * @var Collection<int, Subscription>
      */
@@ -405,5 +411,46 @@ class Client
         $this->photo = $photo;
 
         return $this;
+    }
+
+    public function getTotalAccesses(): int
+    {
+        return $this->totalAccesses;
+    }
+
+    public function setTotalAccesses(int $totalAccesses): static
+    {
+        $this->totalAccesses = $totalAccesses;
+
+        return $this;
+    }
+
+    public function incrementAccesses(int $amount = 1): static
+    {
+        $this->totalAccesses += $amount;
+
+        return $this;
+    }
+
+    public function getTotalPaid(): float
+    {
+        return (float) $this->totalPaid;
+    }
+
+    public function setTotalPaid(string|float $totalPaid): static
+    {
+        $this->totalPaid = is_float($totalPaid) ? number_format($totalPaid, 2, '.', '') : (string) $totalPaid;
+
+        return $this;
+    }
+
+    public function getCostPerVisit(): float
+    {
+        $paid = $this->getTotalPaid();
+        if ($this->totalAccesses <= 0) {
+            return $paid;
+        }
+
+        return round($paid / $this->totalAccesses, 2);
     }
 }

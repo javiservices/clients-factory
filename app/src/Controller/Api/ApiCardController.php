@@ -587,6 +587,7 @@ class ApiCardController extends AbstractController
         $log->setStatus($status);
         if ($status === 'success') {
             $client->setLastAccess(new \DateTime());
+            $client->incrementAccesses(1);
         }
         $this->entityManager->persist($log);
         $this->entityManager->flush();

@@ -38,6 +38,12 @@
             Registros
         </a>
 
+        <a class="sidebar-link {{ app.request.get('_route') starts with 'app_statistics' ? 'active' : '' }}"
+           href="{{ path('app_statistics_index') }}" aria-current="{{ app.request.get('_route') starts with 'app_statistics' ? 'page' : 'false' }}">
+            <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
+            Estadísticas
+        </a>
+
         <span class="sidebar-section-label">Cuenta</span>
 
         <a class="sidebar-link {{ app.request.get('_route') starts with 'profile' ? 'active' : '' }}"

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diploma al Socio Más Rentable - {{ client.name }} {{ client.surname }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Montserrat:wght@400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --gold-dark: #92400E;
+            --gold-primary: #D97706;
+            --gold-light: #FDE68A;
+            --cream-bg: #FCFBF7;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #0F172A;
+            font-family: 'Montserrat', sans-serif;
+            color: #1E293B;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        /* ─── Barra de Acciones Superior (No imprimible) ─── #*/
+        .action-bar {
+            width: 100%;
+            max-width: 960px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        .btn-back {
+            background: rgba(255, 255, 255, 0.1);
+            color: #E2E8F0;
+        }
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #FFFFFF;
+        }
+        .btn-print {
+            background: linear-gradient(135deg, #FDE68A 0%, #D97706 100%);
+            color: #451A03;
+            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.4);
+        }
+        .btn-print:hover {
+            filter: brightness(1.08);
+            transform: translateY(-1px);
+        }
+
+        /* ─── Marco del Diploma ─── #*/
+        .diploma-sheet {
+            width: 100%;
+            max-width: 960px;
+            background: var(--cream-bg);
+            border-radius: 4px;
+            padding: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .diploma-border-outer {
+            border: 4px solid var(--gold-primary);
+            padding: 8px;
+            position: relative;
+        }
+
+        .diploma-border-inner {
+            border: 2px solid var(--gold-dark);
+            padding: 40px 50px;
+            text-align: center;
+            background: radial-gradient(circle at center, #FFFFFF 0%, #FBF8EE 100%);
+            position: relative;
+        }
+
+        /* Adornos en esquinas */
+        .corner-ornament {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--gold-primary);
+        }
+        .corner-top-left { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        .corner-top-right { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+        .corner-bottom-left { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+        .corner-bottom-right { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+        /* Textos del Diploma */
+        .diploma-header-gym {
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            letter-spacing: 4px;
+            color: var(--gold-dark);
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .diploma-main-title {
+            font-family: 'Cinzel', serif;
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: #0F172A;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            line-height: 1.2;
+            margin-bottom: 6px;
+        }
+
+        .diploma-subtitle {
+            font-size: 0.95rem;
+            color: #64748B;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        .diploma-presented-to {
+            font-family: 'Great Vibes', cursive;
+            font-size: 2.2rem;
+            color: var(--gold-primary);
+            margin-bottom: 4px;
+        }
+
+        .diploma-recipient-name {
+            font-family: 'Cinzel', serif;
+            font-size: 2.3rem;
+            font-weight: 900;
+            color: #0F172A;
+            letter-spacing: 1.5px;
+            border-bottom: 2px solid var(--gold-primary);
+            display: inline-block;
+            padding: 0 40px 8px;
+            margin-bottom: 16px;
+        }
+
+        .diploma-citation {
+            font-size: 0.98rem;
+            line-height: 1.6;
+            color: #334155;
+            max-width: 720px;
+            margin: 0 auto 28px;
+            font-style: italic;
+        }
+
+        /* Grid de Métricas de Honor */
+        .diploma-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            max-width: 760px;
+            margin: 0 auto 36px;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 14px 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            color: #64748B;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .stat-val {
+            font-family: 'Cinzel', serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #0F172A;
+        }
+        .stat-val.highlight {
+            color: var(--gold-dark);
+        }
+
+        /* Firmas y Sello */
+        .diploma-footer {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            max-width: 760px;
+            margin: 0 auto;
+            padding-top: 10px;
+        }
+
+        .signature-block {
+            text-align: center;
+            width: 220px;
+        }
+        .signature-line {
+            border-top: 1px solid #0F172A;
+            padding-top: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #1E293B;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .signature-title {
+            font-size: 0.72rem;
+            color: #64748B;
+        }
+        .signature-art {
+            font-family: 'Great Vibes', cursive;
+            font-size: 1.8rem;
+            color: #1E293B;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Sello oficial dorado */
+        .gold-seal {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #FDE68A 0%, #D97706 70%, #92400E 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #FFFFFF;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            border: 2px dashed rgba(255, 255, 255, 0.7);
+        }
+        .seal-star { font-size: 1.2rem; }
+        .seal-text { font-size: 0.55rem; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
+
+        /* ─── Modo Impresión (A4 Apaisado / Horizontal) ─── #*/
+        @media print {
+            body {
+                background: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .action-bar {
+                display: none !important;
+            }
+            .diploma-sheet {
+                box-shadow: none !important;
+                max-width: 100% !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                border-radius: 0 !important;
+                padding: 15mm !important;
+            }
+            @page {
+                size: A4 landscape;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    {# ─── Barra de Acciones ─── #}
+    <div class="action-bar">
+        <a href="{{ path('app_statistics_index') }}" class="btn-action btn-back">
+            <i class="bi bi-arrow-left"></i>
+            <span>Volver a Estadísticas</span>
+        </a>
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ path('app_client_show', {'id': client.id}) }}" class="btn-action btn-back">
+                <i class="bi bi-person"></i>
+                <span>Ver Ficha de Socio</span>
+            </a>
+            <button onclick="window.print()" class="btn-action btn-print">
+                <i class="bi bi-printer-fill"></i>
+                <span>Imprimir / Guardar PDF</span>
+            </button>
+        </div>
+    </div>
+
+    {# ─── Hoja del Diploma ─── #}
+    <div class="diploma-sheet">
+        <div class="diploma-border-outer">
+            <div class="corner-ornament corner-top-left"></div>
+            <div class="corner-ornament corner-top-right"></div>
+            <div class="corner-ornament corner-bottom-left"></div>
+            <div class="corner-ornament corner-bottom-right"></div>
+
+            <div class="diploma-border-inner">
+                <div class="diploma-header-gym">Gimnasio Santa María • Logroño</div>
+                <h1 class="diploma-main-title">Certificado de Excelencia</h1>
+                <div class="diploma-subtitle">Al Socio Más Rentable y Donante de Honor</div>
+
+                <div class="diploma-presented-to">Otorgado con admiración y eterna gratitud a:</div>
+                <div class="diploma-recipient-name">{{ client.name }} {{ client.surname }}</div>
+                <div style="font-size: 0.85rem; color: #64748B; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">
+                    Socio Acreditado #{{ client.id }}
+                </div>
+
+                <p class="diploma-citation">
+                    "En reconocimiento formal a su disciplina financiera inquebrantable, abonando con puntualidad y rigor sus cuotas mensuales mientras cuidaba con esmero y delicadeza las instalaciones del gimnasio... manteniéndose prudentemente alejado de ellas."
+                </p>
+
+                {# Métricas de Honor #}
+                <div class="diploma-stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Total Aportado</div>
+                        <div class="stat-val highlight">{{ totalPaid|number_format(2, ',', '.') }} €</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Visitas Realizadas</div>
+                        <div class="stat-val">{{ totalAccesses }} accesos</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Coste / Visita</div>
+                        <div class="stat-val highlight">{{ costPerVisit|number_format(2, ',', '.') }} €</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Desgaste Maquinaria</div>
+                        <div class="stat-val" style="color: #10B981;">0.0%</div>
+                    </div>
+                </div>
+
+                {# Pie de Firmas y Sello #}
+                <div class="diploma-footer">
+                    <div class="signature-block">
+                        <div class="signature-art">La Dirección</div>
+                        <div class="signature-line">El Gerente Agradecido</div>
+                        <div class="signature-title">Santa María Gym</div>
+                    </div>
+
+                    <div class="gold-seal">
+                        <div class="seal-star">★</div>
+                        <div class="seal-text">SANTA MARÍA</div>
+                        <div class="seal-text">OFICIAL</div>
+                    </div>
+
+                    <div class="signature-block">
+                        <div class="signature-art">La Elíptica</div>
+                        <div class="signature-line">La Maquinaria Intacta</div>
+                        <div class="signature-title">Comité de Mantenimiento</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px; font-size: 0.72rem; color: #94A3B8; letter-spacing: 1px;">
+                    Expedido en Logroño a {{ today|date('d') }} de noviembre de {{ today|date('Y') }} • Registro Oficial de Socios Donantes
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

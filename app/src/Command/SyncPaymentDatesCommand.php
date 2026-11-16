@@ -151,3 +151,4 @@ class SyncPaymentDatesCommand extends Command
         return Command::SUCCESS;
     }
 }
+

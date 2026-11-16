@@ -16,10 +16,19 @@ class DashboardController extends AbstractController
 {
     #[Route('/', name: 'dashboard', methods: ['GET'])]
     #[Route('/dashboard', name: 'dashboard_alias', methods: ['GET'])]
-    public function dashboard(): Response
+    public function dashboard(ClientRepository $clientRepo): Response
     {
+        $topProfitable = $clientRepo->createQueryBuilder('c')
+            ->where('c.totalPaid >= 50')
+            ->orderBy('c.totalAccesses', 'ASC')
+            ->addOrderBy('c.totalPaid', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
         return $this->render('dashboard.html.twig', [
             'turnstileClients' => [],
+            'topProfitable'    => $topProfitable,
         ]);
     }
 
