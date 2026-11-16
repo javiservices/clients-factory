@@ -224,6 +224,87 @@ class ApiCardController extends AbstractController
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Verificación de credenciales de socio (Login SantaDoor: DNI + Código)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    #[Route('/client/verify-login', name: 'client_verify_login', methods: ['POST'])]
+    public function verifyLogin(Request $request, ClientRepository $clientRepository): JsonResponse
+    {
+        $data = [];
+        if ($request->getContent()) {
+            $data = json_decode($request->getContent(), true) ?? [];
+        }
+
+        $dni  = strtoupper(trim($data['dni'] ?? $request->request->get('dni') ?? ''));
+        $code = strtoupper(trim($data['code'] ?? $request->request->get('code') ?? ''));
+
+        if (!$dni || !$code) {
+            return $this->json(['success' => false, 'message' => 'Por favor introduce tu DNI y tu código de socio.'], 400);
+        }
+
+        $matchedClient = null;
+        foreach ($clientRepository->findAll() as $client) {
+            $clientDni = strtoupper(trim((string)$client->getIdNumber()));
+            if ($clientDni === $dni) {
+                $clientCard = strtoupper(trim((string)$client->getCardCode()));
+                $clientId   = (string)$client->getId();
+                if ($code === $clientId || $code === $clientCard) {
+                    $matchedClient = $client;
+                    break;
+                }
+            }
+        }
+
+        if (!$matchedClient) {
+            return $this->json(['success' => false, 'message' => 'Datos incorrectos. Verifica tu DNI y código de socio.'], 401);
+        }
+
+        $activeSub = null;
+        foreach ($matchedClient->getSubscriptions() as $sub) {
+            if ($sub->isActive()) {
+                $activeSub = $sub;
+                break;
+            }
+        }
+
+        $daysRemaining = null;
+        $warningMessage = null;
+        if ($activeSub) {
+            $endDate = $activeSub->getEndDate();
+            if ($endDate) {
+                $today = new \DateTime('today');
+                $endDay = (clone $endDate)->setTime(0, 0, 0);
+                $diff = (int) $today->diff($endDay)->format('%r%a');
+                $daysRemaining = max(0, $diff);
+                if ($diff <= 3 && $diff >= 0) {
+                    $warningMessage = ($diff === 0) ? 'Tu cuota vence HOY' : "Tu cuota vence en $diff días";
+                }
+            }
+        }
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Login correcto',
+            'client'  => [
+                'id'       => $matchedClient->getId(),
+                'name'     => $matchedClient->getName(),
+                'surname'  => $matchedClient->getSurname(),
+                'dni'      => $matchedClient->getIdNumber(),
+                'cardCode' => $matchedClient->getCardCode() ?: (string)$matchedClient->getId(),
+            ],
+            'subscription' => [
+                'active'          => $activeSub !== null,
+                'type'            => $activeSub?->getSubscriptionType()?->getName() ?: 'Sin cuota activa',
+                'endDate'         => $activeSub?->getEndDate()?->format('d/m/Y'),
+                'daysRemaining'   => $daysRemaining,
+                'warningMessage'  => $warningMessage,
+                'isDailyPass'     => $activeSub?->getSubscriptionType()?->isDailyPass() ?? false,
+                'remainingPasses' => $activeSub?->getRemainingPasses(),
+            ]
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // Apertura Remota desde App Móvil (SantaDoor)
     // ─────────────────────────────────────────────────────────────────────────
 

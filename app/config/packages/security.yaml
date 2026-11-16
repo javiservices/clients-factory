@@ -31,6 +31,10 @@ security:
         - { path: ^/login$, roles: PUBLIC_ACCESS }
         - { path: ^/logout$, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: PUBLIC_ACCESS }
+        - { path: ^/app, roles: PUBLIC_ACCESS }
+        - { path: ^/door, roles: PUBLIC_ACCESS }
+        - { path: ^/manifest\.webmanifest, roles: PUBLIC_ACCESS }
+        - { path: ^/SantaDoor\.apk, roles: PUBLIC_ACCESS }
         - { path: ^/, roles: ROLE_ADMIN }
 
 when@test:

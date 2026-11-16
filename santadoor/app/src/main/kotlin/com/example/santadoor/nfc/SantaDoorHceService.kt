@@ -51,3 +51,4 @@ class SantaDoorHceService : HostApduService() {
         Log.d(TAG, "HCE Desactivado: $reasonStr")
     }
 }
+

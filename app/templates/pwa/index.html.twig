@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>SantaDoor · Santamaría Gym</title>
+
+    <!-- PWA / iOS Web App Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SantaDoor">
+    <meta name="theme-color" content="#0F172A">
+    <link rel="manifest" href="/manifest.webmanifest">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+    <style>
+        :root {
+            --gym-red: #D72638;
+            --gym-red-dark: #9F1239;
+            --gym-gold: #F59E0B;
+            --gym-green: #10B981;
+            --bg-dark: #0B0F19;
+            --bg-card: #161F30;
+            --border-card: #2B3954;
+            --text-muted: #94A3B8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-dark);
+            color: #FFFFFF;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            padding-top: env(safe-area-inset-top, 20px);
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        /* ─── Header ─── */
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.25rem;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .gym-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+        }
+
+        .logo-emblem {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--gym-red), var(--gym-red-dark));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.15rem;
+            box-shadow: 0 4px 12px rgba(215, 38, 56, 0.4);
+        }
+
+        .logo-text h1 {
+            font-size: 1.05rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-text span {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        /* ─── Bottom Navigation Dock ─── */
+        .bottom-nav {
+            position: fixed;
+            bottom: calc(env(safe-area-inset-bottom, 12px) + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 2rem);
+            max-width: 400px;
+            background: rgba(22, 31, 48, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 999px;
+            display: flex;
+            justify-content: space-around;
+            padding: 0.4rem 0.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.45rem 1.25rem;
+            border-radius: 999px;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 600;
+            gap: 0.2rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item i {
+            font-size: 1.15rem;
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, var(--gym-red), var(--gym-red-dark));
+            color: #FFFFFF;
+            box-shadow: 0 4px 14px rgba(215, 38, 56, 0.4);
+        }
+
+        /* ─── Content Views ─── */
+        .view-container {
+            flex: 1;
+            padding: 1.25rem 1.25rem 6rem;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .view-container.active {
+            display: flex;
+        }
+
+        /* ─── Member Card ─── */
+        .member-card {
+            width: 100%;
+            max-width: 420px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 20px;
+            padding: 1.25rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            margin-bottom: 2rem;
+        }
+
+        .member-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .member-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        .member-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        .badge-pill {
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--gym-green);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--gym-gold);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        /* ─── Unlock Button Hero ─── */
+        .unlock-button-wrapper {
+            position: relative;
+            margin: auto 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pulse-halo {
+            position: absolute;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(215, 38, 56, 0.35) 0%, rgba(215, 38, 56, 0) 70%);
+            animation: pulseGlow 2.5s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0% { transform: scale(0.9); opacity: 0.4; }
+            50% { transform: scale(1.15); opacity: 0.8; }
+            100% { transform: scale(0.9); opacity: 0.4; }
+        }
+
+        .unlock-btn {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #E11D48, #9F1239);
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 16px 40px rgba(225, 29, 72, 0.5), inset 0 2px 6px rgba(255, 255, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 2;
+        }
+
+        .unlock-btn:active {
+            transform: scale(0.92);
+            box-shadow: 0 8px 20px rgba(225, 29, 72, 0.6);
+        }
+
+        .unlock-btn.success {
+            background: linear-gradient(145deg, #10B981, #047857);
+            box-shadow: 0 16px 40px rgba(16, 185, 129, 0.5);
+        }
+
+        .unlock-btn.opening {
+            transform: scale(0.96);
+            opacity: 0.9;
+        }
+
+        .unlock-btn-icon {
+            font-size: 3.5rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .unlock-btn-title {
+            font-size: 1.15rem;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .unlock-btn-sub {
+            font-size: 0.72rem;
+            opacity: 0.85;
+            margin-top: 0.2rem;
+        }
+
+        /* ─── QR Card ─── */
+        .qr-card {
+            background: #FFFFFF;
+            border-radius: 24px;
+            padding: 1.75rem;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 2rem 0;
+        }
+
+        #qrContainer {
+            width: 240px;
+            height: 240px;
+        }
+
+        /* ─── Login Screen ─── */
+        .login-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-dark);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 380px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 24px;
+            padding: 2rem 1.5rem;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            padding: 0.85rem 1rem;
+            color: #FFFFFF;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: var(--gym-red);
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: linear-gradient(135deg, var(--gym-red), var(--gym-red-dark));
+            border: none;
+            border-radius: 12px;
+            color: #FFFFFF;
+            padding: 0.95rem;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(215, 38, 56, 0.4);
+        }
+
+        /* ─── iOS Banner ─── */
+        .ios-banner {
+            width: 100%;
+            max-width: 420px;
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 0.85rem 1rem;
+            margin-top: 1rem;
+            font-size: 0.78rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ─── Login Screen (Si no está autenticado) ─── -->
+    <div id="loginScreen" class="login-screen" style="display:none;">
+        <div class="login-box">
+            <div class="logo-emblem" style="margin: 0 auto 1rem; width: 64px; height: 64px; font-size: 1.8rem;">S</div>
+            <h2 style="font-size: 1.35rem; font-weight: 800; margin-bottom: 0.35rem;">SANTAMARÍA GYM</h2>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.5rem;">SantaDoor · Acceso de Socios</p>
+
+            <div id="loginAlert" style="display:none; padding: 0.65rem; border-radius: 10px; background: rgba(239, 68, 68, 0.2); color: #FCA5A5; font-size: 0.8rem; margin-bottom: 1rem;"></div>
+
+            <input type="text" id="loginDni" class="form-input" placeholder="DNI o NIE (ej: 16555482J)" autocomplete="off" autocapitalize="characters">
+            <input type="text" id="loginCode" class="form-input" placeholder="Código de socio o ID (ej: 4773)" autocomplete="off">
+
+            <button class="btn-submit" id="btnLogin" onclick="doLogin()">
+                <span id="loginBtnText">Entrar a mi gimnasio</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ─── App Header ─── -->
+    <header class="app-header">
+        <div class="gym-logo">
+            <div class="logo-emblem">S</div>
+            <div class="logo-text">
+                <h1>SANTAMARÍA GYM</h1>
+                <span>SantaDoor · Acceso Móvil</span>
+            </div>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--gym-green); display: flex; align-items: center; gap: 0.35rem;">
+            <i class="bi bi-circle-fill" style="font-size: 0.55rem;"></i> En línea
+        </div>
+    </header>
+
+    <!-- ─── Vista 1: Torno / Apertura ─── -->
+    <main id="doorView" class="view-container active">
+        <div class="member-card">
+            <div class="member-card-header">
+                <div>
+                    <div class="member-name" id="cardMemberName">Cargando...</div>
+                    <div class="member-sub" id="cardMemberSub">Consultando cuota...</div>
+                </div>
+                <div class="badge-pill" id="cardMemberBadge">—</div>
+            </div>
+        </div>
+
+        <div class="unlock-button-wrapper">
+            <div class="pulse-halo"></div>
+            <button class="unlock-btn" id="btnUnlock" onclick="triggerUnlock()">
+                <div class="unlock-btn-icon" id="unlockIcon">🚪</div>
+                <div class="unlock-btn-title" id="unlockTitle">ABRIR TORNO</div>
+                <div class="unlock-btn-sub" id="unlockSub">Toca para desbloquear</div>
+            </button>
+        </div>
+
+        <!-- Banner para iOS Safari -->
+        <div class="ios-banner" id="iosInstallBanner" style="display:none;">
+            <i class="bi bi-apple" style="font-size: 1.5rem; color: #FFF;"></i>
+            <div>
+                <strong>Instalar en tu iPhone:</strong> Pulsa en <em>Compartir</em> <i class="bi bi-box-arrow-up"></i> y luego en <em>"Añadir a pantalla de inicio"</em>.
+            </div>
+        </div>
+    </main>
+
+    <!-- ─── Vista 2: Pase QR ─── -->
+    <main id="qrView" class="view-container">
+        <h2 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.25rem;">Pase Digital de Acceso</h2>
+        <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center;">Muestra este código al escáner óptico del torno</p>
+
+        <div class="qr-card">
+            <div id="qrContainer"></div>
+        </div>
+
+        <div style="text-align: center;">
+            <h3 id="qrClientName" style="font-size: 1.05rem; font-weight: 700;">—</h3>
+            <p id="qrClientCode" style="font-size: 0.85rem; color: var(--gym-gold); font-family: monospace; font-weight: 700; margin-top: 0.2rem;">ID: —</p>
+        </div>
+    </main>
+
+    <!-- ─── Vista 3: Mi Cuenta ─── -->
+    <main id="settingsView" class="view-container">
+        <h2 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.25rem;">Mi Cuenta</h2>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.5rem;">Detalles del socio y sesión</p>
+
+        <div class="member-card">
+            <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Nombre y Apellidos</div>
+                    <div id="accName" style="font-weight: 700; font-size: 1rem;">—</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">DNI / NIE</div>
+                    <div id="accDni" style="font-weight: 600; font-family: monospace;">—</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Código de Tarjeta / Socio</div>
+                    <div id="accCode" style="font-weight: 600; font-family: monospace; color: var(--gym-gold);">—</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Cuota Actual</div>
+                    <div id="accSub" style="font-weight: 600;">—</div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-submit" style="background: rgba(239, 68, 68, 0.2); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.4); max-width: 420px;" onclick="doLogout()">
+            <i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión
+        </button>
+    </main>
+
+    <!-- ─── Bottom Navigation Dock ─── -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('door')">
+            <i class="bi bi-door-open-fill"></i>
+            <span>Torno</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('qr')">
+            <i class="bi bi-qr-code-scan"></i>
+            <span>Pase QR</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('settings')">
+            <i class="bi bi-person-fill"></i>
+            <span>Mi Cuenta</span>
+        </div>
+    </nav>
+
+    <script>
+        const API_KEY = 'S@NT4M@R146YM';
+        let currentClient = null;
+
+        function checkAuth() {
+            const stored = localStorage.getItem('santadoor_client');
+            if (stored) {
+                try {
+                    currentClient = JSON.parse(stored);
+                    updateUI();
+                    document.getElementById('loginScreen').style.display = 'none';
+                    refreshStatus();
+                } catch(e) {
+                    showLogin();
+                }
+            } else {
+                showLogin();
+            }
+        }
+
+        function showLogin() {
+            document.getElementById('loginScreen').style.display = 'flex';
+        }
+
+        async function doLogin() {
+            const dni = document.getElementById('loginDni').value.trim().toUpperCase();
+            const code = document.getElementById('loginCode').value.trim().toUpperCase();
+            const alertEl = document.getElementById('loginAlert');
+            const btnText = document.getElementById('loginBtnText');
+
+            if (!dni || !code) {
+                alertEl.textContent = 'Introduce tu DNI y tu código de socio.';
+                alertEl.style.display = 'block';
+                return;
+            }
+
+            alertEl.style.display = 'none';
+            btnText.textContent = 'Verificando...';
+
+            try {
+                const res = await fetch('/api/client/verify-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dni, code })
+                });
+                const data = await res.json();
+
+                if (data.success && data.client) {
+                    currentClient = {
+                        id: data.client.id,
+                        name: `${data.client.name} ${data.client.surname}`.trim(),
+                        dni: data.client.dni,
+                        code: data.client.cardCode,
+                        subType: data.subscription.type,
+                        daysRemaining: data.subscription.daysRemaining,
+                        warningMessage: data.subscription.warningMessage
+                    };
+                    localStorage.setItem('santadoor_client', JSON.stringify(currentClient));
+                    document.getElementById('loginScreen').style.display = 'none';
+                    updateUI();
+                } else {
+                    alertEl.textContent = data.message || 'Datos no encontrados.';
+                    alertEl.style.display = 'block';
+                }
+            } catch (e) {
+                alertEl.textContent = 'Error de conexión con el servidor.';
+                alertEl.style.display = 'block';
+            } finally {
+                btnText.textContent = 'Entrar a mi gimnasio';
+            }
+        }
+
+        function doLogout() {
+            if (confirm('¿Cerrar sesión de SantaDoor en este dispositivo?')) {
+                localStorage.removeItem('santadoor_client');
+                currentClient = null;
+                showLogin();
+            }
+        }
+
+        function updateUI() {
+            if (!currentClient) return;
+
+            document.getElementById('cardMemberName').textContent = currentClient.name;
+            document.getElementById('cardMemberSub').textContent = currentClient.subType;
+
+            const badge = document.getElementById('cardMemberBadge');
+            if (currentClient.daysRemaining !== null && currentClient.daysRemaining !== undefined) {
+                badge.textContent = currentClient.daysRemaining === 0 ? 'Vence HOY' : `${currentClient.daysRemaining} días`;
+                if (currentClient.daysRemaining <= 3) {
+                    badge.className = 'badge-pill badge-warning';
+                } else {
+                    badge.className = 'badge-pill';
+                }
+            } else {
+                badge.textContent = 'Activa';
+            }
+
+            document.getElementById('accName').textContent = currentClient.name;
+            document.getElementById('accDni').textContent = currentClient.dni;
+            document.getElementById('accCode').textContent = currentClient.code;
+            document.getElementById('accSub').textContent = currentClient.subType;
+
+            document.getElementById('qrClientName').textContent = currentClient.name;
+            document.getElementById('qrClientCode').textContent = `Código: ${currentClient.code}`;
+
+            renderQr(currentClient.code);
+        }
+
+        async function refreshStatus() {
+            if (!currentClient) return;
+            try {
+                const res = await fetch(`/api/check-card?card_id=${encodeURIComponent(currentClient.code)}&api_key=${API_KEY}`, {
+                    headers: { 'X-Api-Key': API_KEY }
+                });
+                const data = await res.json();
+                if (data.success && data.subscription) {
+                    currentClient.subType = data.subscription.type;
+                    currentClient.daysRemaining = data.days_remaining;
+                    localStorage.setItem('santadoor_client', JSON.stringify(currentClient));
+                    updateUI();
+                }
+            } catch(e) {}
+        }
+
+        let qrCodeInstance = null;
+        function renderQr(code) {
+            const container = document.getElementById('qrContainer');
+            container.innerHTML = '';
+            qrCodeInstance = new QRCode(container, {
+                text: code,
+                width: 240,
+                height: 240,
+                colorDark: "#0F172A",
+                colorLight: "#FFFFFF",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        let isUnlocking = false;
+        async function triggerUnlock() {
+            if (isUnlocking || !currentClient) return;
+            isUnlocking = true;
+
+            const btn = document.getElementById('btnUnlock');
+            const icon = document.getElementById('unlockIcon');
+            const title = document.getElementById('unlockTitle');
+            const sub = document.getElementById('unlockSub');
+
+            btn.classList.add('opening');
+            icon.textContent = '⏳';
+            title.textContent = 'ABRIENDO...';
+            sub.textContent = 'Contactando con el torno';
+
+            if (navigator.vibrate) navigator.vibrate(80);
+
+            try {
+                const res = await fetch('/api/door/open', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Api-Key': API_KEY
+                    },
+                    body: JSON.stringify({
+                        card_id: currentClient.code,
+                        api_key: API_KEY,
+                        source: 'santadoor_ios_pwa'
+                    })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    if (navigator.vibrate) navigator.vibrate([100, 80, 200]);
+                    btn.classList.remove('opening');
+                    btn.classList.add('success');
+                    icon.textContent = '🔓';
+                    title.textContent = '¡ABIERTO!';
+                    sub.textContent = 'Pase autorizado · Torno activo';
+
+                    setTimeout(() => {
+                        btn.classList.remove('success');
+                        icon.textContent = '🚪';
+                        title.textContent = 'ABRIR TORNO';
+                        sub.textContent = 'Toca para desbloquear';
+                        isUnlocking = false;
+                    }, 4000);
+                } else {
+                    btn.classList.remove('opening');
+                    icon.textContent = '❌';
+                    title.textContent = 'DENEGADO';
+                    sub.textContent = data.message || 'Cuota no activa';
+
+                    setTimeout(() => {
+                        icon.textContent = '🚪';
+                        title.textContent = 'ABRIR TORNO';
+                        sub.textContent = 'Toca para desbloquear';
+                        isUnlocking = false;
+                    }, 3000);
+                }
+            } catch (e) {
+                btn.classList.remove('opening');
+                icon.textContent = '⚠️';
+                title.textContent = 'ERROR RED';
+                sub.textContent = 'No se pudo conectar al torno';
+
+                setTimeout(() => {
+                    icon.textContent = '🚪';
+                    title.textContent = 'ABRIR TORNO';
+                    sub.textContent = 'Toca para desbloquear';
+                    isUnlocking = false;
+                }, 3000);
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+            if (tab === 'door') {
+                document.getElementById('doorView').classList.add('active');
+                document.querySelectorAll('.nav-item')[0].classList.add('active');
+            } else if (tab === 'qr') {
+                document.getElementById('qrView').classList.add('active');
+                document.querySelectorAll('.nav-item')[1].classList.add('active');
+            } else if (tab === 'settings') {
+                document.getElementById('settingsView').classList.add('active');
+                document.querySelectorAll('.nav-item')[2].classList.add('active');
+            }
+        }
+
+        // Detección de iOS para mostrar banner de instalación en Safari
+        const isIos = () => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+        const isStandalone = window.navigator.standalone === true;
+        if (isIos() && !isStandalone) {
+            document.getElementById('iosInstallBanner').style.display = 'flex';
+        }
+
+        document.addEventListener('DOMContentLoaded', checkAuth);
+    </script>
+</body>
+</html>

@@ -1,12 +1,19 @@
-// Dashboard JavaScript
+// Dashboard JavaScript con Smart Diffing (cero parpadeos)
+let lastClientsData = null;
+
 function renderClients(clients) {
     const container = document.getElementById('turnstileClients');
     if (!container) return;
 
-    container.innerHTML = '';
-    if (clients.length === 0) {
+    const currentJson = JSON.stringify(clients);
+    if (currentJson === lastClientsData) {
+        return; // Sin cambios, no tocamos el DOM
+    }
+    lastClientsData = currentJson;
+
+    if (!clients || clients.length === 0) {
         container.innerHTML = `
-            <div class="col-12">
+            <div class="col-12" style="animation: fadeIn 0.3s ease;">
                 <div class="waiting-state">
                     <div class="waiting-icon">
                         <i class="bi bi-person-plus"></i>
@@ -18,6 +25,7 @@ function renderClients(clients) {
         return;
     }
 
+    let html = '';
     clients.forEach(client => {
         const lastAccessFormatted = client.lastAccess ? new Date(client.lastAccess).toLocaleString('es-ES', {
             year: 'numeric',
@@ -36,7 +44,6 @@ function renderClients(clients) {
             <i class="bi bi-pencil-square me-2"></i>Editar
         </a>`;
 
-        // Botón de renovar con token CSRF válido
         actions += `<form method="post" action="/client/${client.id}/renew" style="display:inline;">
             <input type="hidden" name="_token" value="${client.csrfToken || ''}">
             <button type="submit" class="btn btn-dashboard btn-success-dashboard">
@@ -50,20 +57,17 @@ function renderClients(clients) {
                </div>`
             : `<div class="client-avatar"><i class="bi bi-person-circle"></i></div>`;
 
-        container.innerHTML += `
-            <div class="col-12 col-lg-10 col-xl-8">
+        html += `
+            <div class="col-12 col-lg-10 col-xl-8" style="animation: fadeIn 0.3s ease;">
                 <div class="client-card updated">
                     <div class="client-info">
                         ${avatarHtml}
-
                         <h2 class="client-name">${client.name} ${client.surname}</h2>
-
                         <div class="text-center mb-3">
                             <span class="status-indicator ${statusClass}">
                                 <i class="bi bi-circle-fill me-2"></i>${statusText}
                             </span>
                         </div>
-
                         <div class="client-details">
                             <div class="detail-item">
                                 <div class="detail-label">ID Cliente</div>
@@ -78,7 +82,6 @@ function renderClients(clients) {
                                 <div class="detail-value">${lastAccessFormatted}</div>
                             </div>
                         </div>
-
                         <div class="action-buttons">
                             ${actions}
                         </div>
@@ -87,6 +90,7 @@ function renderClients(clients) {
             </div>
         `;
     });
+    container.innerHTML = html;
 }
 
 function fetchClients() {
@@ -109,12 +113,14 @@ function updateLastUpdate() {
         minute: '2-digit',
         second: '2-digit'
     });
-    document.getElementById('lastUpdate').textContent = `Última actualización: ${timeString}`;
+    const elem = document.getElementById('lastUpdate');
+    if (elem) elem.textContent = `Última actualización: ${timeString}`;
     updateConnectionStatus(true);
 }
 
 function updateConnectionStatus(connected) {
     const statusElement = document.getElementById('connectionStatus');
+    if (!statusElement) return;
     if (connected) {
         statusElement.className = 'bi bi-circle-fill text-success me-1';
     } else {
@@ -124,5 +130,5 @@ function updateConnectionStatus(connected) {
 
 document.addEventListener('DOMContentLoaded', function() {
     fetchClients();
-    setInterval(fetchClients, 5000); // Actualiza cada 5 segundos
+    setInterval(fetchClients, 5000);
 });

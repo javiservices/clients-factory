@@ -4,7 +4,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.BufferedReader
-import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
@@ -35,10 +34,23 @@ data class UnlockResult(
     val clientName: String? = null
 )
 
+data class LoginResult(
+    val success: Boolean,
+    val message: String,
+    val clientName: String,
+    val dni: String,
+    val cardCode: String,
+    val subscriptionType: String,
+    val daysRemaining: Int?,
+    val warningMessage: String?,
+    val isDailyPass: Boolean = false,
+    val remainingPasses: Int? = null
+)
+
 class DoorRepository {
 
     init {
-        // Permitir certificados autofirmados / Let's Encrypt de DuckDNS en entornos locales de pruebas
+        // Permitir certificados DuckDNS en conexiones locales de pruebas
         setupTrustAllSsl()
     }
 
@@ -56,7 +68,89 @@ class DoorRepository {
         } catch (_: Exception) {}
     }
 
-    suspend fun checkCard(serverUrl: String, cardId: String, apiKey: String): Result<CheckCardResult> =
+    /**
+     * Valida credenciales de socio: DNI + Código de socio / Tarjeta
+     */
+    suspend fun login(serverUrl: String, dni: String, code: String): Result<LoginResult> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanUrl = serverUrl.trimEnd('/')
+                val endpoint = "$cleanUrl/api/client/verify-login"
+                val url = URL(endpoint)
+                val conn = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    connectTimeout = 5000
+                    readTimeout = 5000
+                    doOutput = true
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                }
+
+                val payload = JSONObject().apply {
+                    put("dni", dni.trim().uppercase())
+                    put("code", code.trim().uppercase())
+                }.toString()
+
+                conn.outputStream.use { os ->
+                    os.write(payload.toByteArray(Charsets.UTF_8))
+                }
+
+                val responseCode = conn.responseCode
+                val stream = if (responseCode in 200..299) conn.inputStream else conn.errorStream
+                val responseText = stream?.bufferedReader()?.use(BufferedReader::readText) ?: "{}"
+                val json = JSONObject(responseText)
+
+                val success = json.optBoolean("success", responseCode in 200..299)
+                val message = json.optString("message", if (success) "Inicio de sesión correcto" else "Datos incorrectos")
+
+                if (!success) {
+                    return@withContext Result.failure(Exception(message))
+                }
+
+                val clientObj = json.optJSONObject("client")
+                val name = clientObj?.optString("name", "") ?: ""
+                val surname = clientObj?.optString("surname", "") ?: ""
+                val fullName = "$name $surname".trim().ifEmpty { "Socio Santamaría" }
+                val clientDni = clientObj?.optString("dni", dni) ?: dni
+                val cardCode = clientObj?.optString("cardCode", code) ?: code
+
+                val subObj = json.optJSONObject("subscription")
+                val subType = subObj?.optString("type", "Cuota Activa") ?: "Cuota Activa"
+                val daysRemaining = if (subObj != null && subObj.has("daysRemaining") && !subObj.isNull("daysRemaining")) {
+                    subObj.getInt("daysRemaining")
+                } else null
+                val warning = if (subObj != null && subObj.has("warningMessage") && !subObj.isNull("warningMessage")) {
+                    subObj.getString("warningMessage")
+                } else null
+                val isDaily = subObj?.optBoolean("isDailyPass", false) ?: false
+                val remainingPasses = if (subObj != null && subObj.has("remainingPasses") && !subObj.isNull("remainingPasses")) {
+                    subObj.getInt("remainingPasses")
+                } else null
+
+                Result.success(
+                    LoginResult(
+                        success = true,
+                        message = message,
+                        clientName = fullName,
+                        dni = clientDni,
+                        cardCode = cardCode,
+                        subscriptionType = subType,
+                        daysRemaining = daysRemaining,
+                        warningMessage = warning,
+                        isDailyPass = isDaily,
+                        remainingPasses = remainingPasses
+                    )
+                )
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun checkCard(
+        serverUrl: String,
+        cardId: String,
+        apiKey: String = DoorPreferences.INTERNAL_API_KEY
+    ): Result<CheckCardResult> =
         withContext(Dispatchers.IO) {
             try {
                 val cleanUrl = serverUrl.trimEnd('/')
@@ -121,7 +215,11 @@ class DoorRepository {
             }
         }
 
-    suspend fun unlockDoor(serverUrl: String, cardId: String, apiKey: String): Result<UnlockResult> =
+    suspend fun unlockDoor(
+        serverUrl: String,
+        cardId: String,
+        apiKey: String = DoorPreferences.INTERNAL_API_KEY
+    ): Result<UnlockResult> =
         withContext(Dispatchers.IO) {
             try {
                 // Primero validamos la cuota con checkCard
@@ -138,7 +236,6 @@ class DoorRepository {
 
                 // Disparamos la señal de apertura remota al endpoint de apertura
                 val cleanUrl = serverUrl.trimEnd('/')
-                val encodedCard = URLEncoder.encode(cardId.trim(), "UTF-8")
                 val openEndpoint = "$cleanUrl/api/door/open"
 
                 val openUrl = URL(openEndpoint)
@@ -180,13 +277,13 @@ class DoorRepository {
                     )
                 )
             } catch (e: Exception) {
-                // Si /api/door/open aún no está en el backend, el propio checkCard valida y autoriza la entrada
+                // Fallback de validación si el endpoint /api/door/open tuviera cualquier contingencia
                 try {
                     val fallbackCheck = checkCard(serverUrl, cardId, apiKey).getOrThrow()
                     Result.success(
                         UnlockResult(
                             success = fallbackCheck.success,
-                            message = if (fallbackCheck.success) "¡Acceso autorizador verificado!" else fallbackCheck.message,
+                            message = if (fallbackCheck.success) "¡Acceso autorizado verificado!" else fallbackCheck.message,
                             warning = fallbackCheck.warning,
                             warningMessage = fallbackCheck.warningMessage,
                             clientName = fallbackCheck.clientName
