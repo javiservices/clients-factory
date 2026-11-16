@@ -213,8 +213,13 @@
     color: var(--c-gray-500, #64748b);
 }
 @media (max-width: 576px) {
-    .topbar-title { display: none; }
-    .topbar-search-wrap { max-width: 100% !important; margin: 0 0.5rem !important; }
+    .topbar { padding: 0 0.5rem !important; }
+    .topbar-title { display: none !important; }
+    .topbar-left { gap: 0.25rem !important; }
+    .topbar-right { gap: 0.25rem !important; }
+    .topbar-search-wrap { max-width: none !important; margin: 0 0.35rem !important; flex: 1 1 auto !important; }
+    .topbar-search-box { padding: 0.2rem 0.5rem !important; }
+    .topbar-search-input { font-size: 0.8rem !important; }
 }
 </style>
 
