@@ -7,7 +7,7 @@ set -e
 
 PROJECT_DIR="/var/www/clients-factory"
 CONTAINER_NAME="clients-factory-app-1"
-BRANCH="${1:-develop}"
+BRANCH="${1:-main}"
 
 echo "=================================================="
 echo "🚀 Iniciando despliegue automático: rama [$BRANCH]"
@@ -47,3 +47,4 @@ docker exec "$CONTAINER_NAME" php bin/console cache:clear
 echo "=================================================="
 echo "✅ Despliegue completado con éxito en: $(date)"
 echo "=================================================="
+

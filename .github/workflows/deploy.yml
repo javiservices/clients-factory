@@ -3,8 +3,7 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - develop
-      - master
+      - main
   workflow_dispatch:
 
 jobs:
@@ -20,4 +19,4 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: 22
           script: |
-            bash /var/www/clients-factory/deploy.sh ${{ github.ref_name }}
+            bash /var/www/clients-factory/deploy.sh main
