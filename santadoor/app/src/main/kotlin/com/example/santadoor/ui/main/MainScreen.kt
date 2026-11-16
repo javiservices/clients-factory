@@ -71,6 +71,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -81,6 +82,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.santadoor.R
 import com.example.santadoor.ui.qr.QrCodeGenerator
 
 // Paleta corporativa premium Santamaría Gym
@@ -135,23 +137,14 @@ fun MainScreen(
                 TopAppBar(
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
+                            Image(
+                                painter = painterResource(id = R.drawable.logo_santamaria),
+                                contentDescription = "Logo Santamaría Gym",
                                 modifier = Modifier
                                     .size(38.dp)
                                     .clip(CircleShape)
-                                    .background(
-                                        Brush.linearGradient(listOf(GymPrimary, GymPrimaryDark))
-                                    )
-                                    .border(1.5.dp, Color(0xFFFDA4AF), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "S",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 19.sp
-                                )
-                            }
+                                    .border(1.5.dp, Color(0xFFFDA4AF), CircleShape)
+                            )
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
@@ -273,26 +266,15 @@ private fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Emblema Santamaría Gym
-            Box(
+            Image(
+                painter = painterResource(id = R.drawable.logo_santamaria),
+                contentDescription = "Logo Santamaría Gym",
                 modifier = Modifier
-                    .size(88.dp)
+                    .size(96.dp)
                     .clip(CircleShape)
-                    .background(
-                        Brush.radialGradient(
-                            listOf(GymPrimary, GymPrimaryDark, GymPrimaryDeep)
-                        )
-                    )
                     .border(2.dp, Color(0xFFFDA4AF), CircleShape)
-                    .shadow(16.dp, CircleShape, spotColor = GymPrimary),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "S",
-                    color = Color.White,
-                    fontSize = 44.sp,
-                    fontWeight = FontWeight.Black
-                )
-            }
+                    .shadow(16.dp, CircleShape, spotColor = GymPrimary)
+            )
 
             Spacer(modifier = Modifier.height(18.dp))
 

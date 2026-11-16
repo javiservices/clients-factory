@@ -10,6 +10,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SantaDoor">
     <meta name="theme-color" content="#0F172A">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="manifest" href="/manifest.webmanifest">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -75,14 +78,11 @@
         .logo-emblem {
             width: 38px;
             height: 38px;
-            background: linear-gradient(135deg, var(--gym-red), var(--gym-red-dark));
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 900;
-            font-size: 1.15rem;
+            object-fit: cover;
+            display: block;
             box-shadow: 0 4px 12px rgba(215, 38, 56, 0.4);
+            border: 1.5px solid rgba(253, 164, 175, 0.4);
         }
 
         .logo-text h1 {
@@ -366,7 +366,7 @@
     <!-- ─── Login Screen (Si no está autenticado) ─── -->
     <div id="loginScreen" class="login-screen" style="display:none;">
         <div class="login-box">
-            <div class="logo-emblem" style="margin: 0 auto 1rem; width: 64px; height: 64px; font-size: 1.8rem;">S</div>
+            <img src="/images/logo-round.png" alt="Santamaría Gym" class="logo-emblem" style="margin: 0 auto 1.25rem; width: 76px; height: 76px;">
             <h2 style="font-size: 1.35rem; font-weight: 800; margin-bottom: 0.35rem;">SANTAMARÍA GYM</h2>
             <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.5rem;">SantaDoor · Acceso de Socios</p>
 
@@ -384,7 +384,7 @@
     <!-- ─── App Header ─── -->
     <header class="app-header">
         <div class="gym-logo">
-            <div class="logo-emblem">S</div>
+            <img src="/images/logo-round.png" alt="Santamaría Gym" class="logo-emblem">
             <div class="logo-text">
                 <h1>SANTAMARÍA GYM</h1>
                 <span>SantaDoor · Acceso Móvil</span>
