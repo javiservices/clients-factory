@@ -231,7 +231,7 @@
                             </div>
 
                             {# Franja intermedia: Tarifa / Suscripción + DNI #}
-                            <div class="client-sub-strip d-flex align-items-center justify-content-between gap-2 mb-3">
+                            <div class="client-sub-strip d-flex align-items-center justify-content-between gap-2 mb-2">
                                 <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;" title="{{ clientData.subscriptionType ?: 'Sin cuota' }}">
                                     <i class="bi bi-tag-fill me-1" style="color:var(--c-primary,#D72638); font-size: 0.78rem;"></i>
                                     <span class="fw-semibold text-dark text-truncate">{{ clientData.subscriptionType ?: 'Sin cuota' }}</span>
@@ -240,6 +240,23 @@
                                     <div class="text-secondary font-monospace flex-shrink-0 ms-2" style="font-size: 0.76rem;" title="DNI / NIE">
                                         <i class="bi bi-person-vcard text-muted me-1"></i>{{ clientData.client.idNumber }}
                                     </div>
+                                {% endif %}
+                            </div>
+
+                            {# Información de último mes pagado y vencimiento #}
+                            <div class="d-flex align-items-center justify-content-between gap-2 mb-3" style="font-size: 0.76rem; color: var(--c-gray-500, #64748B);">
+                                <div class="d-inline-flex align-items-center text-truncate" title="Último mes abonado">
+                                    <i class="bi bi-calendar-check text-secondary me-1.5" style="font-size: 0.74rem;"></i>
+                                    {% if clientData.lastPaidMonth %}
+                                        <span>Último mes: <strong class="text-dark">{{ clientData.lastPaidMonth }}</strong></span>
+                                    {% else %}
+                                        <span class="text-muted">Sin pagos</span>
+                                    {% endif %}
+                                </div>
+                                {% if clientData.paymentUntil %}
+                                    <span class="flex-shrink-0" title="Pagado hasta el {{ clientData.paymentUntil|date('d/m/Y') }}">
+                                        Hasta: <strong class="text-dark">{{ clientData.paymentUntil|date('d/m/Y') }}</strong>
+                                    </span>
                                 {% endif %}
                             </div>
                         </div>

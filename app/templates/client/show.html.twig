@@ -229,10 +229,15 @@
                         </div>
                     </div>
 
-                    {# Pagado hasta #}
+                    {# Pagado hasta y Último mes #}
                     <div class="col-6 col-md-3">
-                        <div class="small" style="color:var(--c-gray-500)">Pagado hasta</div>
-                        <div class="fw-semibold mt-1">{{ paymentUntil ? paymentUntil|date('d/m/Y') : '—' }}</div>
+                        <div class="small" style="color:var(--c-gray-500)">Último mes abonado</div>
+                        <div class="fw-semibold mt-1">
+                            {{ lastPaidMonth ?: 'Sin pagos' }}
+                            {% if paymentUntil %}
+                                <div class="text-muted small fw-normal">(Hasta {{ paymentUntil|date('d/m/Y') }})</div>
+                            {% endif %}
+                        </div>
                     </div>
 
                     {# Fecha de alta #}

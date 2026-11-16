@@ -170,16 +170,31 @@ final class ClientController extends AbstractController
         /** @var Client[] $clients */
         $clients = $qb->getQuery()->getResult();
 
+        $monthNames = [
+            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+            5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+            9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+        ];
+
         // 5. Mapear únicamente los clientes de la página actual
         $clientsWithPaymentStatus = [];
         foreach ($clients as $client) {
             $sub = $client->getSubscriptions()->last() ?: null;
             $hasPaid = false;
             $subscriptionTypeName = $sub ? $sub->getSubscriptionType()?->getName() : '—';
+            $lastPaidMonth = null;
+            $paymentUntil = null;
 
-            if ($sub && $sub->isActive()) {
+            if ($sub) {
                 $lastPaymentDate = $sub->getLastPaymentDate();
-                if ($lastPaymentDate && $lastPaymentDate->format('Y-m') === $currentDate->format('Y-m')) {
+                if ($lastPaymentDate) {
+                    $m = (int) $lastPaymentDate->format('n');
+                    $y = $lastPaymentDate->format('Y');
+                    $lastPaidMonth = ($monthNames[$m] ?? '') . ' ' . $y;
+                }
+                $paymentUntil = $sub->getEndDate();
+
+                if ($sub->isActive() && $lastPaymentDate && $lastPaymentDate->format('Y-m') === $currentDate->format('Y-m')) {
                     $hasPaid = true;
                 }
             }
@@ -188,6 +203,8 @@ final class ClientController extends AbstractController
                 'client' => $client,
                 'hasPaid' => $hasPaid,
                 'subscriptionType' => $subscriptionTypeName,
+                'lastPaidMonth' => $lastPaidMonth,
+                'paymentUntil' => $paymentUntil,
             ];
         }
 
@@ -437,12 +454,25 @@ final class ClientController extends AbstractController
         $lastSubscription = $client->getSubscriptions()->last() ?: null;
         $hasPaid = false;
         $paymentUntil = null;
+        $lastPaidMonth = null;
+
+        $monthNames = [
+            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+            5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+            9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+        ];
 
         if ($lastSubscription) {
             $paymentUntil = $lastSubscription->getEndDate();
+            $lastPaymentDate = $lastSubscription->getLastPaymentDate();
+
+            if ($lastPaymentDate) {
+                $m = (int) $lastPaymentDate->format('n');
+                $y = $lastPaymentDate->format('Y');
+                $lastPaidMonth = ($monthNames[$m] ?? '') . ' ' . $y;
+            }
 
             if ($lastSubscription->isActive()) {
-                $lastPaymentDate = $lastSubscription->getLastPaymentDate();
                 $currentDate = new \DateTime();
 
                 if ($lastPaymentDate && $lastPaymentDate->format('Y-m') === $currentDate->format('Y-m')) {
@@ -454,11 +484,12 @@ final class ClientController extends AbstractController
         $recentLogs = $accessLogRepo->findRecentByClient($client, 20);
 
         return $this->render('client/show.html.twig', [
-            'client'       => $client,
-            'hasPaid'      => $hasPaid,
-            'paymentUntil' => $paymentUntil,
-            'subscription' => $lastSubscription,
-            'recentLogs'   => $recentLogs,
+            'client'        => $client,
+            'hasPaid'       => $hasPaid,
+            'paymentUntil'  => $paymentUntil,
+            'lastPaidMonth' => $lastPaidMonth,
+            'subscription'  => $lastSubscription,
+            'recentLogs'    => $recentLogs,
         ]);
     }
 
