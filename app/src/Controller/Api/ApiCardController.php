@@ -537,7 +537,7 @@ class ApiCardController extends AbstractController
         if ($cacheItem->isHit()) {
             return new JsonResponse(['success' => true, 'card_id' => $cacheItem->get()]);
         }
-        return new JsonResponse(['success' => false, 'message' => 'No hay tarjetas disponibles'], 404);
+        return new JsonResponse(['success' => false, 'card_id' => null, 'message' => 'No hay tarjetas disponibles'], 200);
     }
 
     #[Route('/card-read/clear', name: 'card_read_clear', methods: ['POST'])]

@@ -7,47 +7,81 @@ const initCardReader = () => {
     }
 
     let isFetching = false;
+    let pollInterval = null;
 
     const fetchCardId = async () => {
-        if (isFetching) return;
+        // No consultar si la pestaña está en segundo plano o si ya hay una petición en vuelo
+        if (document.hidden || isFetching) return;
         isFetching = true;
+
         try {
-            const response = await fetch('/api/card-read', { method: 'GET' });
+            const response = await fetch('/api/card-read', {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            });
+
             if (!response.ok) {
-                isFetching = false;
                 return;
             }
+
             const data = await response.json();
 
-            if (data.success && data.card_id) {
-                cardCodeField.value = data.card_id;
-                cardCodeField.classList.add('card-code-highlight');
-                cardCodeField.dispatchEvent(new Event('input', { bubbles: true }));
-                cardCodeField.dispatchEvent(new Event('change', { bubbles: true }));
+            if (data && data.success && data.card_id) {
+                // Solo asignar si el valor es diferente para no sobrescribir ediciones manuales
+                if (cardCodeField.value !== data.card_id) {
+                    cardCodeField.value = data.card_id;
+                    cardCodeField.classList.add('card-code-highlight');
+                    cardCodeField.dispatchEvent(new Event('input', { bubbles: true }));
+                    cardCodeField.dispatchEvent(new Event('change', { bubbles: true }));
 
-                setTimeout(() => {
-                    cardCodeField.classList.remove('card-code-highlight');
-                }, 1800);
+                    setTimeout(() => {
+                        cardCodeField.classList.remove('card-code-highlight');
+                    }, 2000);
+                }
 
-                // Limpiar de caché para evitar que siga asignándolo
-                await fetch('/api/card-read/clear', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
+                // Limpiar de caché del backend para evitar asignaciones repetidas
+                try {
+                    await fetch('/api/card-read/clear', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                } catch (_) {}
             }
-        } catch (error) {
-            console.error('Error al obtener el ID de la tarjeta:', error);
+        } catch (_) {
+            // Silencioso ante cortes de red momentáneos
         } finally {
             isFetching = false;
         }
     };
 
+    const startPolling = () => {
+        if (!pollInterval) {
+            pollInterval = setInterval(fetchCardId, 2000);
+        }
+    };
+
+    const stopPolling = () => {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+        }
+    };
+
+    // Pausar sondeo al cambiar de pestaña y reanudar al volver
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            stopPolling();
+        } else {
+            startPolling();
+        }
+    });
+
+    window.addEventListener('beforeunload', stopPolling);
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            setInterval(fetchCardId, 1500);
-        });
+        document.addEventListener('DOMContentLoaded', startPolling);
     } else {
-        setInterval(fetchCardId, 1500);
+        startPolling();
     }
 };
 
