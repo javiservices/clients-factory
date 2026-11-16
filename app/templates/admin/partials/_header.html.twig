@@ -1,20 +1,20 @@
 {# ─── Topbar ─── #}
 <header class="topbar" role="banner">
-    <div class="topbar-left">
+    <div class="topbar-left d-flex align-items-center flex-shrink-0">
         <button class="btn-sidebar-toggle" type="button" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false">
             <i class="bi bi-list fs-5" aria-hidden="true"></i>
         </button>
-        <h1 class="topbar-title" aria-label="{{ page_title }}">{{ page_title }}</h1>
+        <h1 class="topbar-title d-none d-sm-block ms-2" aria-label="{{ page_title }}">{{ page_title }}</h1>
     </div>
 
     {# ─── Buscador Global Rápido de Usuarios (Ctrl+K) ─── #}
-    <div class="topbar-search-wrap position-relative mx-2 mx-md-3 flex-grow-1" style="max-width: 440px;">
+    <div class="topbar-search-wrap position-relative mx-1 mx-sm-2 mx-md-3 flex-grow-1" style="max-width: 440px;">
         <div class="topbar-search-box d-flex align-items-center">
             <i class="bi bi-search topbar-search-ico text-muted" aria-hidden="true"></i>
             <input type="text"
                    id="globalSearchInput"
                    class="form-control form-control-sm topbar-search-input"
-                   placeholder="Buscar cliente (Ctrl + K)..."
+                   placeholder="Buscar cliente..."
                    autocomplete="off"
                    spellcheck="false"
                    aria-label="Buscar cliente globalmente"
@@ -32,7 +32,7 @@
         </div>
     </div>
 
-    <div class="topbar-right">
+    <div class="topbar-right d-flex align-items-center flex-shrink-0">
         {% if app.session.get('system_mode') == 'hidden' %}
         <span class="mode-badge" title="Modo Restringido activo">
             <i class="bi bi-eye-slash" aria-hidden="true"></i>
@@ -77,8 +77,25 @@
 </header>
 
 <style>
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+.topbar-left {
+    flex-shrink: 0;
+}
+.topbar-right {
+    flex-shrink: 0;
+}
 .topbar-search-wrap {
-    min-width: 140px;
+    min-width: 0 !important;
+    max-width: 440px;
+    flex: 1 1 auto;
 }
 .topbar-search-box {
     position: relative;
@@ -87,6 +104,8 @@
     border-radius: 999px;
     padding: 0.25rem 0.65rem 0.25rem 0.75rem;
     transition: all 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
 }
 .topbar-search-box:focus-within {
     background: #ffffff;
@@ -108,9 +127,48 @@
     color: var(--c-gray-900, #0f172a) !important;
     outline: none !important;
     width: 100%;
+    min-width: 0 !important;
 }
 .topbar-search-input::placeholder {
     color: var(--c-gray-400, #94a3b8);
+}
+@media (max-width: 575.98px) {
+    .topbar {
+        padding: 0 0.5rem !important;
+        gap: 0.35rem !important;
+    }
+    .topbar-left {
+        flex-shrink: 0 !important;
+    }
+    .topbar-right {
+        flex-shrink: 0 !important;
+    }
+    .topbar-search-wrap {
+        margin: 0 0.25rem !important;
+    }
+    .topbar-search-box {
+        padding: 0.2rem 0.5rem !important;
+    }
+    .topbar-search-ico {
+        font-size: 0.78rem !important;
+        margin-right: 0.3rem !important;
+    }
+    .topbar-search-input {
+        font-size: 0.8rem !important;
+    }
+    .user-avatar-btn {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 0.8rem !important;
+    }
+    .btn-sidebar-toggle {
+        width: 34px !important;
+        height: 34px !important;
+        padding: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
 }
 .topbar-search-badge {
     display: inline-flex;
