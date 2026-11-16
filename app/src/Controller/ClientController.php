@@ -294,8 +294,10 @@ final class ClientController extends AbstractController
                         (int)$endDate->format('m'),
                         5
                     );
+                    $endDate->setTime(23, 59, 59);
                 } elseif ($subscriptionType->getDays()) {
                     $endDate->modify('+' . $subscriptionType->getDays() . ' days');
+                    $endDate->setTime(23, 59, 59);
                 }
 
                 $lastSubscription->setStartDate($startDate);
@@ -392,8 +394,10 @@ final class ClientController extends AbstractController
                         (int)$endDate->format('m'),
                         5
                     );
+                    $endDate->setTime(23, 59, 59);
                 } elseif ($subscriptionType->getDays()) {
                     $endDate->modify('+' . $subscriptionType->getDays() . ' days');
+                    $endDate->setTime(23, 59, 59);
                 } else {
                     // Por defecto, un mes
                     $endDate->modify('first day of +1 month');
@@ -402,6 +406,7 @@ final class ClientController extends AbstractController
                         (int)$endDate->format('m'),
                         5
                     );
+                    $endDate->setTime(23, 59, 59);
                 }
     
                 $subscription->setStartDate($startDate);
