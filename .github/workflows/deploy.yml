@@ -1,27 +1,24 @@
 name: Deploy to Server
 
 on:
-    push:
-        branches:
-            - master
+  push:
+    branches:
+      - develop
+      - master
+  workflow_dispatch:
 
 jobs:
-    deploy:
-        runs-on: ubuntu-latest
+  deploy:
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
-
-            - name: Deploy via SSH
-              uses: appleboy/ssh-action@v1
-              with:
-                  host: ${{ secrets.SSH_HOST }}
-                  username: ${{ secrets.SSH_USER }}
-                  password: ${{ secrets.SSH_PASSWORD }}
-                  port: ${{ secrets.SSH_PORT || 22 }}
-                  script: |
-                      cd ${{ secrets.DEPLOY_PATH }}
-                      git pull origin master
-                      docker compose down
-                      docker compose up -d --build
+    steps:
+      - name: Deploy via SSH to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER || 'root' }}
+          key: ${{ secrets.SSH_KEY }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            bash /var/www/clients-factory/deploy.sh ${{ github.ref_name }}
