@@ -10,6 +10,7 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -215,6 +216,22 @@ class ClientType extends AbstractType
                 ],
                 'label_attr' => [
                     'class' => 'form-label small'
+                ]
+            ])
+            ->add('welcomeMessage', TextareaType::class, [
+                'required' => false,
+                'label' => 'Mensaje de bienvenida en el torno',
+                'attr' => [
+                    'class' => 'form-control',
+                    'rows' => 2,
+                    'placeholder' => 'Ej: ¡A por todas hoy!, Felicidades por tu cumpleaños, Pasa por recepción...'
+                ],
+                'label_attr' => [
+                    'class' => 'form-label small'
+                ],
+                'help' => 'Mensaje personalizado que se mostrará en pantalla cuando este socio pase por el torno.',
+                'help_attr' => [
+                    'class' => 'form-text text-muted'
                 ]
             ]);
     }

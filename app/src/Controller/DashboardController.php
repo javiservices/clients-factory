@@ -19,28 +19,82 @@ class DashboardController extends AbstractController
     #[Route('/dashboard', name: 'dashboard_alias', methods: ['GET'])]
     public function dashboard(EntityManagerInterface $em): Response
     {
+        $now = new \DateTime();
         $startOfMonth = new \DateTime('first day of this month 00:00:00');
         $endOfMonth = new \DateTime('last day of this month 23:59:59');
 
-        $sub = $em->getRepository(Subscription::class)->createQueryBuilder('s')
+        $monthNames = [
+            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+            5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+            9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+        ];
+        $currentMonthName = $monthNames[(int)$now->format('n')] . ' ' . $now->format('Y');
+
+        $conn = $em->getConnection();
+        // Accesos del mes actual en access_log
+        $accessRows = $conn->fetchAllAssociative("
+            SELECT client_id, COUNT(*) as cnt 
+            FROM access_log 
+            WHERE access_time >= :start AND access_time <= :end AND status = 'success'
+            GROUP BY client_id
+        ", [
+            'start' => $startOfMonth->format('Y-m-d H:i:s'),
+            'end'   => $endOfMonth->format('Y-m-d H:i:s'),
+        ]);
+        $accessMap = [];
+        foreach ($accessRows as $row) {
+            $accessMap[(int)$row['client_id']] = (int)$row['cnt'];
+        }
+
+        // Socios con suscripción activa/pagada en el mes actual
+        $subscriptions = $em->getRepository(Subscription::class)->createQueryBuilder('s')
             ->join('s.client', 'c')
+            ->leftJoin('s.subscriptionType', 'st')
             ->where('s.isActive = true')
             ->andWhere('s.lastPaymentDate IS NOT NULL')
             ->andWhere('s.lastPaymentDate <= :end')
             ->andWhere('s.endDate >= :start')
             ->setParameter('start', $startOfMonth)
             ->setParameter('end', $endOfMonth)
-            ->orderBy('c.totalAccesses', 'ASC')
-            ->addOrderBy('c.totalPaid', 'DESC')
-            ->setMaxResults(1)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getResult();
 
-        $topProfitable = $sub?->getClient();
+        $candidates = [];
+        $processed = [];
+        foreach ($subscriptions as $sub) {
+            $client = $sub->getClient();
+            if (!$client || isset($processed[$client->getId()])) {
+                continue;
+            }
+            $processed[$client->getId()] = true;
+            $monthAccesses = $accessMap[$client->getId()] ?? 0;
+            $paidMonth = $sub->getSubscriptionType()?->getPrice() ?? 50.0;
+            $candidates[] = [
+                'client'         => $client,
+                'paidMonth'      => $paidMonth,
+                'monthAccesses'  => $monthAccesses,
+                'historicalPaid' => (float) $client->getTotalPaid(),
+            ];
+        }
+
+        usort($candidates, function (array $a, array $b) {
+            // 1º Menos accesos en el mes actual
+            if ($a['monthAccesses'] !== $b['monthAccesses']) {
+                return $a['monthAccesses'] <=> $b['monthAccesses'];
+            }
+            // 2º Desempate: mayor aportación histórica
+            if ($a['historicalPaid'] !== $b['historicalPaid']) {
+                return $b['historicalPaid'] <=> $a['historicalPaid'];
+            }
+            return $a['client']->getId() <=> $b['client']->getId();
+        });
+
+        $topProfitableMonth = !empty($candidates) ? $candidates[0] : null;
 
         return $this->render('dashboard.html.twig', [
-            'turnstileClients' => [],
-            'topProfitable'    => $topProfitable,
+            'turnstileClients'   => [],
+            'topProfitableMonth' => $topProfitableMonth,
+            'currentMonthName'   => $currentMonthName,
         ]);
     }
 
@@ -63,14 +117,15 @@ class DashboardController extends AbstractController
         $data = [];
         if ($client) {
             $data[] = [
-                'id'         => $client->getId(),
-                'name'       => $client->getName(),
-                'surname'    => $client->getSurname(),
-                'cardCode'   => $client->getCardCode(),
-                'lastAccess' => $client->getLastAccess()?->format('c'),
-                'hasPaid'    => $client->getSubscriptions()->last() && $client->getSubscriptions()->last()->isActive(),
-                'photoUrl'   => $client->getPhoto() ? '/uploads/clients/' . $client->getPhoto() : null,
-                'csrfToken'  => $csrfTokenManager->getToken('renew' . $client->getId())->getValue(),
+                'id'             => $client->getId(),
+                'name'           => $client->getName(),
+                'surname'        => $client->getSurname(),
+                'cardCode'       => $client->getCardCode(),
+                'lastAccess'     => $client->getLastAccess()?->format('c'),
+                'hasPaid'        => $client->getSubscriptions()->last() && $client->getSubscriptions()->last()->isActive(),
+                'photoUrl'       => $client->getPhoto() ? '/uploads/clients/' . $client->getPhoto() : null,
+                'welcomeMessage' => $client->getWelcomeMessage(),
+                'csrfToken'      => $csrfTokenManager->getToken('renew' . $client->getId())->getValue(),
             ];
         }
 

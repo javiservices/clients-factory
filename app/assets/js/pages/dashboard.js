@@ -57,6 +57,22 @@ function renderClients(clients) {
                </div>`
             : `<div class="client-avatar"><i class="bi bi-person-circle"></i></div>`;
 
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            const p = document.createElement('p');
+            p.textContent = str;
+            return p.innerHTML;
+        };
+
+        const welcomeBanner = client.welcomeMessage ? `
+            <div class="alert text-center py-2 px-3 mb-3 rounded-3 shadow-sm border-0" style="background: linear-gradient(135deg, rgba(215, 38, 56, 0.08), rgba(215, 38, 56, 0.16)); border-left: 5px solid var(--c-primary, #D72638) !important; color: #1e293b;">
+                <div class="d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-chat-heart-fill" style="color: var(--c-primary, #D72638); font-size: 1.25rem;"></i>
+                    <span style="font-weight: 600; font-size: 1.05rem;">${escapeHtml(client.welcomeMessage)}</span>
+                </div>
+            </div>
+        ` : '';
+
         html += `
             <div class="col-12 col-lg-10 col-xl-8" style="animation: fadeIn 0.3s ease;">
                 <div class="client-card updated">
@@ -68,6 +84,7 @@ function renderClients(clients) {
                                 <i class="bi bi-circle-fill me-2"></i>${statusText}
                             </span>
                         </div>
+                        ${welcomeBanner}
                         <div class="client-details">
                             <div class="detail-item">
                                 <div class="detail-label">ID Cliente</div>

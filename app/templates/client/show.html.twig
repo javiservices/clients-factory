@@ -255,6 +255,18 @@
                             </div>
                         </div>
                     {% endif %}
+
+                    {% if client.welcomeMessage %}
+                        <div class="col-12">
+                            <div class="alert border-0 shadow-sm d-flex align-items-center gap-3 p-3 rounded-3 mb-0" style="background: linear-gradient(135deg, rgba(215, 38, 56, 0.05), rgba(215, 38, 56, 0.12)); border-left: 4px solid var(--c-primary, #D72638) !important;">
+                                <i class="bi bi-chat-quote-fill fs-3" style="color: var(--c-primary, #D72638);"></i>
+                                <div>
+                                    <div class="fw-bold small text-dark">Mensaje de bienvenida en pantalla del torno:</div>
+                                    <div class="text-dark fst-italic fs-6">"{{ client.welcomeMessage }}"</div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

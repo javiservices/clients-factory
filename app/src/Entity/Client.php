@@ -69,6 +69,9 @@ class Client
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => '0.00'])]
     private string $totalPaid = '0.00';
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $welcomeMessage = null;
+
     /**
      * @var Collection<int, Subscription>
      */
@@ -452,5 +455,17 @@ class Client
         }
 
         return round($paid / $this->totalAccesses, 2);
+    }
+
+    public function getWelcomeMessage(): ?string
+    {
+        return $this->welcomeMessage;
+    }
+
+    public function setWelcomeMessage(?string $welcomeMessage): static
+    {
+        $this->welcomeMessage = $welcomeMessage;
+
+        return $this;
     }
 }

@@ -196,23 +196,30 @@ class ApiCardController extends AbstractController
             }
         }
 
-        $message = $activeSubscription->getSubscriptionType()->isDailyPass()
-            ? sprintf('Bienvenido/a, %s. Pases restantes: %d', $client->getName(), $activeSubscription->getRemainingPasses())
-            : sprintf('Bienvenido/a, %s', $client->getName());
+        $welcomeCustom = $client->getWelcomeMessage();
+        if ($welcomeCustom && trim($welcomeCustom) !== '') {
+            $message = trim($welcomeCustom);
+        } else {
+            $message = $activeSubscription->getSubscriptionType()->isDailyPass()
+                ? sprintf('Bienvenido/a, %s. Pases restantes: %d', $client->getName(), $activeSubscription->getRemainingPasses())
+                : sprintf('Bienvenido/a, %s', $client->getName());
+        }
 
         $photoUrl = $client->getPhoto() ? '/uploads/clients/' . $client->getPhoto() : null;
 
         return $this->json([
             'success'         => true,
             'message'         => $message,
+            'welcome_message' => $welcomeCustom,
             'warning'         => $warning,
             'warning_message' => $warningMessage,
             'days_remaining'  => $daysRemaining,
             'client'          => [
-                'id'       => $client->getId(),
-                'name'     => $client->getName(),
-                'surname'  => $client->getSurname(),
-                'photoUrl' => $photoUrl,
+                'id'             => $client->getId(),
+                'name'           => $client->getName(),
+                'surname'        => $client->getSurname(),
+                'photoUrl'       => $photoUrl,
+                'welcomeMessage' => $welcomeCustom,
             ],
             'subscription' => [
                 'type'            => $activeSubscription->getSubscriptionType()->getName(),
@@ -372,13 +379,20 @@ class ApiCardController extends AbstractController
 
         $this->logAccess($client, 'success');
 
+        $welcomeCustom = $client->getWelcomeMessage();
+        $message = ($welcomeCustom && trim($welcomeCustom) !== '')
+            ? trim($welcomeCustom)
+            : '¡Apertura autorizada! Torno activado.';
+
         return $this->json([
-            'success' => true,
-            'message' => '¡Apertura autorizada! Torno activado.',
-            'client'  => [
-                'id'      => $client->getId(),
-                'name'    => $client->getName(),
-                'surname' => $client->getSurname(),
+            'success'         => true,
+            'message'         => $message,
+            'welcome_message' => $welcomeCustom,
+            'client'          => [
+                'id'             => $client->getId(),
+                'name'           => $client->getName(),
+                'surname'        => $client->getSurname(),
+                'welcomeMessage' => $welcomeCustom,
             ],
             'subscription' => [
                 'type' => $activeSubscription->getSubscriptionType()?->getName(),

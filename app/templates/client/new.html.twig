@@ -136,6 +136,18 @@
                 </div>
             </div>
 
+            <p class="card-section-title">
+                <i class="bi bi-chat-quote" aria-hidden="true"></i>Pantalla del torno
+            </p>
+            <div class="row g-3 mb-4">
+                <div class="col-12">
+                    {{ form_label(form.welcomeMessage) }}
+                    {{ form_widget(form.welcomeMessage) }}
+                    {{ form_help(form.welcomeMessage) }}
+                    {{ form_errors(form.welcomeMessage) }}
+                </div>
+            </div>
+
             <div class="d-flex align-items-center gap-3 pt-2" style="border-top:1px solid var(--c-gray-100)">
                 <div class="form-check me-auto" style="opacity:.6;font-size:.85rem">
                     {{ form_widget(form.billable) }}
