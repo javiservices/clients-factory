@@ -292,7 +292,7 @@ final class ClientController extends AbstractController
                     $endDate->setDate(
                         (int)$endDate->format('Y'),
                         (int)$endDate->format('m'),
-                        5
+                        4
                     );
                     $endDate->setTime(23, 59, 59);
                 } elseif ($subscriptionType->getDays()) {
@@ -392,7 +392,7 @@ final class ClientController extends AbstractController
                     $endDate->setDate(
                         (int)$endDate->format('Y'),
                         (int)$endDate->format('m'),
-                        5
+                        4
                     );
                     $endDate->setTime(23, 59, 59);
                 } elseif ($subscriptionType->getDays()) {
@@ -404,7 +404,7 @@ final class ClientController extends AbstractController
                     $endDate->setDate(
                         (int)$endDate->format('Y'),
                         (int)$endDate->format('m'),
-                        5
+                        4
                     );
                     $endDate->setTime(23, 59, 59);
                 }
@@ -542,10 +542,12 @@ final class ClientController extends AbstractController
                 $endDate->setDate(
                     (int)$endDate->format('Y'),
                     (int)$endDate->format('m'),
-                    5
+                    4
                 );
+                $endDate->setTime(23, 59, 59);
             } elseif ($subscriptionType->getDays()) {
                 $endDate->modify('+' . $subscriptionType->getDays() . ' days');
+                $endDate->setTime(23, 59, 59);
             }
     
             // Si es pase diario, sumar los nuevos pases a los existentes

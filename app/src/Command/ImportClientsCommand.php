@@ -127,8 +127,8 @@ class ImportClientsCommand extends Command
                     $subscription->setIsActive(true);
                     $subStart = $item['cuota_inicio'] ? new \DateTime($item['cuota_inicio']) : ($item['start_date'] ? new \DateTime($item['start_date']) : new \DateTime('2026-11-01'));
                     $subscription->setStartDate($subStart);
-                    // Vence el 5 del mes siguiente al mes actual
-                    $subscription->setEndDate(new \DateTime('2026-12-05 23:59:59'));
+                    // Vence el 4 del mes siguiente al mes actual (el 5 ya no puede entrar)
+                    $subscription->setEndDate(new \DateTime('2026-12-04 23:59:59'));
                     $subscription->setLastPaymentDate(new \DateTime('2026-11-01 00:00:00'));
                 } else {
                     // Cliente de baja con registro histórico
