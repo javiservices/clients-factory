@@ -10,6 +10,7 @@ use App\Repository\AccessLogRepository;
 use App\Repository\ClientRepository;
 use App\Repository\SubscriptionRepository;
 use App\Service\EncryptionService;
+use App\Service\ImageOptimizerService;
 use App\Service\InvoiceService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -205,7 +206,8 @@ final class ClientController extends AbstractController
         Request $request,
         Client $client,
         EntityManagerInterface $entityManager,
-        InvoiceService $invoiceService
+        InvoiceService $invoiceService,
+        ImageOptimizerService $imageOptimizer
     ): Response {
         // Obtener la última suscripción del cliente
         $subscriptions = $client->getSubscriptions();
@@ -229,19 +231,16 @@ final class ClientController extends AbstractController
             // ── Foto del cliente ──────────────────────────────────────────
             $photoFile = $form->get('photo')->getData();
             if ($photoFile) {
-                $uploadsDir  = $this->getParameter('uploads_directory');
-                if (!is_dir($uploadsDir)) {
-                    mkdir($uploadsDir, 0775, true);
-                }
+                $uploadsDir = $this->getParameter('uploads_directory');
                 // Eliminar foto anterior si existe
                 if ($client->getPhoto()) {
                     $old = $uploadsDir . '/' . $client->getPhoto();
                     if (file_exists($old)) {
-                        unlink($old);
+                        @unlink($old);
                     }
                 }
-                $newFilename = uniqid('client_', true) . '.' . $photoFile->guessExtension();
-                $photoFile->move($uploadsDir, $newFilename);
+                // Comprimir al máximo en formato WebP eliminando el original no comprimido
+                $newFilename = $imageOptimizer->optimizeUploadedPhoto($photoFile, $uploadsDir, 600, 82);
                 $client->setPhoto($newFilename);
             }
             // ─────────────────────────────────────────────────────────────
@@ -334,7 +333,12 @@ final class ClientController extends AbstractController
     }
     
     #[Route('/new', name: 'app_client_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager, InvoiceService $invoiceService): Response
+    public function new(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        InvoiceService $invoiceService,
+        ImageOptimizerService $imageOptimizer
+    ): Response
     {
         $client = new Client();
         $form = $this->createForm(ClientType::class, $client);
@@ -346,11 +350,8 @@ final class ClientController extends AbstractController
                 $photoFile = $form->get('photo')->getData();
                 if ($photoFile) {
                     $uploadsDir = $this->getParameter('uploads_directory');
-                    if (!is_dir($uploadsDir)) {
-                        mkdir($uploadsDir, 0775, true);
-                    }
-                    $newFilename = uniqid('client_', true) . '.' . $photoFile->guessExtension();
-                    $photoFile->move($uploadsDir, $newFilename);
+                    // Comprimir al máximo en formato WebP eliminando el original no comprimido
+                    $newFilename = $imageOptimizer->optimizeUploadedPhoto($photoFile, $uploadsDir, 600, 82);
                     $client->setPhoto($newFilename);
                 }
                 // ─────────────────────────────────────────────────────────

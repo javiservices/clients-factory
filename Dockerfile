@@ -47,15 +47,26 @@ RUN apk add --no-cache \
         icu-libs \
         libzip \
         oniguruma \
+        libpng \
+        libjpeg-turbo \
+        libwebp \
+        freetype \
     && apk add --no-cache --virtual .build-deps \
         icu-dev \
         libzip-dev \
         oniguruma-dev \
+        libpng-dev \
+        libjpeg-turbo-dev \
+        libwebp-dev \
+        freetype-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install \
         pdo_mysql \
         zip \
         intl \
         opcache \
+        gd \
+        exif \
     && apk del .build-deps \
     && rm -rf /var/cache/apk/*
 
