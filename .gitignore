@@ -15,6 +15,8 @@ docker-compose.override.yml
 *.xlsx
 *.xls
 clients_import.json
+payments_sync.json
+update_client_stats.sql
 ###< docker ###
 .env*
 !.env.default
