@@ -338,7 +338,18 @@ final class ClientController extends AbstractController
             try {
                 $entityManager->persist($client);
                 $entityManager->flush();
-                // El mensaje de éxito se muestra arriba en la lógica de facturación
+
+                $returnTo = $request->query->get('return_to') ?? $request->request->get('return_to');
+                if ($returnTo === 'dashboard') {
+                    return $this->redirectToRoute('dashboard');
+                }
+                $referer = $request->headers->get('referer');
+                if ($referer) {
+                    $path = parse_url($referer, PHP_URL_PATH) ?? '';
+                    if ($path === '/' || str_contains($path, '/dashboard')) {
+                        return $this->redirectToRoute('dashboard');
+                    }
+                }
                 return $this->redirectToRoute('app_client_index');
             } catch (\Exception $e) {
                 $this->addFlash('error', 'Error al actualizar el cliente: ' . $e->getMessage());
@@ -524,77 +535,125 @@ final class ClientController extends AbstractController
         EntityManagerInterface $entityManager,
         InvoiceService $invoiceService
     ): Response {
-        if ($this->isCsrfTokenValid('renew'.$client->getId(), $request->request->get('_token'))) {
-            $subscriptions = $client->getSubscriptions();
-            $lastSubscription = $subscriptions->last();
-    
-            if (!$lastSubscription) {
-                $this->addFlash('error', 'Este cliente no tiene ninguna suscripción que renovar.');
-                return $this->redirectToRoute('app_client_index');
-            }
-    
-            $subscriptionType = $lastSubscription->getSubscriptionType();
-            $startDate = new \DateTime();
-            $endDate = clone $startDate;
-            // Calcular la fecha de fin basada en meses o días
-            if ($subscriptionType->getMonths()) {
-                $endDate->modify('first day of +' . $subscriptionType->getMonths() . ' month');
-                $endDate->setDate(
-                    (int)$endDate->format('Y'),
-                    (int)$endDate->format('m'),
-                    4
-                );
-                $endDate->setTime(23, 59, 59);
-            } elseif ($subscriptionType->getDays()) {
-                $endDate->modify('+' . $subscriptionType->getDays() . ' days');
-                $endDate->setTime(23, 59, 59);
-            }
-    
-            // Si es pase diario, sumar los nuevos pases a los existentes
-            if ($subscriptionType->isDailyPass()) {
-                $currentPasses = $lastSubscription->getRemainingPasses() ?? 0;
-                $newPasses = $subscriptionType->getDays();
-                $lastSubscription->setRemainingPasses($currentPasses + $newPasses);
-            }
-    
-            $lastSubscription->setLastPaymentDate(new \DateTime());
-            $lastSubscription->setIsActive(true);
-            $lastSubscription->setStartDate($startDate);
-            $lastSubscription->setEndDate($endDate);
+        $isAjax = $request->isXmlHttpRequest() || str_contains($request->headers->get('Accept', ''), 'application/json');
 
-            // Crear registro de facturación
-            $billingRecord = new \App\Entity\BillingRecord();
-            $billingRecord->setClient($client);
-            $billingRecord->setSubscription($lastSubscription);
-            $billingRecord->setBillingDate(new \DateTime());
-            $billingRecord->setPeriodStart($startDate);
-            $billingRecord->setPeriodEnd($endDate);
-            $billingRecord->setAmount($subscriptionType->getPrice());
-            $billingRecord->setDescription('Renovación de suscripción ' . $subscriptionType->getName());
-            $billingRecord->setIsBilled(false);
-
-            $entityManager->persist($billingRecord);
-
-            try {
-                $entityManager->flush();
-            } catch (\Exception $e) {
-                $this->addFlash('error', 'Error al renovar la suscripción: ' . $e->getMessage());
-                return $this->redirectToRoute('app_client_index');
+        if (!$this->isCsrfTokenValid('renew'.$client->getId(), $request->request->get('_token'))) {
+            if ($isAjax) {
+                return $this->json(['success' => false, 'message' => 'Token de seguridad inválido.'], 400);
             }
-
-            // Generar factura inmediatamente para este registro de facturación
-            try {
-                $invoice = $invoiceService->generateInvoiceForBillingRecord($billingRecord, $this->getUser());
-                $this->addFlash('success', 'Suscripción renovada y factura generada correctamente hasta el ' . $endDate->format('d/m/Y') . '. Factura: ' . $invoice->getInvoiceNumber());
-            } catch (\Exception $e) {
-                $this->addFlash('warning', 'Suscripción renovada correctamente hasta el ' . $endDate->format('d/m/Y') . ', pero no se pudo generar la factura: ' . $e->getMessage());
-            }
+            $this->addFlash('error', 'Token de seguridad inválido.');
+            return $this->redirectAfterRenew($request, $client);
         }
-    
+
+        $subscriptions = $client->getSubscriptions();
+        $lastSubscription = $subscriptions->last();
+
+        if (!$lastSubscription) {
+            if ($isAjax) {
+                return $this->json(['success' => false, 'message' => 'Este cliente no tiene ninguna suscripción que renovar.'], 400);
+            }
+            $this->addFlash('error', 'Este cliente no tiene ninguna suscripción que renovar.');
+            return $this->redirectAfterRenew($request, $client);
+        }
+
+        $subscriptionType = $lastSubscription->getSubscriptionType();
+        $startDate = new \DateTime();
+        $endDate = clone $startDate;
+        // Calcular la fecha de fin basada en meses o días
+        if ($subscriptionType->getMonths()) {
+            $endDate->modify('first day of +' . $subscriptionType->getMonths() . ' month');
+            $endDate->setDate(
+                (int)$endDate->format('Y'),
+                (int)$endDate->format('m'),
+                4
+            );
+            $endDate->setTime(23, 59, 59);
+        } elseif ($subscriptionType->getDays()) {
+            $endDate->modify('+' . $subscriptionType->getDays() . ' days');
+            $endDate->setTime(23, 59, 59);
+        }
+
+        // Si es pase diario, sumar los nuevos pases a los existentes
+        if ($subscriptionType->isDailyPass()) {
+            $currentPasses = $lastSubscription->getRemainingPasses() ?? 0;
+            $newPasses = $subscriptionType->getDays();
+            $lastSubscription->setRemainingPasses($currentPasses + $newPasses);
+        }
+
+        $lastSubscription->setLastPaymentDate(new \DateTime());
+        $lastSubscription->setIsActive(true);
+        $lastSubscription->setStartDate($startDate);
+        $lastSubscription->setEndDate($endDate);
+
+        // Crear registro de facturación
+        $billingRecord = new \App\Entity\BillingRecord();
+        $billingRecord->setClient($client);
+        $billingRecord->setSubscription($lastSubscription);
+        $billingRecord->setBillingDate(new \DateTime());
+        $billingRecord->setPeriodStart($startDate);
+        $billingRecord->setPeriodEnd($endDate);
+        $billingRecord->setAmount($subscriptionType->getPrice());
+        $billingRecord->setDescription('Renovación de suscripción ' . $subscriptionType->getName());
+        $billingRecord->setIsBilled(false);
+
+        $entityManager->persist($billingRecord);
+
+        try {
+            $entityManager->flush();
+        } catch (\Exception $e) {
+            if ($isAjax) {
+                return $this->json(['success' => false, 'message' => 'Error al renovar la suscripción: ' . $e->getMessage()], 500);
+            }
+            $this->addFlash('error', 'Error al renovar la suscripción: ' . $e->getMessage());
+            return $this->redirectAfterRenew($request, $client);
+        }
+
+        // Generar factura inmediatamente para este registro de facturación
+        $invoiceNumber = null;
+        try {
+            $invoice = $invoiceService->generateInvoiceForBillingRecord($billingRecord, $this->getUser());
+            $invoiceNumber = $invoice->getInvoiceNumber();
+            $msg = 'Suscripción renovada y factura generada correctamente hasta el ' . $endDate->format('d/m/Y') . '. Factura: ' . $invoiceNumber;
+            $this->addFlash('success', $msg);
+        } catch (\Exception $e) {
+            $msg = 'Suscripción renovada correctamente hasta el ' . $endDate->format('d/m/Y') . ', pero no se pudo generar la factura: ' . $e->getMessage();
+            $this->addFlash('warning', $msg);
+        }
+
+        if ($isAjax) {
+            return $this->json([
+                'success'       => true,
+                'message'       => $msg,
+                'endDate'       => $endDate->format('d/m/Y'),
+                'invoiceNumber' => $invoiceNumber,
+                'client'        => [
+                    'id'   => $client->getId(),
+                    'name' => $client->getName() . ' ' . $client->getSurname(),
+                ],
+            ]);
+        }
+
+        return $this->redirectAfterRenew($request, $client);
+    }
+
+    private function redirectAfterRenew(Request $request, Client $client): Response
+    {
+        $returnTo = $request->query->get('return_to') ?? $request->request->get('return_to');
+        if ($returnTo === 'dashboard') {
+            return $this->redirectToRoute('dashboard');
+        }
+
         $referer = $request->headers->get('referer');
-        if ($referer && str_contains($referer, '/client/' . $client->getId())) {
-            return $this->redirectToRoute('app_client_show', ['id' => $client->getId()]);
+        if ($referer) {
+            $path = parse_url($referer, PHP_URL_PATH) ?? '';
+            if ($path === '/' || str_contains($path, '/dashboard')) {
+                return $this->redirectToRoute('dashboard');
+            }
+            if (str_contains($referer, '/client/' . $client->getId())) {
+                return $this->redirectToRoute('app_client_show', ['id' => $client->getId()]);
+            }
         }
+
         return $this->redirectToRoute('app_client_index');
     }
 

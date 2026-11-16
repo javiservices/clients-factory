@@ -91,8 +91,75 @@ class DashboardController extends AbstractController
 
         $topProfitableMonth = !empty($candidates) ? $candidates[0] : null;
 
+        // Último acceso registrado y recientes para carga instantánea SSR
+        $latestLog = $em->createQuery('
+            SELECT a, c FROM App\\Entity\\AccessLog a
+            JOIN a.Client c
+            ORDER BY a.id DESC
+        ')
+        ->setMaxResults(1)
+        ->getOneOrNullResult();
+
+        $recentLogs = $em->createQuery('
+            SELECT a, c FROM App\\Entity\\AccessLog a
+            JOIN a.Client c
+            ORDER BY a.id DESC
+        ')
+        ->setMaxResults(5)
+        ->getResult();
+
+        $initialClient = null;
+        if ($latestLog) {
+            $client = $latestLog->getClient();
+            $sub = $client->getSubscriptions()->last() ?: null;
+            $isActive = $sub && $sub->isActive();
+            $endDate = $sub?->getEndDate();
+            $daysRemaining = null;
+            if ($endDate) {
+                $today = new \DateTime('today');
+                $endDay = (clone $endDate)->setTime(0, 0, 0);
+                $daysRemaining = (int) $today->diff($endDay)->format('%r%a');
+            }
+
+            $initialClient = [
+                'accessId'            => $latestLog->getId(),
+                'status'              => $latestLog->getStatus() ?? 'success',
+                'accessTime'          => $latestLog->getAccessTime()?->format('c'),
+                'accessTimeFormatted' => $latestLog->getAccessTime()?->format('H:i:s'),
+                'id'                  => $client->getId(),
+                'name'                => $client->getName(),
+                'surname'             => $client->getSurname(),
+                'cardCode'            => $client->getCardCode(),
+                'hasPaid'             => $isActive,
+                'subType'             => $sub?->getSubscriptionType()?->getName() ?? 'Sin cuota',
+                'endDate'             => $endDate?->format('d/m/Y'),
+                'daysRemaining'       => $daysRemaining,
+                'isDailyPass'         => $sub?->getSubscriptionType()?->isDailyPass() ?? false,
+                'remainingPasses'     => $sub?->getRemainingPasses(),
+                'photoUrl'            => $client->getPhoto() ? '/uploads/clients/' . $client->getPhoto() : null,
+                'welcomeMessage'      => $client->getWelcomeMessage(),
+            ];
+        }
+
+        $initialRecent = [];
+        foreach ($recentLogs as $log) {
+            $c = $log->getClient();
+            $s = $c->getSubscriptions()->last() ?: null;
+            $initialRecent[] = [
+                'accessId'   => $log->getId(),
+                'status'     => $log->getStatus() ?? 'success',
+                'accessTime' => $log->getAccessTime()?->format('H:i:s'),
+                'clientId'   => $c->getId(),
+                'name'       => $c->getName() . ' ' . $c->getSurname(),
+                'hasPaid'    => $s && $s->isActive(),
+                'photoUrl'   => $c->getPhoto() ? '/uploads/clients/' . $c->getPhoto() : null,
+            ];
+        }
+
         return $this->render('dashboard.html.twig', [
-            'turnstileClients'   => [],
+            'initialClient'      => $initialClient,
+            'initialRecent'      => $initialRecent,
+            'latestAccessId'     => $latestLog?->getId() ?? 0,
             'topProfitableMonth' => $topProfitableMonth,
             'currentMonthName'   => $currentMonthName,
         ]);
@@ -104,32 +171,76 @@ class DashboardController extends AbstractController
         CsrfTokenManagerInterface $csrfTokenManager
     ): Response
     {
-        $since  = new \DateTime('-10 minutes');
-        $client = $em->createQuery('
-            SELECT c FROM App\\Entity\\Client c
-            WHERE c.lastAccess >= :since
-            ORDER BY c.lastAccess DESC
+        $latestLog = $em->createQuery('
+            SELECT a, c FROM App\\Entity\\AccessLog a
+            JOIN a.Client c
+            ORDER BY a.id DESC
         ')
-        ->setParameter('since', $since)
         ->setMaxResults(1)
         ->getOneOrNullResult();
 
-        $data = [];
-        if ($client) {
-            $data[] = [
-                'id'             => $client->getId(),
-                'name'           => $client->getName(),
-                'surname'        => $client->getSurname(),
-                'cardCode'       => $client->getCardCode(),
-                'lastAccess'     => $client->getLastAccess()?->format('c'),
-                'hasPaid'        => $client->getSubscriptions()->last() && $client->getSubscriptions()->last()->isActive(),
-                'photoUrl'       => $client->getPhoto() ? '/uploads/clients/' . $client->getPhoto() : null,
-                'welcomeMessage' => $client->getWelcomeMessage(),
-                'csrfToken'      => $csrfTokenManager->getToken('renew' . $client->getId())->getValue(),
+        $recentLogs = $em->createQuery('
+            SELECT a, c FROM App\\Entity\\AccessLog a
+            JOIN a.Client c
+            ORDER BY a.id DESC
+        ')
+        ->setMaxResults(5)
+        ->getResult();
+
+        $latestClientData = null;
+        if ($latestLog) {
+            $client = $latestLog->getClient();
+            $sub = $client->getSubscriptions()->last() ?: null;
+            $isActive = $sub && $sub->isActive();
+            $endDate = $sub?->getEndDate();
+            $daysRemaining = null;
+            if ($endDate) {
+                $today = new \DateTime('today');
+                $endDay = (clone $endDate)->setTime(0, 0, 0);
+                $daysRemaining = (int) $today->diff($endDay)->format('%r%a');
+            }
+
+            $latestClientData = [
+                'accessId'            => $latestLog->getId(),
+                'status'              => $latestLog->getStatus() ?? 'success',
+                'accessTime'          => $latestLog->getAccessTime()?->format('c'),
+                'accessTimeFormatted' => $latestLog->getAccessTime()?->format('H:i:s'),
+                'id'                  => $client->getId(),
+                'name'                => $client->getName(),
+                'surname'             => $client->getSurname(),
+                'cardCode'            => $client->getCardCode(),
+                'hasPaid'             => $isActive,
+                'subType'             => $sub?->getSubscriptionType()?->getName() ?? 'Sin cuota',
+                'endDate'             => $endDate?->format('d/m/Y'),
+                'daysRemaining'       => $daysRemaining,
+                'isDailyPass'         => $sub?->getSubscriptionType()?->isDailyPass() ?? false,
+                'remainingPasses'     => $sub?->getRemainingPasses(),
+                'photoUrl'            => $client->getPhoto() ? '/uploads/clients/' . $client->getPhoto() : null,
+                'welcomeMessage'      => $client->getWelcomeMessage(),
+                'csrfToken'           => $csrfTokenManager->getToken('renew' . $client->getId())->getValue(),
             ];
         }
 
-        return $this->json($data);
+        $recentList = [];
+        foreach ($recentLogs as $log) {
+            $c = $log->getClient();
+            $s = $c->getSubscriptions()->last() ?: null;
+            $recentList[] = [
+                'accessId'   => $log->getId(),
+                'status'     => $log->getStatus() ?? 'success',
+                'accessTime' => $log->getAccessTime()?->format('H:i:s'),
+                'clientId'   => $c->getId(),
+                'name'       => $c->getName() . ' ' . $c->getSurname(),
+                'hasPaid'    => $s && $s->isActive(),
+                'photoUrl'   => $c->getPhoto() ? '/uploads/clients/' . $c->getPhoto() : null,
+            ];
+        }
+
+        return $this->json([
+            'latestAccessId' => $latestLog?->getId() ?? 0,
+            'client'         => $latestClientData,
+            'recent'         => $recentList,
+        ]);
     }
 
     /** Estadísticas para el dashboard: accesos, distribución horaria, suscripciones próximas a vencer */
@@ -146,6 +257,7 @@ class DashboardController extends AbstractController
         $byStatus      = $accessLogRepo->countByStatus();
         $todayCount    = $accessLogRepo->countToday();
         $expiring      = $subscriptionRepo->findExpiringSoon(7);
+        $totalActiveClients = $subscriptionRepo->count(['isActive' => true]);
         $totalClients  = $clientRepo->count([]);
 
         $expiringData = [];
@@ -159,12 +271,13 @@ class DashboardController extends AbstractController
         }
 
         return $this->json([
-            'accessesByDay' => $accessesByDay,
-            'byHour'        => $byHour,
-            'byStatus'      => $byStatus,
-            'todayCount'    => $todayCount,
-            'expiring'      => $expiringData,
-            'totalClients'  => $totalClients,
+            'accessesByDay'      => $accessesByDay,
+            'byHour'             => $byHour,
+            'byStatus'           => $byStatus,
+            'todayCount'         => $todayCount,
+            'expiring'           => $expiringData,
+            'totalActiveClients' => $totalActiveClients,
+            'totalClients'       => $totalClients,
         ]);
     }
 }
