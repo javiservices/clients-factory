@@ -13,12 +13,11 @@ jobs:
 
     steps:
       - name: Deploy via SSH to VPS
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER || 'root' }}
+          username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          port: ${{ secrets.SSH_PORT || 22 }}
+          port: 22
           script: |
             bash /var/www/clients-factory/deploy.sh ${{ github.ref_name }}
