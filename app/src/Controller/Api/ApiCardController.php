@@ -224,6 +224,105 @@ class ApiCardController extends AbstractController
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Apertura Remota desde App Móvil (SantaDoor)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    #[Route('/door/open', name: 'door_open', methods: ['POST', 'GET'])]
+    public function openDoor(Request $request, ClientRepository $clientRepository): JsonResponse
+    {
+        if (!$this->checkApiKey($request)) {
+            return $this->json(['success' => false, 'message' => 'Clave de API inválida'], 401);
+        }
+
+        $data = [];
+        if ($request->getContent()) {
+            $data = json_decode($request->getContent(), true) ?? [];
+        }
+
+        $cardId = $data['card_id']
+            ?? $request->request->get('card_id')
+            ?? $request->query->get('card_id');
+
+        if (!$cardId) {
+            return $this->json(['success' => false, 'message' => 'No se proporcionó ID de tarjeta o socio'], 400);
+        }
+
+        $client = $clientRepository->findOneByCardCode($cardId);
+        if (!$client) {
+            return $this->json(['success' => false, 'message' => 'Socio no encontrado'], 404);
+        }
+
+        $activeSubscription = null;
+        foreach ($client->getSubscriptions() as $subscription) {
+            if ($subscription->isActive()) {
+                $activeSubscription = $subscription;
+                break;
+            }
+        }
+
+        if (!$activeSubscription) {
+            $this->logAccess($client, 'denied');
+            return $this->json([
+                'success' => false,
+                'message' => 'Cliente sin suscripción activa',
+                'client'  => ['id' => $client->getId(), 'name' => $client->getName()],
+            ], 403);
+        }
+
+        if ($activeSubscription->isFrozen()) {
+            $this->logAccess($client, 'denied');
+            return $this->json([
+                'success' => false,
+                'message' => 'Suscripción congelada temporalmente',
+                'client'  => ['id' => $client->getId(), 'name' => $client->getName()],
+            ], 403);
+        }
+
+        // Registrar señal en caché para que Raspberry Pi / ESP32 accione el relé
+        $item = $this->cache->getItem('remote_door_unlock_signal');
+        $item->set([
+            'client_id'   => $client->getId(),
+            'client_name' => $client->getName() . ' ' . $client->getSurname(),
+            'timestamp'   => time(),
+            'source'      => 'santadoor_android',
+        ]);
+        $item->expiresAfter(15);
+        $this->cache->save($item);
+
+        $this->logAccess($client, 'success');
+
+        return $this->json([
+            'success' => true,
+            'message' => '¡Apertura autorizada! Torno activado.',
+            'client'  => [
+                'id'      => $client->getId(),
+                'name'    => $client->getName(),
+                'surname' => $client->getSurname(),
+            ],
+            'subscription' => [
+                'type' => $activeSubscription->getSubscriptionType()?->getName(),
+            ],
+        ]);
+    }
+
+    #[Route('/door/pending-unlock', name: 'door_pending_unlock', methods: ['GET'])]
+    public function getPendingUnlock(Request $request): JsonResponse
+    {
+        if (!$this->checkApiKey($request)) {
+            return $this->json(['success' => false, 'message' => 'Clave de API inválida'], 401);
+        }
+
+        $item = $this->cache->getItem('remote_door_unlock_signal');
+        if ($item->isHit()) {
+            $val = $item->get();
+            $this->cache->deleteItem('remote_door_unlock_signal');
+            return $this->json(['success' => true, 'unlock' => true, 'data' => $val]);
+        }
+
+        return $this->json(['success' => true, 'unlock' => false]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // SSE – Server-Sent Events para lectura en tiempo real
     // ─────────────────────────────────────────────────────────────────────────
 

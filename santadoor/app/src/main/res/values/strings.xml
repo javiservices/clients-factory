@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">SantaDoor</string>
+    <string name="hce_service_desc">SantaDoor Control de Acceso NFC</string>
+    <string name="hce_aid_desc">Identificador SantaDoor Gimnasio</string>
+    <string name="tile_label">SantaDoor</string>
+</resources>

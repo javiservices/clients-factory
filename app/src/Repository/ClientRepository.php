@@ -29,13 +29,18 @@ class ClientRepository extends ServiceEntityRepository
     }
 
     /**
-     * Busca un cliente por su código de tarjeta.
+     * Busca un cliente por su código de tarjeta, DNI/NIF o ID numérico.
      * Como card_code está cifrado en BD, cargamos todos y comparamos en PHP.
      */
     public function findOneByCardCode(string $cardCode): ?Client
     {
+        $clean = strtoupper(trim($cardCode));
         foreach ($this->findAll() as $client) {
-            if ($client->getCardCode() === $cardCode) {
+            $clientCard = strtoupper(trim((string) $client->getCardCode()));
+            $clientIdNumber = strtoupper(trim((string) $client->getIdNumber()));
+            $clientId = (string) $client->getId();
+
+            if ($clientCard === $clean || $clientIdNumber === $clean || $clientId === $clean) {
                 return $client;
             }
         }
