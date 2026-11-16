@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diploma al Socio Más Rentable - {{ client.name }} {{ client.surname }}</title>
+    <title>Diploma al Socio Más Rentable ({{ periodLabel }}) - {{ client.name }} {{ client.surname }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Montserrat:wght@400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
@@ -289,9 +289,9 @@
 
     {# ─── Barra de Acciones ─── #}
     <div class="action-bar">
-        <a href="{{ path('app_statistics_index') }}" class="btn-action btn-back">
+        <a href="{{ path('app_statistics_index', {'preset': preset, 'start_date': startDate, 'end_date': endDate}) }}" class="btn-action btn-back">
             <i class="bi bi-arrow-left"></i>
-            <span>Volver a Estadísticas</span>
+            <span>Volver a Estadísticas ({{ periodLabel }})</span>
         </a>
         <div style="display: flex; gap: 10px;">
             <a href="{{ path('app_client_show', {'id': client.id}) }}" class="btn-action btn-back">
@@ -316,7 +316,7 @@
             <div class="diploma-border-inner">
                 <div class="diploma-header-gym">Gimnasio Santa María • Logroño</div>
                 <h1 class="diploma-main-title">Certificado de Excelencia</h1>
-                <div class="diploma-subtitle">Al Socio Más Rentable y Donante de Honor</div>
+                <div class="diploma-subtitle">Al Socio Más Rentable • {{ periodLabel }}</div>
 
                 <div class="diploma-presented-to">Otorgado con admiración y eterna gratitud a:</div>
                 <div class="diploma-recipient-name">{{ client.name }} {{ client.surname }}</div>
@@ -325,18 +325,18 @@
                 </div>
 
                 <p class="diploma-citation">
-                    "En reconocimiento formal a su disciplina financiera inquebrantable, abonando con puntualidad y rigor sus cuotas mensuales mientras cuidaba con esmero y delicadeza las instalaciones del gimnasio... manteniéndose prudentemente alejado de ellas."
+                    "En reconocimiento formal a su disciplina financiera inquebrantable durante <strong>{{ periodLabel }}</strong>, abonando con puntualidad y rigor su cuota de socio mientras cuidaba con esmero y delicadeza las instalaciones del gimnasio... manteniéndose prudentemente alejado de ellas."
                 </p>
 
                 {# Métricas de Honor #}
                 <div class="diploma-stats-grid">
                     <div class="stat-item">
-                        <div class="stat-label">Total Aportado</div>
-                        <div class="stat-val highlight">{{ totalPaid|number_format(2, ',', '.') }} €</div>
+                        <div class="stat-label">Cuota ({{ periodLabel }})</div>
+                        <div class="stat-val highlight">{{ periodPaid|number_format(2, ',', '.') }} €</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-label">Visitas Realizadas</div>
-                        <div class="stat-val">{{ totalAccesses }} accesos</div>
+                        <div class="stat-val">{{ periodAccesses }} accesos</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-label">Coste / Visita</div>

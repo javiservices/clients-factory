@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Subscription;
 use App\Repository\AccessLogRepository;
 use App\Repository\ClientRepository;
 use App\Repository\InvoiceRepository;
@@ -16,15 +17,26 @@ class DashboardController extends AbstractController
 {
     #[Route('/', name: 'dashboard', methods: ['GET'])]
     #[Route('/dashboard', name: 'dashboard_alias', methods: ['GET'])]
-    public function dashboard(ClientRepository $clientRepo): Response
+    public function dashboard(EntityManagerInterface $em): Response
     {
-        $topProfitable = $clientRepo->createQueryBuilder('c')
-            ->where('c.totalPaid >= 50')
+        $startOfMonth = new \DateTime('first day of this month 00:00:00');
+        $endOfMonth = new \DateTime('last day of this month 23:59:59');
+
+        $sub = $em->getRepository(Subscription::class)->createQueryBuilder('s')
+            ->join('s.client', 'c')
+            ->where('s.isActive = true')
+            ->andWhere('s.lastPaymentDate IS NOT NULL')
+            ->andWhere('s.lastPaymentDate <= :end')
+            ->andWhere('s.endDate >= :start')
+            ->setParameter('start', $startOfMonth)
+            ->setParameter('end', $endOfMonth)
             ->orderBy('c.totalAccesses', 'ASC')
             ->addOrderBy('c.totalPaid', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
+
+        $topProfitable = $sub?->getClient();
 
         return $this->render('dashboard.html.twig', [
             'turnstileClients' => [],
