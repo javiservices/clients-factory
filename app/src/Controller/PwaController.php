@@ -49,3 +49,4 @@ class PwaController extends AbstractController
         ]);
     }
 }
+
