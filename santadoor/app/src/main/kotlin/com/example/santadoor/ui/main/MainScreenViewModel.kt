@@ -180,7 +180,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun openDoor(onSuccessVibrate: () -> Unit) {
+    fun openDoor(onSuccessVibrate: () -> Unit, latitude: Double? = null, longitude: Double? = null) {
         if (_uiState.value.isOpening) return
         val currentCard = prefs.cardId
         if (currentCard.isEmpty()) {
@@ -199,7 +199,12 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
             }
 
             val current = _uiState.value
-            val result = repository.unlockDoor(current.serverUrl, currentCard)
+            val result = repository.unlockDoor(
+                serverUrl = current.serverUrl,
+                cardId = currentCard,
+                latitude = latitude,
+                longitude = longitude
+            )
 
             result.onSuccess { res ->
                 if (res.success) {
@@ -226,7 +231,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
                             unlockStatus = UnlockStatus.Error(res.message)
                         )
                     }
-                    delay(3500)
+                    delay(4000)
                     _uiState.update { it.copy(unlockStatus = UnlockStatus.Idle) }
                 }
             }.onFailure { err ->
@@ -239,6 +244,19 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
                 delay(3500)
                 _uiState.update { it.copy(unlockStatus = UnlockStatus.Idle) }
             }
+        }
+    }
+
+    fun showLocationError(message: String) {
+        _uiState.update {
+            it.copy(
+                isOpening = false,
+                unlockStatus = UnlockStatus.Error(message)
+            )
+        }
+        viewModelScope.launch {
+            delay(4000)
+            _uiState.update { it.copy(unlockStatus = UnlockStatus.Idle) }
         }
     }
 

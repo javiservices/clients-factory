@@ -24,6 +24,13 @@ class ApiCardController extends AbstractController
     private const RATE_LIMIT_MAX = 300; // peticiones por minuto por IP
     private const PASSBACK_TTL   = 5;   // segundos mínimos entre accesos del mismo card
 
+    // Coordenadas oficiales y geofence de Santamaría Gym (Logroño)
+    public const GYM_LATITUDE            = 42.465168341854756;
+    public const GYM_LONGITUDE           = -2.469648710013292;
+    public const GYM_MAX_DISTANCE_METERS = 75.0; // Radio máximo permitido en metros
+    private const REMOTE_PASSBACK_KEY    = 'remote_passback_client_';
+    private const REMOTE_PASSBACK_TTL    = 45;   // Cooldown de 45s para evitar doble pulsación accidental o abusiva
+
     public function __construct(private EntityManagerInterface $entityManager)
     {
         $this->cache = new FilesystemAdapter();
@@ -72,6 +79,23 @@ class ApiCardController extends AbstractController
         $item->expiresAfter(self::PASSBACK_TTL);
         $this->cache->save($item);
         return true;
+    }
+
+    /**
+     * Calcula la distancia en metros entre dos coordenadas geográficas mediante la fórmula de Haversine.
+     */
+    private function calculateDistanceMeters(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $earthRadius = 6371000.0; // Radio medio de la Tierra en metros
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLon / 2) * sin($dLon / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        return $earthRadius * $c;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -366,16 +390,57 @@ class ApiCardController extends AbstractController
             ], 403);
         }
 
+        // ─── 1. Validación de Geolocalización (Geofence Santamaría Gym) ───
+        $lat = $data['latitude'] ?? $request->request->get('latitude') ?? $request->query->get('latitude');
+        $lng = $data['longitude'] ?? $request->request->get('longitude') ?? $request->query->get('longitude');
+
+        if ($lat === null || $lng === null || !is_numeric($lat) || !is_numeric($lng)) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Es necesario activar y permitir la ubicación GPS para abrir el torno.',
+                'code'    => 'LOCATION_REQUIRED',
+            ], 403);
+        }
+
+        $distanceMeters = $this->calculateDistanceMeters((float)$lat, (float)$lng, self::GYM_LATITUDE, self::GYM_LONGITUDE);
+
+        if ($distanceMeters > self::GYM_MAX_DISTANCE_METERS) {
+            return $this->json([
+                'success'         => false,
+                'message'         => sprintf('Estás demasiado lejos del gimnasio (%d metros). Debes estar en las inmediaciones para abrir el torno.', (int) round($distanceMeters)),
+                'code'            => 'OUT_OF_RANGE',
+                'distance_meters' => (int) round($distanceMeters),
+                'max_radius'      => self::GYM_MAX_DISTANCE_METERS,
+            ], 403);
+        }
+
+        // ─── 2. Anti-passback por tiempo de apertura remota (Cooldown) ───
+        $passbackKey = self::REMOTE_PASSBACK_KEY . $client->getId();
+        $passbackItem = $this->cache->getItem($passbackKey);
+        if ($passbackItem->isHit()) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Acabas de abrir el torno recientemente. Espera unos momentos antes de volver a solicitarlo.',
+                'code'    => 'COOLDOWN_ACTIVE',
+            ], 429);
+        }
+
         // Registrar señal en caché para que Raspberry Pi / ESP32 accione el relé
         $item = $this->cache->getItem('remote_door_unlock_signal');
         $item->set([
             'client_id'   => $client->getId(),
             'client_name' => $client->getName() . ' ' . $client->getSurname(),
             'timestamp'   => time(),
-            'source'      => 'santadoor_android',
+            'source'      => $data['source'] ?? 'santadoor_remote',
+            'distance_m'  => round($distanceMeters, 1),
         ]);
         $item->expiresAfter(15);
         $this->cache->save($item);
+
+        // Guardar cooldown de 45 segundos para este socio
+        $passbackItem->set(true);
+        $passbackItem->expiresAfter(self::REMOTE_PASSBACK_TTL);
+        $this->cache->save($passbackItem);
 
         $this->logAccess($client, 'success');
 

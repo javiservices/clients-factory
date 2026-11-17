@@ -1,10 +1,18 @@
 package com.example.santadoor.ui.main
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.core.location.LocationManagerCompat
+import androidx.core.os.CancellationSignal
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -125,6 +133,40 @@ fun MainScreen(
         Unit
     }
 
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
+        val coarseGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (fineGranted || coarseGranted) {
+            triggerOpenWithLocation(context, viewModel, vibrateSuccess)
+        } else {
+            viewModel.showLocationError("Permiso de ubicación denegado. Es obligatorio para abrir el torno.")
+        }
+    }
+
+    val onDoorClick = {
+        val fineGranted = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        val coarseGranted = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (fineGranted || coarseGranted) {
+            triggerOpenWithLocation(context, viewModel, vibrateSuccess)
+        } else {
+            permissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
+
     if (!state.isLoggedIn) {
         LoginScreen(
             state = state,
@@ -215,7 +257,7 @@ fun MainScreen(
 
                 // Contenido según pestaña
                 when (state.selectedTab) {
-                    0 -> DoorTab(state = state, onOpenClick = { viewModel.openDoor(vibrateSuccess) })
+                    0 -> DoorTab(state = state, onOpenClick = onDoorClick)
                     else -> ProfileTab(
                         state = state,
                         onLogout = viewModel::logout,
@@ -1112,5 +1154,83 @@ private fun ProfileTab(
             lineHeight = 15.sp,
             modifier = Modifier.fillMaxWidth()
         )
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper para Geofencing / Validación de Proximidad Física
+// ─────────────────────────────────────────────────────────────────────────────
+
+private fun triggerOpenWithLocation(
+    context: Context,
+    viewModel: MainScreenViewModel,
+    vibrateSuccess: () -> Unit
+) {
+    val fineGranted = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+
+    val coarseGranted = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+
+    if (!fineGranted && !coarseGranted) {
+        viewModel.showLocationError("Permiso de ubicación denegado. Es obligatorio para abrir el torno.")
+        return
+    }
+
+    try {
+        val lm = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+        if (lm == null) {
+            viewModel.showLocationError("Servicio de ubicación no disponible.")
+            return
+        }
+
+        val lastGps = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+        val lastNet = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+        val bestLast = when {
+            lastGps != null && lastNet != null -> if (lastGps.time >= lastNet.time) lastGps else lastNet
+            lastGps != null -> lastGps
+            else -> lastNet
+        }
+
+        // Si la última posición conocida tiene menos de 45 segundos, la usamos directamente
+        if (bestLast != null && (System.currentTimeMillis() - bestLast.time) < 45_000) {
+            viewModel.openDoor(vibrateSuccess, bestLast.latitude, bestLast.longitude)
+            return
+        }
+
+        // De lo contrario solicitamos una lectura rápida y fresca
+        val cancellationSignal = CancellationSignal()
+        LocationManagerCompat.getCurrentLocation(
+            lm,
+            LocationManager.GPS_PROVIDER,
+            cancellationSignal,
+            ContextCompat.getMainExecutor(context)
+        ) { location ->
+            if (location != null) {
+                viewModel.openDoor(vibrateSuccess, location.latitude, location.longitude)
+            } else {
+                LocationManagerCompat.getCurrentLocation(
+                    lm,
+                    LocationManager.NETWORK_PROVIDER,
+                    cancellationSignal,
+                    ContextCompat.getMainExecutor(context)
+                ) { netLoc ->
+                    val finalLoc = netLoc ?: bestLast
+                    if (finalLoc != null) {
+                        viewModel.openDoor(vibrateSuccess, finalLoc.latitude, finalLoc.longitude)
+                    } else {
+                        viewModel.showLocationError("Buscando señal GPS... Inténtalo de nuevo en unos segundos.")
+                    }
+                }
+            }
+        }
+    } catch (_: SecurityException) {
+        viewModel.showLocationError("Permiso de ubicación requerido para abrir el torno.")
+    } catch (e: Exception) {
+        viewModel.showLocationError("Error de ubicación: ${e.message}")
     }
 }

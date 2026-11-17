@@ -632,69 +632,103 @@
             const title = document.getElementById('unlockTitle');
             const sub = document.getElementById('unlockSub');
 
-            btn.classList.add('opening');
-            icon.textContent = '⏳';
-            title.textContent = 'ABRIENDO...';
-            sub.textContent = 'Contactando con el torno';
-
-            if (navigator.vibrate) navigator.vibrate(80);
-
-            try {
-                const res = await fetch('/api/door/open', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Api-Key': API_KEY
-                    },
-                    body: JSON.stringify({
-                        card_id: currentClient.code,
-                        api_key: API_KEY,
-                        source: 'santadoor_ios_pwa'
-                    })
-                });
-                const data = await res.json();
-
-                if (data.success) {
-                    if (navigator.vibrate) navigator.vibrate([100, 80, 200]);
-                    btn.classList.remove('opening');
-                    btn.classList.add('success');
-                    icon.textContent = '🔓';
-                    title.textContent = '¡ABIERTO!';
-                    sub.textContent = 'Pase autorizado · Torno activo';
-
-                    setTimeout(() => {
-                        btn.classList.remove('success');
-                        icon.textContent = '🚪';
-                        title.textContent = 'ABRIR TORNO';
-                        sub.textContent = 'Toca para desbloquear';
-                        isUnlocking = false;
-                    }, 4000);
-                } else {
-                    btn.classList.remove('opening');
-                    icon.textContent = '❌';
-                    title.textContent = 'DENEGADO';
-                    sub.textContent = data.message || 'Cuota no activa';
-
-                    setTimeout(() => {
-                        icon.textContent = '🚪';
-                        title.textContent = 'ABRIR TORNO';
-                        sub.textContent = 'Toca para desbloquear';
-                        isUnlocking = false;
-                    }, 3000);
-                }
-            } catch (e) {
-                btn.classList.remove('opening');
-                icon.textContent = '⚠️';
-                title.textContent = 'ERROR RED';
-                sub.textContent = 'No se pudo conectar al torno';
-
+            const resetBtn = (delay = 3500) => {
                 setTimeout(() => {
+                    btn.classList.remove('opening', 'success');
                     icon.textContent = '🚪';
                     title.textContent = 'ABRIR TORNO';
                     sub.textContent = 'Toca para desbloquear';
                     isUnlocking = false;
-                }, 3000);
+                }, delay);
+            };
+
+            // 1. Verificación de soporte de geolocalización
+            if (!navigator.geolocation) {
+                alert('Tu dispositivo no soporta geolocalización. Es obligatoria para abrir el torno.');
+                isUnlocking = false;
+                return;
             }
+
+            btn.classList.add('opening');
+            icon.textContent = '📍';
+            title.textContent = 'UBICACIÓN...';
+            sub.textContent = 'Comprobando cercanía al gimnasio';
+
+            if (navigator.vibrate) navigator.vibrate(50);
+
+            // 2. Obtener posición GPS precisa
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const accuracy = position.coords.accuracy;
+
+                    icon.textContent = '⏳';
+                    title.textContent = 'ABRIENDO...';
+                    sub.textContent = 'Contactando con el torno';
+
+                    try {
+                        const res = await fetch('/api/door/open', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Api-Key': API_KEY
+                            },
+                            body: JSON.stringify({
+                                card_id: currentClient.code,
+                                api_key: API_KEY,
+                                source: 'santadoor_ios_pwa',
+                                latitude: lat,
+                                longitude: lng,
+                                accuracy: accuracy
+                            })
+                        });
+                        const data = await res.json();
+
+                        if (data.success) {
+                            if (navigator.vibrate) navigator.vibrate([100, 80, 200]);
+                            btn.classList.remove('opening');
+                            btn.classList.add('success');
+                            icon.textContent = '🔓';
+                            title.textContent = '¡ABIERTO!';
+                            sub.textContent = 'Pase autorizado · Torno activo';
+                            resetBtn(4000);
+                        } else {
+                            btn.classList.remove('opening');
+                            icon.textContent = '❌';
+                            title.textContent = data.code === 'OUT_OF_RANGE' ? 'DEMASIADO LEJOS' : 'DENEGADO';
+                            sub.textContent = data.message || 'Acceso no permitido';
+                            resetBtn(4000);
+                        }
+                    } catch (e) {
+                        btn.classList.remove('opening');
+                        icon.textContent = '⚠️';
+                        title.textContent = 'ERROR RED';
+                        sub.textContent = 'No se pudo conectar al torno';
+                        resetBtn(3500);
+                    }
+                },
+                (error) => {
+                    btn.classList.remove('opening');
+                    icon.textContent = '📍';
+                    title.textContent = 'UBICACIÓN REQUERIDA';
+
+                    let errorMsg = 'Es necesario activar el GPS para abrir el torno.';
+                    if (error.code === error.PERMISSION_DENIED) {
+                        errorMsg = 'Permiso denegado. Activa la ubicación en Safari para abrir el torno.';
+                    } else if (error.code === error.TIMEOUT || error.code === error.POSITION_UNAVAILABLE) {
+                        errorMsg = 'Buscando señal GPS... Inténtalo de nuevo en unos segundos.';
+                    }
+                    sub.textContent = errorMsg;
+                    alert(errorMsg);
+                    resetBtn(3500);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 8000,
+                    maximumAge: 10000
+                }
+            );
         }
 
         function switchTab(tab) {

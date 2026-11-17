@@ -574,9 +574,12 @@ html_content = f'''<!DOCTYPE html>
                     <div class="door-row" style="margin-bottom: 0;">
                         <div class="door-icon-box">{svg_nfc}</div>
                         <div class="door-text">
-                            <strong>Por Proximidad NFC (Exclusivo Android):</strong><br>
-                            Con el móvil desbloqueado, acerca la parte trasera del teléfono al lector del torno como si fuera tu tarjeta física.
+                            <strong>Tag NFC o Móvil (Por Contacto):</strong><br>
+                            Acerca tu llavero/tag NFC físico o tu móvil Android con NFC al lector del torno como si fuera tu tarjeta de socio.
                         </div>
+                    </div>
+                    <div class="note-warning" style="background: #EFF6FF; border-color: #BFDBFE; color: #1E40AF; margin-top: 6px;">
+                        <strong>Ubicación requerida:</strong> Al usar el botón digital debes estar junto al gimnasio (solicitará permiso GPS).
                     </div>
                 </div>
             </td>
@@ -603,3 +606,4 @@ pdf_out = 'Guia_Acceso_SantaDoor_Santamaria_Gym.pdf'
 HTML(string=html_content).write_pdf(pdf_out)
 shutil.copyfile(pdf_out, 'app/public/guia-acceso.pdf')
 print(f'OK: {pdf_out} y app/public/guia-acceso.pdf')
+

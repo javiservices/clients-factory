@@ -218,23 +218,12 @@ class DoorRepository {
     suspend fun unlockDoor(
         serverUrl: String,
         cardId: String,
-        apiKey: String = DoorPreferences.INTERNAL_API_KEY
+        apiKey: String = DoorPreferences.INTERNAL_API_KEY,
+        latitude: Double? = null,
+        longitude: Double? = null
     ): Result<UnlockResult> =
         withContext(Dispatchers.IO) {
             try {
-                // Primero validamos la cuota con checkCard
-                val checkResult = checkCard(serverUrl, cardId, apiKey).getOrThrow()
-                if (!checkResult.success) {
-                    return@withContext Result.success(
-                        UnlockResult(
-                            success = false,
-                            message = checkResult.message,
-                            clientName = checkResult.clientName
-                        )
-                    )
-                }
-
-                // Disparamos la señal de apertura remota al endpoint de apertura
                 val cleanUrl = serverUrl.trimEnd('/')
                 val openEndpoint = "$cleanUrl/api/door/open"
 
@@ -253,6 +242,10 @@ class DoorRepository {
                     put("card_id", cardId.trim())
                     put("api_key", apiKey)
                     put("source", "santadoor_android")
+                    if (latitude != null && longitude != null) {
+                        put("latitude", latitude)
+                        put("longitude", longitude)
+                    }
                 }.toString()
 
                 conn.outputStream.use { os ->
@@ -265,33 +258,17 @@ class DoorRepository {
                 val json = JSONObject(resp)
 
                 val success = json.optBoolean("success", code in 200..299)
-                val msg = json.optString("message", checkResult.message)
+                val msg = json.optString("message", if (success) "¡Apertura autorizada! Torno activado." else "Acceso denegado")
 
                 Result.success(
                     UnlockResult(
                         success = success,
                         message = msg,
-                        warning = checkResult.warning,
-                        warningMessage = checkResult.warningMessage,
-                        clientName = checkResult.clientName
+                        clientName = json.optJSONObject("client")?.optString("name")
                     )
                 )
             } catch (e: Exception) {
-                // Fallback de validación si el endpoint /api/door/open tuviera cualquier contingencia
-                try {
-                    val fallbackCheck = checkCard(serverUrl, cardId, apiKey).getOrThrow()
-                    Result.success(
-                        UnlockResult(
-                            success = fallbackCheck.success,
-                            message = if (fallbackCheck.success) "¡Acceso autorizado verificado!" else fallbackCheck.message,
-                            warning = fallbackCheck.warning,
-                            warningMessage = fallbackCheck.warningMessage,
-                            clientName = fallbackCheck.clientName
-                        )
-                    )
-                } catch (ex: Exception) {
-                    Result.failure(e)
-                }
+                Result.failure(e)
             }
         }
 }
