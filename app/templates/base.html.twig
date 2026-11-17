@@ -22,6 +22,25 @@
 
     {# ─── Global Mobile Responsive Overrides ─── #}
     <style>
+        /* ─── Marcado visual de campos obligatorios y opcionales ─── */
+        .form-label.required::after,
+        label.required::after {
+            content: " *";
+            color: #dc2626 !important;
+            font-weight: 700;
+        }
+        .req-star {
+            color: #dc2626 !important;
+            font-weight: 700;
+            margin-left: 0.15rem;
+        }
+        .opt-badge {
+            font-size: 0.72rem;
+            color: #64748b;
+            font-weight: 400;
+            margin-left: 0.35rem;
+        }
+
         html {
             overflow-x: hidden !important;
             max-width: 100% !important;

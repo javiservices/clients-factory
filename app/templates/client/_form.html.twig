@@ -9,7 +9,9 @@
         </div>
         <div class="col-md-6">
             <div class="mb-3">
-                {{ form_label(form.clientNumber) }}
+                <label class="form-label" for="{{ form.clientNumber.vars.id }}">
+                    Nº de Socio <span class="opt-badge">(opcional)</span>
+                </label>
                 {{ form_widget(form.clientNumber) }}
                 {{ form_help(form.clientNumber) }}
                 {{ form_errors(form.clientNumber) }}
@@ -26,28 +28,36 @@
         </div>
         <div class="col-md-6">
             <div class="mb-3">
-                {{ form_label(form.name, 'Nombre', {'label_attr': {'class': 'form-label'}}) }}
+                <label class="form-label" for="{{ form.name.vars.id }}">
+                    Nombre <span class="req-star" title="Obligatorio">*</span>
+                </label>
                 {{ form_widget(form.name, {'attr': {'class': 'form-control'}}) }}
                 {{ form_errors(form.name) }}
             </div>
         </div>
         <div class="col-md-6">
             <div class="mb-3">
-                {{ form_label(form.surname, 'Apellidos', {'label_attr': {'class': 'form-label'}}) }}
+                <label class="form-label" for="{{ form.surname.vars.id }}">
+                    Apellidos <span class="req-star" title="Obligatorio">*</span>
+                </label>
                 {{ form_widget(form.surname, {'attr': {'class': 'form-control'}}) }}
                 {{ form_errors(form.surname) }}
             </div>
         </div>
         <div class="col-md-6">
             <div class="mb-3">
-                {{ form_label(form.birthDate, 'Fecha de nacimiento', {'label_attr': {'class': 'form-label'}}) }}
+                <label class="form-label" for="{{ form.birthDate.vars.id }}">
+                    Fecha de nacimiento <span class="opt-badge">(opcional)</span>
+                </label>
                 {{ form_widget(form.birthDate, {'attr': {'class': 'form-control'}}) }}
                 {{ form_errors(form.birthDate) }}
             </div>
         </div>
         <div class="col-md-6">
             <div class="mb-3">
-                {{ form_label(form.idNumber, 'DNI/NIE', {'label_attr': {'class': 'form-label'}}) }}
+                <label class="form-label" for="{{ form.idNumber.vars.id }}">
+                    DNI/NIE <span class="req-star" title="Obligatorio">*</span>
+                </label>
                 {{ form_widget(form.idNumber, {'attr': {'class': 'form-control'}}) }}
                 {{ form_errors(form.idNumber) }}
             </div>
@@ -63,21 +73,27 @@
         </div>
         <div class="col-12">
             <div class="mb-3">
-                {{ form_label(form.address, 'Dirección', {'label_attr': {'class': 'form-label'}}) }}
+                <label class="form-label" for="{{ form.address.vars.id }}">
+                    Dirección <span class="opt-badge">(opcional)</span>
+                </label>
                 {{ form_widget(form.address, {'attr': {'class': 'form-control'}}) }}
                 {{ form_errors(form.address) }}
             </div>
         </div>
         <div class="col-md-6">
             <div class="mb-3">
-                {{ form_label(form.locality, 'Localidad', {'label_attr': {'class': 'form-label'}}) }}
+                <label class="form-label" for="{{ form.locality.vars.id }}">
+                    Localidad <span class="opt-badge">(opcional)</span>
+                </label>
                 {{ form_widget(form.locality, {'attr': {'class': 'form-control'}}) }}
                 {{ form_errors(form.locality) }}
             </div>
         </div>
         <div class="col-md-6">
             <div class="mb-3">
-                {{ form_label(form.zipCode, 'Código postal', {'label_attr': {'class': 'form-label'}}) }}
+                <label class="form-label" for="{{ form.zipCode.vars.id }}">
+                    Código postal <span class="opt-badge">(opcional)</span>
+                </label>
                 {{ form_widget(form.zipCode, {'attr': {'class': 'form-control'}}) }}
                 {{ form_errors(form.zipCode) }}
             </div>
@@ -93,7 +109,9 @@
         </div>
         <div class="col-md-6">
             <div class="mb-3">
-                {{ form_label(form.phone, 'Teléfono', {'label_attr': {'class': 'form-label'}}) }}
+                <label class="form-label" for="{{ form.phone.vars.id }}">
+                    Teléfono <span class="opt-badge">(opcional)</span>
+                </label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-telephone"></i></span>
                     {{ form_widget(form.phone, {'attr': {'class': 'form-control'}}) }}
@@ -103,7 +121,9 @@
         </div>
         <div class="col-md-6">
             <div class="mb-3">
-                {{ form_label(form.email, 'Email', {'label_attr': {'class': 'form-label'}}) }}
+                <label class="form-label" for="{{ form.email.vars.id }}">
+                    Email <span class="opt-badge">(opcional)</span>
+                </label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-envelope"></i></span>
                     {{ form_widget(form.email, {'attr': {'class': 'form-control', 'type': 'email'}}) }}
@@ -122,14 +142,18 @@
         </div>
         <div class="col-md-6">
             <div class="mb-3">
-                {{ form_label(form.startDate, 'Fecha de alta', {'label_attr': {'class': 'form-label'}}) }}
+                <label class="form-label" for="{{ form.startDate.vars.id }}">
+                    Fecha de alta <span class="req-star" title="Obligatorio">*</span>
+                </label>
                 {{ form_widget(form.startDate, {'attr': {'class': 'form-control'}}) }}
                 {{ form_errors(form.startDate) }}
             </div>
         </div>
         <div class="col-md-6">
             <div class="mb-3">
-                {{ form_label(form.cardCode, 'Código de tarjeta', {'label_attr': {'class': 'form-label'}}) }}
+                <label class="form-label" for="{{ form.cardCode.vars.id }}">
+                    Código de tarjeta <span class="opt-badge">(opcional)</span>
+                </label>
                 {{ form_widget(form.cardCode, {'attr': {'class': 'form-control'}}) }}
                 {{ form_errors(form.cardCode) }}
             </div>

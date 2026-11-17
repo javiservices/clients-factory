@@ -22,12 +22,25 @@
     <div class="card-body">
         {{ form_start(form, {'attr': {'enctype': 'multipart/form-data'}}) }}
 
+            {# Aviso explicativo de obligatoriedad #}
+            <div class="d-flex flex-wrap align-items-center justify-content-between p-2.5 px-3 mb-4 rounded-3" style="background:#f8fafc; border:1px solid #e2e8f0; font-size:0.83rem;">
+                <div class="d-flex align-items-center gap-2 text-secondary">
+                    <i class="bi bi-info-circle-fill text-primary fs-6"></i>
+                    <span>Los campos marcados con <strong class="text-danger">*</strong> son obligatorios. El resto de campos son opcionales.</span>
+                </div>
+                <span class="badge bg-white text-secondary border fw-normal d-none d-sm-inline-block px-2 py-1">
+                    Obligatorios: Nombre, Apellidos, DNI, Fecha y Tarifa
+                </span>
+            </div>
+
             <p class="card-section-title">
                 <i class="bi bi-person-badge" aria-hidden="true"></i>Identificador de socio
             </p>
             <div class="row g-3 mb-4">
                 <div class="col-12 col-md-6">
-                    {{ form_label(form.clientNumber) }}
+                    <label class="form-label small" for="{{ form.clientNumber.vars.id }}">
+                        Nº de Socio / ID Cliente <span class="badge bg-light text-muted border fw-normal ms-1" style="font-size:0.7rem">Sugerido</span>
+                    </label>
                     {{ form_widget(form.clientNumber) }}
                     {{ form_help(form.clientNumber) }}
                     {{ form_errors(form.clientNumber) }}
@@ -39,22 +52,30 @@
             </p>
             <div class="row g-3 mb-4">
                 <div class="col-12 col-md-6">
-                    {{ form_label(form.name) }}
+                    <label class="form-label small" for="{{ form.name.vars.id }}">
+                        Nombre <span class="req-star" title="Obligatorio">*</span>
+                    </label>
                     {{ form_widget(form.name) }}
                     {{ form_errors(form.name) }}
                 </div>
                 <div class="col-12 col-md-6">
-                    {{ form_label(form.surname) }}
+                    <label class="form-label small" for="{{ form.surname.vars.id }}">
+                        Apellidos <span class="req-star" title="Obligatorio">*</span>
+                    </label>
                     {{ form_widget(form.surname) }}
                     {{ form_errors(form.surname) }}
                 </div>
                 <div class="col-12 col-md-6">
-                    {{ form_label(form.idNumber) }}
+                    <label class="form-label small" for="{{ form.idNumber.vars.id }}">
+                        DNI / NIE <span class="req-star" title="Obligatorio">*</span>
+                    </label>
                     {{ form_widget(form.idNumber) }}
                     {{ form_errors(form.idNumber) }}
                 </div>
                 <div class="col-12 col-md-6">
-                    {{ form_label(form.birthDate) }}
+                    <label class="form-label small" for="{{ form.birthDate.vars.id }}">
+                        Fecha de nacimiento <span class="opt-badge">(opcional)</span>
+                    </label>
                     {{ form_widget(form.birthDate) }}
                     {{ form_errors(form.birthDate) }}
                 </div>
@@ -65,32 +86,44 @@
             </p>
             <div class="row g-3 mb-4">
                 <div class="col-12 col-md-6">
-                    {{ form_label(form.phone) }}
+                    <label class="form-label small" for="{{ form.phone.vars.id }}">
+                        Teléfono <span class="opt-badge">(opcional)</span>
+                    </label>
                     {{ form_widget(form.phone) }}
                     {{ form_errors(form.phone) }}
                 </div>
                 <div class="col-12 col-md-6">
-                    {{ form_label(form.email) }}
+                    <label class="form-label small" for="{{ form.email.vars.id }}">
+                        Email <span class="opt-badge">(opcional)</span>
+                    </label>
                     {{ form_widget(form.email) }}
                     {{ form_errors(form.email) }}
                 </div>
                 <div class="col-12">
-                    {{ form_label(form.address) }}
+                    <label class="form-label small" for="{{ form.address.vars.id }}">
+                        Dirección <span class="opt-badge">(opcional)</span>
+                    </label>
                     {{ form_widget(form.address) }}
                     {{ form_errors(form.address) }}
                 </div>
                 <div class="col-12 col-md-8">
-                    {{ form_label(form.locality) }}
+                    <label class="form-label small" for="{{ form.locality.vars.id }}">
+                        Localidad <span class="opt-badge">(opcional)</span>
+                    </label>
                     {{ form_widget(form.locality) }}
                     {{ form_errors(form.locality) }}
                 </div>
                 <div class="col-12 col-md-4">
-                    {{ form_label(form.zipCode) }}
+                    <label class="form-label small" for="{{ form.zipCode.vars.id }}">
+                        Código postal <span class="opt-badge">(opcional)</span>
+                    </label>
                     {{ form_widget(form.zipCode) }}
                     {{ form_errors(form.zipCode) }}
                 </div>
                 <div class="col-12">
-                    {{ form_label(form.iban) }}
+                    <label class="form-label small" for="{{ form.iban.vars.id }}">
+                        Cuenta Bancaria (IBAN) <span class="opt-badge">(opcional)</span>
+                    </label>
                     {{ form_widget(form.iban) }}
                     {{ form_errors(form.iban) }}
                     <div class="form-text">Cuenta bancaria para remesas SEPA (Norma 19 / XML ISO 20022). Formato español: ES...</div>
@@ -102,18 +135,24 @@
             </p>
             <div class="row g-3 mb-4">
                 <div class="col-12 col-md-6">
-                    {{ form_label(form.cardCode) }}
+                    <label class="form-label small" for="{{ form.cardCode.vars.id }}">
+                        Código de tarjeta <span class="opt-badge">(opcional)</span>
+                    </label>
                     {{ form_widget(form.cardCode) }}
                     <div class="form-text"><i class="bi bi-info-circle me-1"></i>Haz clic para escanear una tarjeta</div>
                     {{ form_errors(form.cardCode) }}
                 </div>
                 <div class="col-12 col-md-6">
-                    {{ form_label(form.startDate) }}
+                    <label class="form-label small" for="{{ form.startDate.vars.id }}">
+                        Fecha de inscripción <span class="req-star" title="Obligatorio">*</span>
+                    </label>
                     {{ form_widget(form.startDate) }}
                     {{ form_errors(form.startDate) }}
                 </div>
                 <div class="col-12 col-md-6">
-                    {{ form_label(form.subscriptionType) }}
+                    <label class="form-label small" for="{{ form.subscriptionType.vars.id }}">
+                        Tipo de suscripción <span class="req-star" title="Obligatorio">*</span>
+                    </label>
                     {{ form_widget(form.subscriptionType) }}
                     {{ form_errors(form.subscriptionType) }}
                 </div>
@@ -141,7 +180,9 @@
                 <div class="col-12">
                     <div class="p-3 rounded" style="background:var(--c-gray-50);border:1px solid var(--c-gray-200)">
                         <div class="small text-muted mb-2"><i class="bi bi-image me-1"></i>Opcional: sube una foto del cliente.</div>
-                        {{ form_label(form.photo) }}
+                        <label class="form-label small" for="{{ form.photo.vars.id }}">
+                            Foto del cliente <span class="opt-badge">(opcional)</span>
+                        </label>
                         {{ form_widget(form.photo) }}
                         {{ form_errors(form.photo) }}
                     </div>
@@ -153,7 +194,9 @@
             </p>
             <div class="row g-3 mb-4">
                 <div class="col-12">
-                    {{ form_label(form.welcomeMessage) }}
+                    <label class="form-label small" for="{{ form.welcomeMessage.vars.id }}">
+                        Mensaje de bienvenida en el torno <span class="opt-badge">(opcional)</span>
+                    </label>
                     {{ form_widget(form.welcomeMessage) }}
                     {{ form_help(form.welcomeMessage) }}
                     {{ form_errors(form.welcomeMessage) }}

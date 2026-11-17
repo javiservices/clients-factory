@@ -391,6 +391,7 @@ final class ClientController extends AbstractController
         // Prefill con el siguiente número de socio correlativo disponible
         $nextNumber = $clientRepository->getNextClientNumber();
         $client->setClientNumber($nextNumber);
+        $client->setStartDate(new \DateTime());
 
         $form = $this->createForm(ClientType::class, $client);
         $form->handleRequest($request);

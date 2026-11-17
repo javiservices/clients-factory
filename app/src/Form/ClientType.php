@@ -44,8 +44,9 @@ class ClientType extends AbstractType
                 ],
                 'label' => 'Nombre',
                 'label_attr' => [
-                    'class' => 'form-label small'
-                ]
+                    'class' => 'form-label small required'
+                ],
+                'required' => true,
             ])
             ->add('surname', TextType::class, [
                 'attr' => [
@@ -54,8 +55,9 @@ class ClientType extends AbstractType
                 ],
                 'label' => 'Apellidos',
                 'label_attr' => [
-                    'class' => 'form-label small'
-                ]
+                    'class' => 'form-label small required'
+                ],
+                'required' => true,
             ])
             ->add('address', TextType::class, [
                 'attr' => [
@@ -65,7 +67,8 @@ class ClientType extends AbstractType
                 'label' => 'Dirección',
                 'label_attr' => [
                     'class' => 'form-label small'
-                ]
+                ],
+                'required' => false,
             ])
             ->add('locality', TextType::class, [
                 'attr' => [
@@ -75,7 +78,8 @@ class ClientType extends AbstractType
                 'label' => 'Localidad',
                 'label_attr' => [
                     'class' => 'form-label small'
-                ]
+                ],
+                'required' => false,
             ])
             ->add('zipCode', TextType::class, [
                 'attr' => [
@@ -85,7 +89,8 @@ class ClientType extends AbstractType
                 'label' => 'Código postal',
                 'label_attr' => [
                     'class' => 'form-label small'
-                ]
+                ],
+                'required' => false,
             ])
             ->add('birthDate', DateType::class, [
                 'widget' => 'single_text',
@@ -95,7 +100,8 @@ class ClientType extends AbstractType
                 'label' => 'Fecha de nacimiento',
                 'label_attr' => [
                     'class' => 'form-label small'
-                ]
+                ],
+                'required' => false,
             ])
             ->add('phone', TextType::class, [
                 'attr' => [
@@ -105,7 +111,8 @@ class ClientType extends AbstractType
                 'label' => 'Teléfono',
                 'label_attr' => [
                     'class' => 'form-label small'
-                ]
+                ],
+                'required' => false,
             ])
             // Email y Facturable juntos para mejor visual
             ->add('email', TextType::class, [
@@ -135,10 +142,11 @@ class ClientType extends AbstractType
                     'class' => 'form-control',
                     'placeholder' => 'Introduce el DNI/NIE'
                 ],
-                'label' => 'DNI',
+                'label' => 'DNI / NIE',
                 'label_attr' => [
-                    'class' => 'form-label small'
-                ]
+                    'class' => 'form-label small required'
+                ],
+                'required' => true,
             ])
             ->add('iban', TextType::class, [
                 'attr' => [
@@ -159,8 +167,9 @@ class ClientType extends AbstractType
                 ],
                 'label' => 'Fecha de inscripción',
                 'label_attr' => [
-                    'class' => 'form-label small'
-                ]
+                    'class' => 'form-label small required'
+                ],
+                'required' => true,
             ])
             ->add('cardCode', TextType::class, [
                 'attr' => [
@@ -172,7 +181,8 @@ class ClientType extends AbstractType
                 'label' => 'Código de tarjeta',
                 'label_attr' => [
                     'class' => 'form-label small'
-                ]
+                ],
+                'required' => false,
             ])
             ->add('photo', FileType::class, [
                 'label' => 'Foto del cliente',
@@ -197,7 +207,7 @@ class ClientType extends AbstractType
                     'data-subscription-type' => 'select' // Añadido para JS
                 ],
                 'label_attr' => [
-                    'class' => 'form-label small'
+                    'class' => 'form-label small required'
                 ]
             ])
             ->add('remainingPasses', null, [
