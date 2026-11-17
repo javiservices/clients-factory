@@ -33,6 +33,24 @@
                 </div>
             </div>
 
+            <!-- Seguridad y Contraseña -->
+            <p class="card-section-title">
+                <i class="bi bi-shield-lock me-2" aria-hidden="true"></i>Seguridad y Contraseña
+            </p>
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                    {{ form_label(form.plainPassword.first) }}
+                    {{ form_widget(form.plainPassword.first) }}
+                    {{ form_errors(form.plainPassword.first) }}
+                    <div class="form-text">Déjalo en blanco si deseas mantener la contraseña actual.</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    {{ form_label(form.plainPassword.second) }}
+                    {{ form_widget(form.plainPassword.second) }}
+                    {{ form_errors(form.plainPassword.second) }}
+                </div>
+            </div>
+
             <!-- Información de Empresa -->
             <p class="card-section-title">
                 <i class="bi bi-building me-2" aria-hidden="true"></i>Datos Fiscales de la Empresa

@@ -5,9 +5,12 @@ namespace App\Form;
 use App\Entity\User;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\PasswordType;
+use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Length;
 
 class UserProfileType extends AbstractType
 {
@@ -23,6 +26,37 @@ class UserProfileType extends AbstractType
                 'label_attr' => [
                     'class' => 'form-label'
                 ]
+            ])
+            ->add('plainPassword', RepeatedType::class, [
+                'type' => PasswordType::class,
+                'mapped' => false,
+                'required' => false,
+                'first_options' => [
+                    'label' => 'Nueva contraseña',
+                    'attr' => [
+                        'class' => 'form-control',
+                        'placeholder' => 'Mínimo 6 caracteres (dejar en blanco para conservar la actual)',
+                        'autocomplete' => 'new-password'
+                    ],
+                    'label_attr' => ['class' => 'form-label']
+                ],
+                'second_options' => [
+                    'label' => 'Confirmar nueva contraseña',
+                    'attr' => [
+                        'class' => 'form-control',
+                        'placeholder' => 'Repite la nueva contraseña',
+                        'autocomplete' => 'new-password'
+                    ],
+                    'label_attr' => ['class' => 'form-label']
+                ],
+                'invalid_message' => 'Las contraseñas no coinciden.',
+                'constraints' => [
+                    new Length([
+                        'min' => 6,
+                        'minMessage' => 'La contraseña debe tener al menos {{ limit }} caracteres.',
+                        'max' => 4096,
+                    ]),
+                ],
             ])
             ->add('companyName', TextType::class, [
                 'attr' => [
