@@ -79,25 +79,25 @@ class Client
     /**
      * @var Collection<int, Subscription>
      */
-    #[ORM\OneToMany(targetEntity: Subscription::class, mappedBy: 'client')]
+    #[ORM\OneToMany(targetEntity: Subscription::class, mappedBy: 'client', cascade: ['remove'], orphanRemoval: true)]
     private Collection $subscriptions;
 
     /**
      * @var Collection<int, AccessLog>
      */
-    #[ORM\OneToMany(targetEntity: AccessLog::class, mappedBy: 'Client', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: AccessLog::class, mappedBy: 'Client', cascade: ['remove'], orphanRemoval: true)]
     private Collection $accessLogs;
 
     /**
      * @var Collection<int, Invoice>
      */
-    #[ORM\OneToMany(targetEntity: Invoice::class, mappedBy: 'client')]
+    #[ORM\OneToMany(targetEntity: Invoice::class, mappedBy: 'client', cascade: ['remove'], orphanRemoval: true)]
     private Collection $invoices;
 
     /**
      * @var Collection<int, BillingRecord>
      */
-    #[ORM\OneToMany(targetEntity: BillingRecord::class, mappedBy: 'client')]
+    #[ORM\OneToMany(targetEntity: BillingRecord::class, mappedBy: 'client', cascade: ['remove'], orphanRemoval: true)]
     private Collection $billingRecords;
 
     public function __construct()

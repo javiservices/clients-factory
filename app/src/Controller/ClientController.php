@@ -548,16 +548,38 @@ final class ClientController extends AbstractController
     public function delete(Request $request, Client $client, EntityManagerInterface $entityManager): Response
     {
         if ($this->isCsrfTokenValid('delete'.$client->getId(), $request->request->get('_token'))) {
-            // Eliminar las suscripciones asociadas al cliente
-            foreach ($client->getSubscriptions() as $subscription) {
-                $entityManager->remove($subscription);
+            try {
+                // Eliminar foto física si existe
+                if ($client->getPhoto()) {
+                    $uploadsDir = $this->getParameter('uploads_directory');
+                    $photoPath = $uploadsDir . '/' . $client->getPhoto();
+                    if (file_exists($photoPath)) {
+                        @unlink($photoPath);
+                    }
+                }
+
+                // Eliminar dependencias respetando el orden de claves foráneas
+                foreach ($client->getBillingRecords() as $billingRecord) {
+                    $entityManager->remove($billingRecord);
+                }
+                foreach ($client->getInvoices() as $invoice) {
+                    $entityManager->remove($invoice);
+                }
+                foreach ($client->getAccessLogs() as $accessLog) {
+                    $entityManager->remove($accessLog);
+                }
+                foreach ($client->getSubscriptions() as $subscription) {
+                    $entityManager->remove($subscription);
+                }
+
+                // Eliminar el cliente
+                $entityManager->remove($client);
+                $entityManager->flush();
+
+                $this->addFlash('success', 'Cliente eliminado correctamente.');
+            } catch (\Exception $e) {
+                $this->addFlash('error', 'Error al eliminar el cliente: ' . $e->getMessage());
             }
-    
-            // Eliminar el cliente
-            $entityManager->remove($client);
-            $entityManager->flush();
-    
-            $this->addFlash('success', 'Cliente eliminado correctamente.');
         }
     
         return $this->redirectToRoute('app_client_index', [], Response::HTTP_SEE_OTHER);

@@ -51,13 +51,13 @@ class ClientRepository extends ServiceEntityRepository
     }
 
     /**
-     * Calcula el siguiente número de socio disponible tomando el mayor número actual
-     * entre client_number e id, garantizando que sea estrictamente correlativo.
+     * Calcula el siguiente número de socio disponible tomando el mayor número de socio actual,
+     * garantizando que sea estrictamente correlativo con el sistema de gestión.
      */
     public function getNextClientNumber(): int
     {
         $conn = $this->getEntityManager()->getConnection();
-        $maxNum = $conn->fetchOne('SELECT GREATEST(COALESCE(MAX(client_number), 0), COALESCE(MAX(id), 0)) FROM client');
+        $maxNum = $conn->fetchOne('SELECT COALESCE(MAX(client_number), MAX(id), 0) FROM client');
         return ((int) $maxNum) + 1;
     }
 
