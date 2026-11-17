@@ -191,12 +191,12 @@ fun MainScreen(
             ) {
                 // Pestañas de navegación superiores
                 TabRow(
-                    selectedTabIndex = state.selectedTab,
+                    selectedTabIndex = state.selectedTab.coerceIn(0, 1),
                     containerColor = GymDarkBg,
                     contentColor = Color.White,
                     indicator = { tabPositions ->
                         TabRowDefaults.SecondaryIndicator(
-                            Modifier.tabIndicatorOffset(tabPositions[state.selectedTab]),
+                            Modifier.tabIndicatorOffset(tabPositions[state.selectedTab.coerceIn(0, 1)]),
                             color = GymPrimary
                         )
                     }
@@ -209,11 +209,6 @@ fun MainScreen(
                     Tab(
                         selected = state.selectedTab == 1,
                         onClick = { viewModel.selectTab(1) },
-                        text = { Text("📱 Pase QR", fontWeight = FontWeight.Bold, fontSize = 13.sp) }
-                    )
-                    Tab(
-                        selected = state.selectedTab == 2,
-                        onClick = { viewModel.selectTab(2) },
                         text = { Text("👤 Mi Perfil", fontWeight = FontWeight.Bold, fontSize = 13.sp) }
                     )
                 }
@@ -221,8 +216,7 @@ fun MainScreen(
                 // Contenido según pestaña
                 when (state.selectedTab) {
                     0 -> DoorTab(state = state, onOpenClick = { viewModel.openDoor(vibrateSuccess) })
-                    1 -> QrTab(state = state)
-                    2 -> ProfileTab(
+                    else -> ProfileTab(
                         state = state,
                         onLogout = viewModel::logout,
                         onRefresh = viewModel::checkStatus,

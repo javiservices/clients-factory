@@ -36,7 +36,7 @@ data class MainUiState(
     val loginError: String? = null,
     val unlockStatus: UnlockStatus = UnlockStatus.Idle,
     val hapticEnabled: Boolean = true,
-    val selectedTab: Int = 0 // 0: Torno, 1: Pase QR, 2: Mi Cuenta
+    val selectedTab: Int = 0 // 0: Torno, 1: Mi Perfil
 )
 
 class MainScreenViewModel(application: Application) : AndroidViewModel(application) {
