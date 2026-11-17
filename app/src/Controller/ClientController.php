@@ -159,11 +159,13 @@ final class ClientController extends AbstractController
         if ($exactId !== null) {
             $qb->orderBy('CASE WHEN (c.id = :exactId OR c.client_number = :exactId) THEN 1 ELSE 0 END', 'DESC')
                ->addOrderBy('CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END', 'DESC')
-               ->addOrderBy('COALESCE(c.client_number, c.id)', 'DESC')
+               ->addOrderBy('c.client_number', 'DESC')
+               ->addOrderBy('c.id', 'DESC')
                ->setParameter('exactId', $exactId);
         } else {
             $qb->orderBy('CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END', 'DESC')
-               ->addOrderBy('COALESCE(c.client_number, c.id)', 'DESC');
+               ->addOrderBy('c.client_number', 'DESC')
+               ->addOrderBy('c.id', 'DESC');
         }
 
         $qb->setFirstResult($offset)
