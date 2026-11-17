@@ -16,6 +16,10 @@ class Client
     #[ORM\Column]
     private ?int $id = null;
 
+    /** Nº de Socio / ID de Cliente asignado en gestión de gimnasio (desacoplado del ID técnico autoincremental de BD) */
+    #[ORM\Column(name: 'client_number', type: Types::INTEGER, nullable: true, unique: true)]
+    private ?int $client_number = null;
+
     /** @Datos personales cifrados – LOPD-GDD (LO 3/2018) / RGPD (UE 2016/679) */
     #[ORM\Column(type: 'encrypted_string')]
     private ?string $name = null;
@@ -114,6 +118,26 @@ class Client
         $this->id = $id;
 
         return $this;
+    }
+
+    public function getClientNumber(): ?int
+    {
+        return $this->client_number;
+    }
+
+    public function setClientNumber(?int $client_number): static
+    {
+        $this->client_number = $client_number;
+
+        return $this;
+    }
+
+    /**
+     * Retorna el número de socio si está definido, o el ID técnico de base de datos como fallback.
+     */
+    public function getEffectiveClientNumber(): int
+    {
+        return $this->client_number ?? $this->id ?? 0;
     }
 
     public function getName(): ?string

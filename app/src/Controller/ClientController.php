@@ -64,14 +64,15 @@ final class ClientController extends AbstractController
             $tokens = preg_split('/[\s,]+/', $normalizedSearch, -1, PREG_SPLIT_NO_EMPTY);
 
             $conn = $em->getConnection();
-            $rows = $conn->fetchAllAssociative('SELECT id, name, surname, id_number, phone, email FROM client');
+            $rows = $conn->fetchAllAssociative('SELECT id, client_number, name, surname, id_number, phone, email FROM client');
             $matchedIds = [];
 
             foreach ($rows as $row) {
                 $id = (int) $row['id'];
+                $clientNumber = isset($row['client_number']) && $row['client_number'] !== null ? (int) $row['client_number'] : $id;
 
-                // Si coincide exactamente con el ID numérico buscado, incluirlo prioritariamente
-                if ($exactId !== null && $id === $exactId) {
+                // Si coincide exactamente con el ID numérico o número de socio buscado, incluirlo prioritariamente
+                if ($exactId !== null && ($id === $exactId || $clientNumber === $exactId)) {
                     $matchedIds[] = $id;
                     continue;
                 }
@@ -86,6 +87,7 @@ final class ClientController extends AbstractController
 
                 $haystack = $this->normalizeSearchText(
                     $id . ' #' . $id . ' ' .
+                    $clientNumber . ' #' . $clientNumber . ' ' .
                     $name . ' ' .
                     $surname . ' ' .
                     $dni . ' ' . $cleanDni . ' ' .
@@ -155,13 +157,13 @@ final class ClientController extends AbstractController
         $qb->select('c', 's', 'st');
 
         if ($exactId !== null) {
-            $qb->orderBy('CASE WHEN c.id = :exactId THEN 1 ELSE 0 END', 'DESC')
+            $qb->orderBy('CASE WHEN (c.id = :exactId OR c.client_number = :exactId) THEN 1 ELSE 0 END', 'DESC')
                ->addOrderBy('CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END', 'DESC')
-               ->addOrderBy('c.id', 'DESC')
+               ->addOrderBy('COALESCE(c.client_number, c.id)', 'DESC')
                ->setParameter('exactId', $exactId);
         } else {
             $qb->orderBy('CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END', 'DESC')
-               ->addOrderBy('c.id', 'DESC');
+               ->addOrderBy('COALESCE(c.client_number, c.id)', 'DESC');
         }
 
         $qb->setFirstResult($offset)
@@ -224,7 +226,8 @@ final class ClientController extends AbstractController
         Client $client,
         EntityManagerInterface $entityManager,
         InvoiceService $invoiceService,
-        ImageOptimizerService $imageOptimizer
+        ImageOptimizerService $imageOptimizer,
+        ClientRepository $clientRepository
     ): Response {
         // Obtener la última suscripción del cliente
         $subscriptions = $client->getSubscriptions();
@@ -245,6 +248,17 @@ final class ClientController extends AbstractController
         $form->handleRequest($request);
     
         if ($form->isSubmitted() && $form->isValid()) {
+            // Validar que el client_number no esté asignado a otro socio
+            if ($client->getClientNumber() !== null) {
+                $existing = $clientRepository->findOneBy(['client_number' => $client->getClientNumber()]);
+                if ($existing && $existing->getId() !== $client->getId()) {
+                    $this->addFlash('error', sprintf('El Nº de Socio / ID %d ya pertenece a %s %s. Elige un número distinto.', $client->getClientNumber(), $existing->getName(), $existing->getSurname()));
+                    return $this->render('client/edit.html.twig', [
+                        'client' => $client,
+                        'form' => $form->createView(),
+                    ]);
+                }
+            }
             // ── Foto del cliente ──────────────────────────────────────────
             $photoFile = $form->get('photo')->getData();
             if ($photoFile) {
@@ -367,15 +381,34 @@ final class ClientController extends AbstractController
         Request $request,
         EntityManagerInterface $entityManager,
         InvoiceService $invoiceService,
-        ImageOptimizerService $imageOptimizer
+        ImageOptimizerService $imageOptimizer,
+        ClientRepository $clientRepository
     ): Response
     {
         $client = new Client();
+        // Prefill con el siguiente número de socio correlativo disponible
+        $nextNumber = $clientRepository->getNextClientNumber();
+        $client->setClientNumber($nextNumber);
+
         $form = $this->createForm(ClientType::class, $client);
         $form->handleRequest($request);
     
         if ($form->isSubmitted() && $form->isValid()) {
             try {
+                // Si el usuario dejó el campo vacío, autocalcular con el siguiente correlativo
+                if ($client->getClientNumber() === null) {
+                    $client->setClientNumber($clientRepository->getNextClientNumber());
+                } else {
+                    // Validar unicidad del número asignado
+                    $existing = $clientRepository->findOneBy(['client_number' => $client->getClientNumber()]);
+                    if ($existing) {
+                        $this->addFlash('error', sprintf('El Nº de Socio / ID %d ya pertenece a %s %s. Elige un número distinto.', $client->getClientNumber(), $existing->getName(), $existing->getSurname()));
+                        return $this->render('client/new.html.twig', [
+                            'client' => $client,
+                            'form' => $form->createView(),
+                        ]);
+                    }
+                }
                 // ── Foto del cliente ──────────────────────────────────────
                 $photoFile = $form->get('photo')->getData();
                 if ($photoFile) {
@@ -914,14 +947,15 @@ final class ClientController extends AbstractController
         $tokens = preg_split('/[\s,]+/', $normalizedQuery, -1, PREG_SPLIT_NO_EMPTY);
 
         $conn = $em->getConnection();
-        $rows = $conn->fetchAllAssociative('SELECT id, name, surname, id_number, phone, photo FROM client');
+        $rows = $conn->fetchAllAssociative('SELECT id, client_number, name, surname, id_number, phone, photo FROM client');
 
         $matchedIds = [];
         $priorityIds = [];
 
         foreach ($rows as $row) {
             $id = (int) $row['id'];
-            if ($exactId !== null && $id === $exactId) {
+            $clientNumber = isset($row['client_number']) && $row['client_number'] !== null ? (int) $row['client_number'] : $id;
+            if ($exactId !== null && ($id === $exactId || $clientNumber === $exactId)) {
                 $priorityIds[] = $id;
                 continue;
             }
@@ -935,6 +969,7 @@ final class ClientController extends AbstractController
 
             $haystack = $this->normalizeSearchText(
                 $id . ' #' . $id . ' ' .
+                $clientNumber . ' #' . $clientNumber . ' ' .
                 $name . ' ' . $surname . ' ' .
                 $dni . ' ' . $cleanDni . ' ' .
                 $phone . ' ' . $cleanPhone
@@ -1002,6 +1037,7 @@ final class ClientController extends AbstractController
 
             $results[] = [
                 'id'               => $client->getId(),
+                'clientNumber'     => $client->getEffectiveClientNumber(),
                 'name'             => trim($client->getName() . ' ' . $client->getSurname()),
                 'idNumber'         => $client->getIdNumber(),
                 'phone'            => $client->getPhone(),

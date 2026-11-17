@@ -239,7 +239,9 @@ class ApiCardController extends AbstractController
             'warning_message' => $warningMessage,
             'days_remaining'  => $daysRemaining,
             'client'          => [
-                'id'             => $client->getId(),
+                'id'             => $client->getEffectiveClientNumber(),
+                'rawId'          => $client->getId(),
+                'clientNumber'   => $client->getEffectiveClientNumber(),
                 'name'           => $client->getName(),
                 'surname'        => $client->getSurname(),
                 'photoUrl'       => $photoUrl,
@@ -277,9 +279,10 @@ class ApiCardController extends AbstractController
         foreach ($clientRepository->findAll() as $client) {
             $clientDni = strtoupper(trim((string)$client->getIdNumber()));
             if ($clientDni === $dni) {
-                $clientCard = strtoupper(trim((string)$client->getCardCode()));
-                $clientId   = (string)$client->getId();
-                if ($code === $clientId || $code === $clientCard) {
+                $clientCard   = strtoupper(trim((string)$client->getCardCode()));
+                $clientId     = (string)$client->getId();
+                $clientNumber = (string)$client->getEffectiveClientNumber();
+                if ($code === $clientId || $code === $clientNumber || $code === $clientCard) {
                     $matchedClient = $client;
                     break;
                 }
@@ -317,11 +320,13 @@ class ApiCardController extends AbstractController
             'success' => true,
             'message' => 'Login correcto',
             'client'  => [
-                'id'       => $matchedClient->getId(),
-                'name'     => $matchedClient->getName(),
-                'surname'  => $matchedClient->getSurname(),
-                'dni'      => $matchedClient->getIdNumber(),
-                'cardCode' => $matchedClient->getCardCode() ?: (string)$matchedClient->getId(),
+                'id'           => $matchedClient->getEffectiveClientNumber(),
+                'rawId'        => $matchedClient->getId(),
+                'clientNumber' => $matchedClient->getEffectiveClientNumber(),
+                'name'         => $matchedClient->getName(),
+                'surname'      => $matchedClient->getSurname(),
+                'dni'          => $matchedClient->getIdNumber(),
+                'cardCode'     => $matchedClient->getCardCode() ?: (string)$matchedClient->getEffectiveClientNumber(),
             ],
             'subscription' => [
                 'active'          => $activeSub !== null,
@@ -454,7 +459,9 @@ class ApiCardController extends AbstractController
             'message'         => $message,
             'welcome_message' => $welcomeCustom,
             'client'          => [
-                'id'             => $client->getId(),
+                'id'             => $client->getEffectiveClientNumber(),
+                'rawId'          => $client->getId(),
+                'clientNumber'   => $client->getEffectiveClientNumber(),
                 'name'           => $client->getName(),
                 'surname'        => $client->getSurname(),
                 'welcomeMessage' => $welcomeCustom,

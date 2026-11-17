@@ -1,5 +1,22 @@
 {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
 
+    <!-- Identificador de Socio -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="text-primary mb-3">
+                <i class="bi bi-person-badge"></i> Identificador de Socio
+            </h5>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form_label(form.clientNumber) }}
+                {{ form_widget(form.clientNumber) }}
+                {{ form_help(form.clientNumber) }}
+                {{ form_errors(form.clientNumber) }}
+            </div>
+        </div>
+    </div>
+
     <!-- Información Personal -->
     <div class="row mb-4">
         <div class="col-12">

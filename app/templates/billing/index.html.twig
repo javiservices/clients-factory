@@ -321,7 +321,7 @@
                 <tbody>
                     {% for item in items %}
                         <tr>
-                            <td class="fw-semibold text-muted">#{{ item.client.id }}</td>
+                            <td class="fw-semibold text-muted">#{{ item.client.effectiveClientNumber }}</td>
                             <td>
                                 <div class="d-flex align-items-center gap-2">
                                     <div class="client-avatar-sm" style="width:34px;height:34px;font-size:0.75rem;">
@@ -421,7 +421,7 @@
                                 </div>
                             </a>
                             <div class="small text-muted text-truncate" style="font-size: 0.78rem;">
-                                #{{ item.client.id }}{% if item.client.locality %} · {{ item.client.locality }}{% endif %}
+                                #{{ item.client.effectiveClientNumber }}{% if item.client.locality %} · {{ item.client.locality }}{% endif %}
                             </div>
                         </div>
                     </div>

@@ -278,7 +278,7 @@
                                     <a href="{{ path('app_client_show', {'id': client.id}) }}" class="fw-semibold text-dark text-decoration-none">
                                         {{ client.name }} {{ client.surname }}
                                     </a>
-                                    <div class="text-muted small font-monospace">#{{ client.id }}</div>
+                                    <div class="text-muted small font-monospace">#{{ client.effectiveClientNumber }}</div>
                                 </td>
                                 <td class="text-end fw-bold text-dark">
                                     {{ item.paidInPeriod|number_format(2, ',', '.') }} €
@@ -346,7 +346,7 @@
                                     <a href="{{ path('app_client_show', {'id': client.id}) }}" class="fw-semibold text-dark text-decoration-none">
                                         {{ client.name }} {{ client.surname }}
                                     </a>
-                                    <div class="text-muted small font-monospace">#{{ client.id }}</div>
+                                    <div class="text-muted small font-monospace">#{{ client.effectiveClientNumber }}</div>
                                 </td>
                                 <td class="text-center">
                                     <span class="badge bg-primary-subtle text-primary fw-bold px-2.5 py-1 rounded-pill">

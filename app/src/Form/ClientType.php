@@ -10,6 +10,7 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -20,6 +21,22 @@ class ClientType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
+            ->add('clientNumber', IntegerType::class, [
+                'label' => 'Nº de Socio / ID Cliente',
+                'required' => false,
+                'attr' => [
+                    'class' => 'form-control font-monospace fw-bold',
+                    'placeholder' => 'Ej: 4780',
+                    'min' => 1
+                ],
+                'label_attr' => [
+                    'class' => 'form-label small fw-bold'
+                ],
+                'help' => 'ID de socio correlativo. Se autocalcula automáticamente, pero puedes modificarlo para sincronizar con la otra aplicación.',
+                'help_attr' => [
+                    'class' => 'form-text text-muted'
+                ]
+            ])
             ->add('name', TextType::class, [
                 'attr' => [
                     'class' => 'form-control',

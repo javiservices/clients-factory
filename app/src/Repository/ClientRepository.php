@@ -22,14 +22,16 @@ class ClientRepository extends ServiceEntityRepository
             ->where('c.name LIKE :search')
             ->orWhere('c.surname LIKE :search')
             ->orWhere('c.id = :id')
+            ->orWhere('c.client_number = :clientNumber')
             ->setParameter('search', '%' . $search . '%')
             ->setParameter('id', (int) $search)
+            ->setParameter('clientNumber', (int) $search)
             ->getQuery()
             ->getResult();
     }
 
     /**
-     * Busca un cliente por su código de tarjeta, DNI/NIF o ID numérico.
+     * Busca un cliente por su código de tarjeta, DNI/NIF, ID numérico de BD o número de socio.
      * Como card_code está cifrado en BD, cargamos todos y comparamos en PHP.
      */
     public function findOneByCardCode(string $cardCode): ?Client
@@ -39,12 +41,24 @@ class ClientRepository extends ServiceEntityRepository
             $clientCard = strtoupper(trim((string) $client->getCardCode()));
             $clientIdNumber = strtoupper(trim((string) $client->getIdNumber()));
             $clientId = (string) $client->getId();
+            $clientNumber = (string) $client->getEffectiveClientNumber();
 
-            if ($clientCard === $clean || $clientIdNumber === $clean || $clientId === $clean) {
+            if ($clientCard === $clean || $clientIdNumber === $clean || $clientId === $clean || $clientNumber === $clean) {
                 return $client;
             }
         }
         return null;
+    }
+
+    /**
+     * Calcula el siguiente número de socio disponible tomando el mayor número actual
+     * entre client_number e id, garantizando que sea estrictamente correlativo.
+     */
+    public function getNextClientNumber(): int
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $maxNum = $conn->fetchOne('SELECT GREATEST(COALESCE(MAX(client_number), 0), COALESCE(MAX(id), 0)) FROM client');
+        return ((int) $maxNum) + 1;
     }
 
     //    /**

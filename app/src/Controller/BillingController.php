@@ -96,6 +96,7 @@ class BillingController extends AbstractController
                 $cleanPhone = str_replace(['.', '-', ' ', '+34'], '', $clientPhone);
                 $haystack = $this->normalizeSearchText(
                     $client->getId() . ' ' .
+                    $client->getEffectiveClientNumber() . ' #' . $client->getEffectiveClientNumber() . ' ' .
                     $clientName . ' ' .
                     $clientSurname . ' ' .
                     $clientIdNumber . ' ' . $cleanDni . ' ' .
@@ -262,6 +263,7 @@ class BillingController extends AbstractController
                     $cleanIban = str_replace(['.', '-', ' '], '', $iban);
                     $haystack = $this->normalizeSearchText(
                         $client->getId() . ' ' .
+                        $client->getEffectiveClientNumber() . ' #' . $client->getEffectiveClientNumber() . ' ' .
                         $name . ' ' .
                         $surname . ' ' .
                         $dni . ' ' . $cleanDni . ' ' .
@@ -403,7 +405,9 @@ class BillingController extends AbstractController
                     $cleanPhone = str_replace(['.', '-', ' ', '+34'], '', $phone);
                     $cleanIban = str_replace(['.', '-', ' '], '', $iban);
                     $haystack = $this->normalizeSearchText(
-                        $client->getId() . ' ' . $name . ' ' . $surname . ' ' .
+                        $client->getId() . ' ' .
+                        $client->getEffectiveClientNumber() . ' #' . $client->getEffectiveClientNumber() . ' ' .
+                        $name . ' ' . $surname . ' ' .
                         $dni . ' ' . $cleanDni . ' ' . $phone . ' ' . $cleanPhone . ' ' .
                         $iban . ' ' . $cleanIban . ' ' .
                         $record->getDescription()

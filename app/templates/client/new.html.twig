@@ -23,6 +23,18 @@
         {{ form_start(form, {'attr': {'enctype': 'multipart/form-data'}}) }}
 
             <p class="card-section-title">
+                <i class="bi bi-person-badge" aria-hidden="true"></i>Identificador de socio
+            </p>
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                    {{ form_label(form.clientNumber) }}
+                    {{ form_widget(form.clientNumber) }}
+                    {{ form_help(form.clientNumber) }}
+                    {{ form_errors(form.clientNumber) }}
+                </div>
+            </div>
+
+            <p class="card-section-title">
                 <i class="bi bi-person" aria-hidden="true"></i>Información personal
             </p>
             <div class="row g-3 mb-4">

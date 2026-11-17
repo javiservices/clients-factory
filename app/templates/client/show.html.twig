@@ -14,7 +14,7 @@
         </a>
         <div>
             <h2 class="page-header-title">{{ client.name }} {{ client.surname }}</h2>
-            <p class="page-header-sub">Cliente #{{ client.id }}</p>
+            <p class="page-header-sub">Socio #{{ client.effectiveClientNumber }}</p>
         </div>
     </div>
     <div class="d-flex align-items-center gap-2">
@@ -64,16 +64,20 @@
                 {% endif %}
                 <div class="row g-3">
                     <div class="col-6">
+                        <div class="small" style="color:var(--c-gray-500)">Nº de Socio / ID</div>
+                        <div class="fw-bold font-monospace text-primary">#{{ client.effectiveClientNumber }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="small" style="color:var(--c-gray-500)">DNI / NIF</div>
+                        <div class="fw-semibold font-monospace">{{ client.idNumber ?: '—' }}</div>
+                    </div>
+                    <div class="col-6">
                         <div class="small" style="color:var(--c-gray-500)">Nombre</div>
                         <div class="fw-semibold">{{ client.name }}</div>
                     </div>
                     <div class="col-6">
                         <div class="small" style="color:var(--c-gray-500)">Apellidos</div>
                         <div class="fw-semibold">{{ client.surname ?: '—' }}</div>
-                    </div>
-                    <div class="col-6">
-                        <div class="small" style="color:var(--c-gray-500)">DNI / NIF</div>
-                        <div class="fw-semibold font-monospace">{{ client.idNumber ?: '—' }}</div>
                     </div>
                     <div class="col-6">
                         <div class="small" style="color:var(--c-gray-500)">Fecha de nacimiento</div>

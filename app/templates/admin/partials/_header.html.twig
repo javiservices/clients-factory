@@ -355,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? `<img src="${client.photoUrl}" alt="${escapeHtml(client.name)}" class="search-avatar">`
                     : `<div class="search-avatar">${escapeHtml(client.initials)}</div>`;
                 
-                const meta = [`#${client.id}`];
+                const meta = [`#${client.clientNumber || client.id}`];
                 if (client.phone) meta.push(client.phone);
                 if (client.idNumber) meta.push(client.idNumber);
                 meta.push(client.subscriptionType);
