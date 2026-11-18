@@ -8,6 +8,7 @@ use App\Repository\ClientRepository;
 use App\Repository\InvoiceRepository;
 use App\Repository\SubscriptionRepository;
 use App\Service\EncryptionService;
+use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -159,13 +160,8 @@ class DashboardController extends AbstractController
             ];
         }
 
-        // Aforo estimado en los últimos 90 minutos
-        $ninetyMinutesAgo = (new \DateTime())->modify('-90 minutes');
-        $currentOccupancy = (int) $conn->fetchOne("
-            SELECT COUNT(DISTINCT client_id) 
-            FROM access_log 
-            WHERE access_time >= :since AND status = 'success'
-        ", ['since' => $ninetyMinutesAgo->format('Y-m-d H:i:s')]);
+        // Aforo estimado en sala (sesiones activas de 80 minutos por persona, agrupando re-entradas)
+        $currentOccupancy = $this->calculateCurrentOccupancy($conn, 80);
 
         // Suscripciones que vencen en los próximos 3 días (Aviso preventivo WhatsApp)
         $expiringIn3Days = $em->getRepository(Subscription::class)->findExpiringSoon(3);
@@ -341,10 +337,14 @@ class DashboardController extends AbstractController
             ];
         }
 
+        $conn = $em->getConnection();
+        $currentOccupancy = $this->calculateCurrentOccupancy($conn, 80);
+
         return $this->json([
-            'latestAccessId' => $latestLog?->getId() ?? 0,
-            'client'         => $latestClientData,
-            'recent'         => $recentList,
+            'latestAccessId'   => $latestLog?->getId() ?? 0,
+            'client'           => $latestClientData,
+            'recent'           => $recentList,
+            'currentOccupancy' => $currentOccupancy,
         ]);
     }
 
@@ -367,12 +367,7 @@ class DashboardController extends AbstractController
         $totalClients  = $clientRepo->count([]);
 
         $conn = $em->getConnection();
-        $ninetyMinutesAgo = (new \DateTime())->modify('-90 minutes');
-        $currentOccupancy = (int) $conn->fetchOne("
-            SELECT COUNT(DISTINCT client_id) 
-            FROM access_log 
-            WHERE access_time >= :since AND status = 'success'
-        ", ['since' => $ninetyMinutesAgo->format('Y-m-d H:i:s')]);
+        $currentOccupancy = $this->calculateCurrentOccupancy($conn, 80);
 
         $expiringData = [];
         foreach ($expiring as $sub) {
@@ -394,6 +389,60 @@ class DashboardController extends AbstractController
             'totalActiveClients' => $totalActiveClients,
             'totalClients'       => $totalClients,
         ]);
+    }
+
+    /**
+     * Calcula el aforo en sala teniendo en cuenta sesiones de entrenamiento estimadas (80 minutos).
+     * Si un mismo socio sale y vuelve a entrar dentro de esos 80 minutos, se considera
+     * la misma sesión de entrenamiento: no se suma como un segundo socio ni se alarga
+     * artificialmente el tiempo de la sesión original.
+     */
+    private function calculateCurrentOccupancy(Connection $conn, int $sessionMinutes = 80): int
+    {
+        $now = new \DateTime();
+        $lookback = (clone $now)->modify('-' . ($sessionMinutes * 2) . ' minutes');
+
+        $rows = $conn->fetchAllAssociative('
+            SELECT client_id, access_time 
+            FROM access_log 
+            WHERE status = \'success\' 
+              AND access_time >= :lookback
+            ORDER BY client_id ASC, access_time ASC
+        ', ['lookback' => $lookback->format('Y-m-d H:i:s')]);
+
+        if (empty($rows)) {
+            return 0;
+        }
+
+        $clientAccesses = [];
+        foreach ($rows as $row) {
+            $clientAccesses[$row['client_id']][] = new \DateTime($row['access_time']);
+        }
+
+        $activeCount = 0;
+
+        foreach ($clientAccesses as $clientId => $times) {
+            $currentSessionStart = null;
+            $currentSessionEnd = null;
+
+            foreach ($times as $accessTime) {
+                if ($currentSessionStart === null || $accessTime > $currentSessionEnd) {
+                    // Inicio de una nueva sesión de entrenamiento
+                    $currentSessionStart = $accessTime;
+                    $currentSessionEnd = (clone $accessTime)->modify("+{$sessionMinutes} minutes");
+                } else {
+                    // Re-entrada dentro de la misma ventana de 80 minutos:
+                    // Es la misma sesión; no duplica socio ni extiende indebidamente el bloque.
+                }
+            }
+
+            // Comprobamos si la última sesión del cliente sigue activa en el momento actual
+            if ($currentSessionEnd !== null && $now >= $currentSessionStart && $now <= $currentSessionEnd) {
+                $activeCount++;
+            }
+        }
+
+        return $activeCount;
     }
 }
 
