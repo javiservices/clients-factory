@@ -82,3 +82,4 @@ class ChangePasswordCommand extends Command
         return Command::SUCCESS;
     }
 }
+

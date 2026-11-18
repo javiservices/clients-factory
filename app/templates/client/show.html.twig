@@ -19,13 +19,35 @@
     </div>
     <div class="d-flex align-items-center gap-2">
         {% if subscription %}
-            <form method="post" action="{{ path('app_client_renew', {'id': client.id}) }}" class="d-inline">
-                <input type="hidden" name="_token" value="{{ csrf_token('renew' ~ client.id) }}">
-                <button type="submit" class="btn btn-sm btn-success"
-                        onclick="return confirm('¿Confirmas la renovación de la cuota para {{ client.name }}?')">
+            <div class="dropdown d-inline">
+                <button class="btn btn-sm btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Renovar cuota
                 </button>
-            </form>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width: 220px;">
+                    <li><h6 class="dropdown-header text-uppercase" style="font-size:0.7rem;letter-spacing:0.05em">Opciones de renovación</h6></li>
+                    <li>
+                        <form method="post" action="{{ path('app_client_renew', {'id': client.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('renew' ~ client.id) }}">
+                            <input type="hidden" name="amount" value="50.00">
+                            <button type="submit" class="dropdown-item py-2 d-flex align-items-center justify-content-between" onclick="return confirm('¿Confirmas la renovación de cuota completa (50 €) para {{ client.name }}?')">
+                                <span><i class="bi bi-calendar-check me-2 text-success"></i>Mes completo</span>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">50,00 €</span>
+                            </button>
+                        </form>
+                    </li>
+                    <li>
+                        <form method="post" action="{{ path('app_client_renew', {'id': client.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('renew' ~ client.id) }}">
+                            <input type="hidden" name="amount" value="30.00">
+                            <input type="hidden" name="half_month" value="1">
+                            <button type="submit" class="dropdown-item py-2 d-flex align-items-center justify-content-between" onclick="return confirm('¿Confirmas la renovación de MEDIO MES (30 €) para {{ client.name }}?')">
+                                <span><i class="bi bi-pie-chart me-2 text-warning"></i>Medio mes</span>
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">30,00 €</span>
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
         {% endif %}
         <a href="{{ path('app_client_edit', {'id': client.id}) }}" class="btn btn-primary btn-sm">
             <i class="bi bi-pencil me-1" aria-hidden="true"></i>Editar

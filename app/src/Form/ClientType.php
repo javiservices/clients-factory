@@ -5,12 +5,14 @@ namespace App\Form;
 use App\Entity\Client;
 use App\Entity\Subscription;
 use App\Entity\SubscriptionType;
+use Doctrine\ORM\EntityRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -201,6 +203,24 @@ class ClientType extends AbstractType
                 'choice_label' => 'name',
                 'mapped' => false,
                 'required' => true,
+                'data' => $options['default_subscription_type'] ?? null,
+                'query_builder' => function (EntityRepository $er) {
+                    return $er->createQueryBuilder('st')
+                        ->addSelect("CASE WHEN st.name = 'SALA-FITNESS' THEN 0 WHEN st.name LIKE '%SALA-FITNESS%' THEN 1 ELSE 2 END AS HIDDEN ord")
+                        ->orderBy('ord', 'ASC')
+                        ->addOrderBy('st.name', 'ASC');
+                },
+                'choice_attr' => function (?SubscriptionType $choice) {
+                    if (!$choice) {
+                        return [];
+                    }
+                    return [
+                        'data-price' => number_format((float) ($choice->getPrice() ?? 0), 2, '.', ''),
+                        'data-months' => (string) ($choice->getMonths() ?? ''),
+                        'data-days' => (string) ($choice->getDays() ?? ''),
+                        'data-is-daily-pass' => $choice->isDailyPass() ? '1' : '0',
+                    ];
+                },
                 'label' => 'Tipo de suscripción',
                 'attr' => [
                     'class' => 'form-control',
@@ -208,6 +228,26 @@ class ClientType extends AbstractType
                 ],
                 'label_attr' => [
                     'class' => 'form-label small required'
+                ]
+            ])
+            ->add('paymentAmount', NumberType::class, [
+                'mapped' => false,
+                'required' => false,
+                'scale' => 2,
+                'label' => 'Importe a cobrar (€)',
+                'attr' => [
+                    'class' => 'form-control',
+                    'step' => '0.01',
+                    'min' => '0',
+                    'placeholder' => '50.00',
+                    'id' => 'paymentAmountField'
+                ],
+                'label_attr' => [
+                    'class' => 'form-label small'
+                ],
+                'help' => 'Importe a facturar (ej: 50 € mes completo o 30 € medio mes).',
+                'help_attr' => [
+                    'class' => 'form-text text-muted'
                 ]
             ])
             ->add('remainingPasses', null, [
@@ -267,6 +307,7 @@ class ClientType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => Client::class,
+            'default_subscription_type' => null,
             'attr' => [
                 'class' => 'needs-validation',
                 'novalidate' => 'novalidate'

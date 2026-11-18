@@ -245,6 +245,9 @@ final class ClientController extends AbstractController
             $form->get('isPaid')->setData($lastSubscription->isActive());
             $form->get('paymentUntil')->setData($lastSubscription->getEndDate());
             $form->get('subscriptionType')->setData($lastSubscription->getSubscriptionType());
+            if ($lastSubscription->getSubscriptionType()) {
+                $form->get('paymentAmount')->setData((float) $lastSubscription->getSubscriptionType()->getPrice());
+            }
         }
     
         $form->handleRequest($request);
@@ -300,20 +303,30 @@ final class ClientController extends AbstractController
                 $lastSubscription->setIsActive(true);
 
                 $startDate = new \DateTime();
-                $endDate = clone $startDate;
-                
-                // Calcular la fecha de fin basada en meses o días
-                if ($subscriptionType->getMonths()) {
-                    $endDate->modify('first day of +' . $subscriptionType->getMonths() . ' month');
-                    $endDate->setDate(
-                        (int)$endDate->format('Y'),
-                        (int)$endDate->format('m'),
-                        4
-                    );
+
+                // Si el usuario especificó una fecha fin en el formulario, respetarla
+                $formEndDate = $form->get('paymentUntil')->getData();
+                if ($formEndDate instanceof \DateTimeInterface) {
+                    $endDate = \DateTime::createFromInterface($formEndDate);
                     $endDate->setTime(23, 59, 59);
-                } elseif ($subscriptionType->getDays()) {
-                    $endDate->modify('+' . $subscriptionType->getDays() . ' days');
-                    $endDate->setTime(23, 59, 59);
+                } else {
+                    $endDate = clone $startDate;
+                    if ($subscriptionType->getMonths()) {
+                        $endDate->modify('first day of +' . $subscriptionType->getMonths() . ' month');
+                        $endDate->setDate(
+                            (int)$endDate->format('Y'),
+                            (int)$endDate->format('m'),
+                            4
+                        );
+                        $endDate->setTime(23, 59, 59);
+                    } elseif ($subscriptionType->getDays()) {
+                        $endDate->modify('+' . $subscriptionType->getDays() . ' days');
+                        $endDate->setTime(23, 59, 59);
+                    } else {
+                        $endDate->modify('first day of +1 month');
+                        $endDate->setDate((int)$endDate->format('Y'), (int)$endDate->format('m'), 4);
+                        $endDate->setTime(23, 59, 59);
+                    }
                 }
 
                 $lastSubscription->setStartDate($startDate);
@@ -321,9 +334,22 @@ final class ClientController extends AbstractController
 
                 // Si es pase diario, establecer el número de pases
                 if ($subscriptionType->isDailyPass()) {
-                    $lastSubscription->setRemainingPasses($subscriptionType->getDays());
+                    $remainingPasses = $form->get('remainingPasses')->getData() ?? $subscriptionType->getDays();
+                    $lastSubscription->setRemainingPasses($remainingPasses);
                 } else {
                     $lastSubscription->setRemainingPasses(null);
+                }
+
+                $customAmount = $form->get('paymentAmount')->getData();
+                $finalAmount = ($customAmount !== null && $customAmount > 0)
+                    ? (float) $customAmount
+                    : (float) $subscriptionType->getPrice();
+
+                $description = 'Pago de suscripción ' . $subscriptionType->getName();
+                if (abs($finalAmount - 30.0) < 0.01 && str_contains($subscriptionType->getName(), 'SALA-FITNESS')) {
+                    $description = 'Pago de suscripción SALA-FITNESS (Medio mes)';
+                } elseif (abs($finalAmount - (float)$subscriptionType->getPrice()) > 0.01) {
+                    $description = sprintf('Pago de suscripción %s (Importe ajustado: %.2f €)', $subscriptionType->getName(), $finalAmount);
                 }
 
                 // Crear registro de facturación y generar factura
@@ -333,8 +359,8 @@ final class ClientController extends AbstractController
                 $billingRecord->setBillingDate(new \DateTime());
                 $billingRecord->setPeriodStart($startDate);
                 $billingRecord->setPeriodEnd($endDate);
-                $billingRecord->setAmount($subscriptionType->getPrice());
-                $billingRecord->setDescription('Pago de suscripción ' . $subscriptionType->getName());
+                $billingRecord->setAmount(number_format($finalAmount, 2, '.', ''));
+                $billingRecord->setDescription($description);
                 $billingRecord->setIsBilled(false);
 
                 $entityManager->persist($billingRecord);
@@ -342,7 +368,7 @@ final class ClientController extends AbstractController
                 // Generar factura inmediatamente para este registro de facturación
                 try {
                     $invoice = $invoiceService->generateInvoiceForBillingRecord($billingRecord, $this->getUser());
-                    $this->addFlash('success', 'Cliente actualizado y factura generada correctamente hasta el ' . $endDate->format('d/m/Y') . '. Factura: ' . $invoice->getInvoiceNumber());
+                    $this->addFlash('success', 'Cliente actualizado y factura generada correctamente hasta el ' . $endDate->format('d/m/Y') . '. Factura: ' . $invoice->getInvoiceNumber() . ' (' . number_format($finalAmount, 2, ',', '.') . ' €)');
                 } catch (\Exception $e) {
                     $this->addFlash('warning', 'Cliente actualizado correctamente, pero no se pudo generar la factura: ' . $e->getMessage());
                 }
@@ -393,7 +419,27 @@ final class ClientController extends AbstractController
         $client->setClientNumber($nextNumber);
         $client->setStartDate(new \DateTime());
 
-        $form = $this->createForm(ClientType::class, $client);
+        // Buscar SALA-FITNESS por defecto
+        $defaultSubType = $entityManager->getRepository(SubscriptionType::class)->findOneBy(['name' => 'SALA-FITNESS']);
+
+        $form = $this->createForm(ClientType::class, $client, [
+            'default_subscription_type' => $defaultSubType,
+        ]);
+
+        if ($request->isMethod('GET')) {
+            if ($defaultSubType) {
+                $form->get('subscriptionType')->setData($defaultSubType);
+                $form->get('paymentAmount')->setData((float) $defaultSubType->getPrice());
+            }
+            $form->get('isPaid')->setData(true);
+
+            // Fecha fin por defecto: día 4 del mes siguiente
+            $defaultEndDate = new \DateTime('first day of +1 month');
+            $defaultEndDate->setDate((int)$defaultEndDate->format('Y'), (int)$defaultEndDate->format('m'), 4);
+            $defaultEndDate->setTime(23, 59, 59);
+            $form->get('paymentUntil')->setData($defaultEndDate);
+        }
+
         $form->handleRequest($request);
     
         if ($form->isSubmitted() && $form->isValid()) {
@@ -424,68 +470,93 @@ final class ClientController extends AbstractController
 
                 // Obtener el SubscriptionType seleccionado del formulario
                 $subscriptionType = $form->get('subscriptionType')->getData();
+                $isPaid = (bool) $form->get('isPaid')->getData();
+
+                $customAmount = $form->get('paymentAmount')->getData();
+                $finalAmount = ($customAmount !== null && $customAmount > 0)
+                    ? (float) $customAmount
+                    : (float) $subscriptionType->getPrice();
                 
                 // Crear una nueva suscripción asociada al cliente
                 $subscription = new Subscription();
                 $subscription->setClient($client);
                 $subscription->setSubscriptionType($subscriptionType);
                 
-                $startDate = new \DateTime();
-                $endDate = clone $startDate;
-    
-                // Calcular la fecha de fin basada en meses o días
-                if ($subscriptionType->getMonths()) {
-                    $endDate->modify('first day of +' . $subscriptionType->getMonths() . ' month');
-                    $endDate->setDate(
-                        (int)$endDate->format('Y'),
-                        (int)$endDate->format('m'),
-                        4
-                    );
-                    $endDate->setTime(23, 59, 59);
-                } elseif ($subscriptionType->getDays()) {
-                    $endDate->modify('+' . $subscriptionType->getDays() . ' days');
+                $startDate = $client->getStartDate() ?? new \DateTime();
+
+                // Si el usuario especificó una fecha fin en el formulario, respetarla
+                $formEndDate = $form->get('paymentUntil')->getData();
+                if ($formEndDate instanceof \DateTimeInterface) {
+                    $endDate = \DateTime::createFromInterface($formEndDate);
                     $endDate->setTime(23, 59, 59);
                 } else {
-                    // Por defecto, un mes
-                    $endDate->modify('first day of +1 month');
-                    $endDate->setDate(
-                        (int)$endDate->format('Y'),
-                        (int)$endDate->format('m'),
-                        4
-                    );
-                    $endDate->setTime(23, 59, 59);
+                    $endDate = clone $startDate;
+                    if ($subscriptionType->getMonths()) {
+                        $endDate->modify('first day of +' . $subscriptionType->getMonths() . ' month');
+                        $endDate->setDate(
+                            (int)$endDate->format('Y'),
+                            (int)$endDate->format('m'),
+                            4
+                        );
+                        $endDate->setTime(23, 59, 59);
+                    } elseif ($subscriptionType->getDays()) {
+                        $endDate->modify('+' . $subscriptionType->getDays() . ' days');
+                        $endDate->setTime(23, 59, 59);
+                    } else {
+                        $endDate->modify('first day of +1 month');
+                        $endDate->setDate((int)$endDate->format('Y'), (int)$endDate->format('m'), 4);
+                        $endDate->setTime(23, 59, 59);
+                    }
                 }
     
                 $subscription->setStartDate($startDate);
                 $subscription->setEndDate($endDate);
-                $subscription->setIsActive(true);
-                $subscription->setLastPaymentDate($startDate);
-                $subscription->setRemainingPasses(null);
+                $subscription->setIsActive($isPaid);
+                $subscription->setLastPaymentDate($isPaid ? $startDate : null);
 
-                // Crear registro de facturación y generar factura
-                $billingRecord = new \App\Entity\BillingRecord();
-                $billingRecord->setClient($client);
-                $billingRecord->setSubscription($subscription);
-                $billingRecord->setBillingDate(new \DateTime());
-                $billingRecord->setPeriodStart($startDate);
-                $billingRecord->setPeriodEnd($endDate);
-                $billingRecord->setAmount($subscriptionType->getPrice());
-                $billingRecord->setDescription('Pago inicial de suscripción ' . $subscriptionType->getName());
-                $billingRecord->setIsBilled(false);
+                if ($subscriptionType->isDailyPass()) {
+                    $remainingPasses = $form->get('remainingPasses')->getData() ?? $subscriptionType->getDays();
+                    $subscription->setRemainingPasses($remainingPasses);
+                } else {
+                    $subscription->setRemainingPasses(null);
+                }
 
-                $entityManager->persist($billingRecord);
-
-                // Persistir el cliente y la suscripción
                 $entityManager->persist($client);
                 $entityManager->persist($subscription);
-                $entityManager->flush();
 
-                // Generar factura inmediatamente para este registro de facturación
-                try {
-                    $invoice = $invoiceService->generateInvoiceForBillingRecord($billingRecord, $this->getUser());
-                    $this->addFlash('success', 'Cliente creado y factura generada correctamente hasta el ' . $endDate->format('d/m/Y') . '. Factura: ' . $invoice->getInvoiceNumber());
-                } catch (\Exception $e) {
-                    $this->addFlash('warning', 'Cliente creado correctamente, pero no se pudo generar la factura: ' . $e->getMessage());
+                if ($isPaid) {
+                    // Determinar descripción clara de facturación
+                    $description = 'Pago inicial de suscripción ' . $subscriptionType->getName();
+                    if (abs($finalAmount - 30.0) < 0.01 && str_contains($subscriptionType->getName(), 'SALA-FITNESS')) {
+                        $description = 'Pago inicial de suscripción SALA-FITNESS (Medio mes)';
+                    } elseif (abs($finalAmount - (float)$subscriptionType->getPrice()) > 0.01) {
+                        $description = sprintf('Pago inicial de suscripción %s (Importe ajustado: %.2f €)', $subscriptionType->getName(), $finalAmount);
+                    }
+
+                    // Crear registro de facturación y generar factura
+                    $billingRecord = new \App\Entity\BillingRecord();
+                    $billingRecord->setClient($client);
+                    $billingRecord->setSubscription($subscription);
+                    $billingRecord->setBillingDate(new \DateTime());
+                    $billingRecord->setPeriodStart($startDate);
+                    $billingRecord->setPeriodEnd($endDate);
+                    $billingRecord->setAmount(number_format($finalAmount, 2, '.', ''));
+                    $billingRecord->setDescription($description);
+                    $billingRecord->setIsBilled(false);
+
+                    $entityManager->persist($billingRecord);
+                    $entityManager->flush();
+
+                    // Generar factura inmediatamente para este registro de facturación
+                    try {
+                        $invoice = $invoiceService->generateInvoiceForBillingRecord($billingRecord, $this->getUser());
+                        $this->addFlash('success', 'Cliente creado y factura generada correctamente hasta el ' . $endDate->format('d/m/Y') . '. Factura: ' . $invoice->getInvoiceNumber() . ' (' . number_format($finalAmount, 2, ',', '.') . ' €)');
+                    } catch (\Exception $e) {
+                        $this->addFlash('warning', 'Cliente creado correctamente, pero no se pudo generar la factura: ' . $e->getMessage());
+                    }
+                } else {
+                    $entityManager->flush();
+                    $this->addFlash('success', 'Cliente creado correctamente (suscripción pendiente de pago / inactiva).');
                 }
 
                 return $this->redirectToRoute('app_client_index', [], Response::HTTP_SEE_OTHER);
@@ -617,8 +688,19 @@ final class ClientController extends AbstractController
         $subscriptionType = $lastSubscription->getSubscriptionType();
         $startDate = new \DateTime();
         $endDate = clone $startDate;
-        // Calcular la fecha de fin basada en meses o días
-        if ($subscriptionType->getMonths()) {
+
+        $postedAmount = $request->request->get('amount');
+        $isHalfMonth = $request->request->get('half_month') === '1' || ($postedAmount !== null && is_numeric($postedAmount) && abs((float)$postedAmount - 30.0) < 0.01);
+
+        $finalAmount = ($postedAmount !== null && is_numeric($postedAmount) && (float)$postedAmount > 0)
+            ? (float) $postedAmount
+            : ($isHalfMonth ? 30.0 : (float) $subscriptionType->getPrice());
+
+        // Calcular la fecha de fin basada en si es medio mes o tipo de suscripción
+        if ($isHalfMonth) {
+            $endDate->modify('+15 days');
+            $endDate->setTime(23, 59, 59);
+        } elseif ($subscriptionType->getMonths()) {
             $endDate->modify('first day of +' . $subscriptionType->getMonths() . ' month');
             $endDate->setDate(
                 (int)$endDate->format('Y'),
@@ -643,6 +725,13 @@ final class ClientController extends AbstractController
         $lastSubscription->setStartDate($startDate);
         $lastSubscription->setEndDate($endDate);
 
+        $description = 'Renovación de suscripción ' . $subscriptionType->getName();
+        if ($isHalfMonth || (abs($finalAmount - 30.0) < 0.01 && str_contains($subscriptionType->getName(), 'SALA-FITNESS'))) {
+            $description = 'Renovación de suscripción SALA-FITNESS (Medio mes)';
+        } elseif (abs($finalAmount - (float)$subscriptionType->getPrice()) > 0.01) {
+            $description = sprintf('Renovación de suscripción %s (Importe ajustado: %.2f €)', $subscriptionType->getName(), $finalAmount);
+        }
+
         // Crear registro de facturación
         $billingRecord = new \App\Entity\BillingRecord();
         $billingRecord->setClient($client);
@@ -650,8 +739,8 @@ final class ClientController extends AbstractController
         $billingRecord->setBillingDate(new \DateTime());
         $billingRecord->setPeriodStart($startDate);
         $billingRecord->setPeriodEnd($endDate);
-        $billingRecord->setAmount($subscriptionType->getPrice());
-        $billingRecord->setDescription('Renovación de suscripción ' . $subscriptionType->getName());
+        $billingRecord->setAmount(number_format($finalAmount, 2, '.', ''));
+        $billingRecord->setDescription($description);
         $billingRecord->setIsBilled(false);
 
         $entityManager->persist($billingRecord);

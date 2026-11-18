@@ -155,9 +155,36 @@
                     </label>
                     {{ form_widget(form.subscriptionType) }}
                     {{ form_errors(form.subscriptionType) }}
+
+                    {# Bloque de importe a cobrar y atajos rápidos #}
+                    <div class="mt-3 p-2.5 rounded" style="background:var(--c-gray-50);border:1px solid var(--c-gray-200)" id="paymentAmountContainer">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label small fw-semibold mb-0" for="{{ form.paymentAmount.vars.id }}">
+                                <i class="bi bi-cash-stack me-1 text-primary"></i>Importe a cobrar (€)
+                            </label>
+                            <span class="badge bg-light text-muted border font-monospace" id="taxBreakdownBadge" style="font-size:0.75rem">IVA 21% incluido</span>
+                        </div>
+                        <div class="input-group mb-2">
+                            {{ form_widget(form.paymentAmount) }}
+                            <span class="input-group-text fw-bold">€</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                            <span class="text-muted small me-1" style="font-size:0.8rem">Atajos:</span>
+                            <button type="button" class="btn btn-sm btn-outline-primary js-amount-preset" data-amount="50.00" title="Cuota mensual estándar">
+                                <i class="bi bi-calendar-check me-1"></i>Mes completo (50 €)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-warning js-amount-preset" data-amount="30.00" title="Cuota reducida por medio mes">
+                                <i class="bi bi-pie-chart me-1"></i>Medio mes (30 €)
+                            </button>
+                        </div>
+                        <div id="halfMonthNotice" class="mt-2 small text-warning-emphasis d-none" style="font-size:0.8rem">
+                            <i class="bi bi-info-circle-fill me-1 text-warning"></i><strong>Medio mes seleccionado:</strong> Se facturarán 30,00 € (Base: 24,79 € + IVA 21%: 5,21 €) y acceso a SALA-FITNESS.
+                        </div>
+                        {{ form_errors(form.paymentAmount) }}
+                    </div>
                 </div>
                 <div class="col-12 col-md-6">
-                    <div class="p-3 rounded" style="background:var(--c-gray-50);border:1px solid var(--c-gray-200)">
+                    <div class="p-3 rounded h-100" style="background:var(--c-gray-50);border:1px solid var(--c-gray-200)">
                         <div class="form-check mb-3">
                             {{ form_widget(form.isPaid) }}
                             {{ form_label(form.isPaid) }}
@@ -165,6 +192,7 @@
                         <div id="regularSubscriptionFields">
                             {{ form_label(form.paymentUntil) }}
                             {{ form_widget(form.paymentUntil) }}
+                            <div class="form-text small"><i class="bi bi-info-circle me-1"></i>Acceso al torno activo hasta esta fecha.</div>
                             {{ form_errors(form.paymentUntil) }}
                         </div>
                         <div id="dailyPassFields" style="display:none">
@@ -223,4 +251,77 @@
 {% block javascripts %}
     {{ parent() }}
     {{ encore_entry_script_tags('client_forms') }}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const subSelect = document.querySelector('[data-subscription-type="select"]');
+        const amountInput = document.getElementById('paymentAmountField');
+        const presetButtons = document.querySelectorAll('.js-amount-preset');
+        const notice = document.getElementById('halfMonthNotice');
+        const taxBadge = document.getElementById('taxBreakdownBadge');
+
+        function updateTaxBreakdown() {
+            if (!amountInput || !taxBadge) return;
+            const val = parseFloat(amountInput.value);
+            if (!isNaN(val) && val > 0) {
+                const base = (val / 1.21).toFixed(2);
+                const iva = (val - base).toFixed(2);
+                taxBadge.textContent = 'Base: ' + base + '€ + IVA: ' + iva + '€';
+                if (Math.abs(val - 30.0) < 0.01) {
+                    if (notice) notice.classList.remove('d-none');
+                } else {
+                    if (notice) notice.classList.add('d-none');
+                }
+            } else {
+                taxBadge.textContent = 'IVA 21% incluido';
+                if (notice) notice.classList.add('d-none');
+            }
+        }
+
+        presetButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const amt = this.dataset.amount;
+                if (amountInput) {
+                    amountInput.value = amt;
+                    presetButtons.forEach(b => {
+                        b.classList.remove('btn-primary', 'btn-warning', 'text-white');
+                        if (b.dataset.amount === '50.00') b.classList.add('btn-outline-primary');
+                        if (b.dataset.amount === '30.00') b.classList.add('btn-outline-warning');
+                    });
+                    if (amt === '50.00') {
+                        this.classList.remove('btn-outline-primary');
+                        this.classList.add('btn-primary', 'text-white');
+                    } else if (amt === '30.00') {
+                        this.classList.remove('btn-outline-warning');
+                        this.classList.add('btn-warning');
+                    }
+                    updateTaxBreakdown();
+                }
+            });
+        });
+
+        if (amountInput) {
+            amountInput.addEventListener('input', function() {
+                presetButtons.forEach(b => {
+                    b.classList.remove('btn-primary', 'btn-warning', 'text-white');
+                    if (b.dataset.amount === '50.00') b.classList.add('btn-outline-primary');
+                    if (b.dataset.amount === '30.00') b.classList.add('btn-outline-warning');
+                });
+                updateTaxBreakdown();
+            });
+            updateTaxBreakdown();
+        }
+
+        if (subSelect) {
+            subSelect.addEventListener('change', function() {
+                const selectedOpt = subSelect.options[subSelect.selectedIndex];
+                if (selectedOpt && selectedOpt.dataset && selectedOpt.dataset.price) {
+                    if (amountInput && (!amountInput.value || amountInput.value === '50.00' || amountInput.value === '70.00')) {
+                        amountInput.value = selectedOpt.dataset.price;
+                        updateTaxBreakdown();
+                    }
+                }
+            });
+        }
+    });
+    </script>
 {% endblock %}
