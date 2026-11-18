@@ -131,15 +131,20 @@
             </div>
 
             <p class="card-section-title">
-                <i class="bi bi-credit-card" aria-hidden="true"></i>Membresía
+                <i class="bi bi-credit-card" aria-hidden="true"></i>Membresía y Cuota
             </p>
+
             <div class="row g-3 mb-4">
+                {# Fila 1: Tarjeta y Fecha de alta #}
                 <div class="col-12 col-md-6">
                     <label class="form-label small" for="{{ form.cardCode.vars.id }}">
                         Código de tarjeta <span class="opt-badge">(opcional)</span>
                     </label>
-                    {{ form_widget(form.cardCode) }}
-                    <div class="form-text"><i class="bi bi-info-circle me-1"></i>Haz clic para escanear una tarjeta</div>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white text-muted"><i class="bi bi-upc-scan"></i></span>
+                        {{ form_widget(form.cardCode) }}
+                    </div>
+                    <div class="form-text"><i class="bi bi-info-circle me-1"></i>Haz clic para escanear en el lector RFID.</div>
                     {{ form_errors(form.cardCode) }}
                 </div>
                 <div class="col-12 col-md-6">
@@ -147,69 +152,130 @@
                         Fecha de inscripción <span class="req-star" title="Obligatorio">*</span>
                     </label>
                     {{ form_widget(form.startDate) }}
+                    <div class="form-text"><i class="bi bi-calendar-event me-1"></i>Fecha de alta del socio en el gimnasio.</div>
                     {{ form_errors(form.startDate) }}
                 </div>
-                <div class="col-12 col-md-6">
-                    <label class="form-label small" for="{{ form.subscriptionType.vars.id }}">
-                        Tipo de suscripción <span class="req-star" title="Obligatorio">*</span>
-                    </label>
-                    {{ form_widget(form.subscriptionType) }}
-                    {{ form_errors(form.subscriptionType) }}
 
-                    {# Bloque de importe a cobrar y atajos rápidos #}
-                    <div class="mt-3 p-2.5 rounded" style="background:var(--c-gray-50);border:1px solid var(--c-gray-200)" id="paymentAmountContainer">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="form-label small fw-semibold mb-0" for="{{ form.paymentAmount.vars.id }}">
-                                <i class="bi bi-cash-stack me-1 text-primary"></i>Importe a cobrar (€)
-                            </label>
-                            <span class="badge bg-light text-muted border font-monospace" id="taxBreakdownBadge" style="font-size:0.75rem">IVA 21% incluido</span>
-                        </div>
-                        <div class="input-group mb-2">
-                            {{ form_widget(form.paymentAmount) }}
-                            <span class="input-group-text fw-bold">€</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                            <span class="text-muted small me-1" style="font-size:0.8rem">Atajos:</span>
-                            <button type="button" class="btn btn-sm btn-outline-primary js-amount-preset" data-amount="50.00" title="Cuota mensual estándar">
-                                <i class="bi bi-calendar-check me-1"></i>Mes completo (50 €)
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-warning js-amount-preset" data-amount="30.00" title="Cuota reducida por medio mes">
-                                <i class="bi bi-pie-chart me-1"></i>Medio mes (30 €)
-                            </button>
-                        </div>
-                        <div id="halfMonthNotice" class="mt-2 small text-warning-emphasis d-none" style="font-size:0.8rem">
-                            <i class="bi bi-info-circle-fill me-1 text-warning"></i><strong>Medio mes seleccionado:</strong> Se facturarán 30,00 € (Base: 24,79 € + IVA 21%: 5,21 €) y acceso a SALA-FITNESS.
-                        </div>
-                        {{ form_errors(form.paymentAmount) }}
-                    </div>
-                </div>
-                <div class="col-12 col-md-6">
-                    <div class="p-3 rounded h-100" style="background:var(--c-gray-50);border:1px solid var(--c-gray-200)">
-                        <div class="form-check mb-3">
-                            {{ form_widget(form.isPaid) }}
-                            {{ form_label(form.isPaid) }}
-                        </div>
-                        <div id="regularSubscriptionFields">
-                            {{ form_label(form.paymentUntil) }}
-                            {{ form_widget(form.paymentUntil) }}
-                            <div class="form-text small"><i class="bi bi-info-circle me-1"></i>Acceso al torno activo hasta esta fecha.</div>
-                            {{ form_errors(form.paymentUntil) }}
-                        </div>
-                        <div id="dailyPassFields" style="display:none">
-                            {{ form_label(form.remainingPasses) }}
-                            {{ form_widget(form.remainingPasses) }}
-                            <div class="form-text"><i class="bi bi-info-circle me-1"></i>Número de pases disponibles</div>
-                            {{ form_errors(form.remainingPasses) }}
-                        </div>
-                    </div>
-                </div>
-
-                {# ── Foto ── #}
+                {# Fila 2: Panel unificado de Suscripción y Facturación #}
                 <div class="col-12">
-                    <div class="p-3 rounded" style="background:var(--c-gray-50);border:1px solid var(--c-gray-200)">
-                        <div class="small text-muted mb-2"><i class="bi bi-image me-1"></i>Opcional: sube una foto del cliente.</div>
-                        <label class="form-label small" for="{{ form.photo.vars.id }}">
-                            Foto del cliente <span class="opt-badge">(opcional)</span>
+                    <div class="card border rounded-3 p-3.5" style="background:#ffffff; border-color:#e2e8f0 !important; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                        
+                        {# Cabecera del panel: Tipo de cuota + Estado del pago y vencimiento #}
+                        <div class="row g-3 align-items-start mb-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold" for="{{ form.subscriptionType.vars.id }}">
+                                    Tipo de suscripción <span class="req-star" title="Obligatorio">*</span>
+                                </label>
+                                {{ form_widget(form.subscriptionType) }}
+                                {{ form_errors(form.subscriptionType) }}
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label small fw-semibold mb-0" for="{{ form.isPaid.vars.id }}">
+                                        Estado de la cuota
+                                    </label>
+                                    <div class="form-check form-switch mb-0">
+                                        {{ form_widget(form.isPaid, {'attr': {'class': 'form-check-input', 'role': 'switch'}}) }}
+                                        <label class="form-check-label small fw-semibold text-success ms-1" for="{{ form.isPaid.vars.id }}" id="paidStatusLabel">Cuota pagada</label>
+                                    </div>
+                                </div>
+                                <div id="regularSubscriptionFields">
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white text-muted small"><i class="bi bi-calendar-check"></i></span>
+                                        {{ form_widget(form.paymentUntil) }}
+                                    </div>
+                                    <div class="form-text small"><i class="bi bi-clock-history me-1"></i>Acceso activo al torno hasta esta fecha.</div>
+                                    {{ form_errors(form.paymentUntil) }}
+                                </div>
+                                <div id="dailyPassFields" style="display:none">
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white text-muted small"><i class="bi bi-ticket-perforated"></i></span>
+                                        {{ form_widget(form.remainingPasses) }}
+                                    </div>
+                                    <div class="form-text small"><i class="bi bi-info-circle me-1"></i>Número de pases disponibles.</div>
+                                    {{ form_errors(form.remainingPasses) }}
+                                </div>
+                            </div>
+                        </div>
+
+                        {# Modalidad de cobro (Tarjetas interactivas) #}
+                        <div id="paymentOptionsSection" class="pt-3 border-top" style="border-color:#f1f5f9 !important;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label small fw-semibold mb-0 text-secondary">
+                                    Modalidad de cobro (Tarifa para facturación)
+                                </label>
+                                <span class="badge font-monospace" id="taxBreakdownBadge" style="background:#f1f5f9; color:#475569; font-size:0.75rem; border:1px solid #e2e8f0">
+                                    Base: 41,32 € + IVA (21%): 8,68 €
+                                </span>
+                            </div>
+
+                            <div class="row g-2.5 mb-3">
+                                {# Card 1: Mes completo #}
+                                <div class="col-12 col-sm-6">
+                                    <div class="plan-card p-3 rounded-3 border h-100 js-plan-card is-active-full"
+                                         data-plan="full" data-amount="50.00">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-check-circle-fill text-success fs-5 plan-check-icon"></i>
+                                                <span class="fw-bold text-dark">Mes completo</span>
+                                            </div>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle font-monospace fw-bold fs-6">
+                                                50,00 €
+                                            </span>
+                                        </div>
+                                        <div class="text-muted small ps-4">
+                                            Cuota regular estándar (acceso hasta el día 4 del mes prox.)
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {# Card 2: Medio mes #}
+                                <div class="col-12 col-sm-6">
+                                    <div class="plan-card p-3 rounded-3 border h-100 js-plan-card"
+                                         data-plan="half" data-amount="30.00">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-circle text-muted fs-5 plan-check-icon"></i>
+                                                <span class="fw-bold text-dark">Medio mes</span>
+                                            </div>
+                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle font-monospace fw-bold fs-6">
+                                                30,00 €
+                                            </span>
+                                        </div>
+                                        <div class="text-muted small ps-4">
+                                            Cuota fraccionada reducida (15 días de acceso)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {# Campo de importe editable #}
+                            <div class="d-flex flex-wrap align-items-center justify-content-between p-2.5 px-3 rounded-2" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                                <div class="d-flex align-items-center gap-2 mb-2 mb-sm-0">
+                                    <label class="form-label small fw-medium mb-0 text-muted" for="{{ form.paymentAmount.vars.id }}">
+                                        Importe final de factura:
+                                    </label>
+                                    <div class="input-group input-group-sm" style="max-width:140px;">
+                                        {{ form_widget(form.paymentAmount, {'attr': {'class': 'form-control font-monospace fw-bold text-end', 'step': '0.01'}}) }}
+                                        <span class="input-group-text fw-bold">€</span>
+                                    </div>
+                                </div>
+                                <div id="halfMonthNotice" class="small text-warning-emphasis d-none">
+                                    <i class="bi bi-info-circle-fill me-1 text-warning"></i>Se aplicará concepto <strong>Medio mes (30,00 €)</strong>
+                                </div>
+                            </div>
+                            {{ form_errors(form.paymentAmount) }}
+                        </div>
+
+                    </div>
+                </div>
+
+                {# Fila 3: Foto del cliente #}
+                <div class="col-12">
+                    <div class="p-3 rounded-3" style="background:var(--c-gray-50);border:1px solid var(--c-gray-200)">
+                        <label class="form-label small fw-semibold" for="{{ form.photo.vars.id }}">
+                            <i class="bi bi-camera me-1"></i>Foto del cliente <span class="opt-badge">(opcional)</span>
                         </label>
                         {{ form_widget(form.photo) }}
                         {{ form_errors(form.photo) }}
@@ -251,13 +317,51 @@
 {% block javascripts %}
     {{ parent() }}
     {{ encore_entry_script_tags('client_forms') }}
+    <style>
+    .plan-card {
+        transition: all 0.18s ease-in-out;
+        border: 1.5px solid #e2e8f0 !important;
+        background: #ffffff;
+        cursor: pointer;
+        user-select: none;
+    }
+    .plan-card:hover {
+        border-color: #cbd5e1 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .plan-card.is-active-full {
+        border-color: #10b981 !important;
+        background: #f0fdf4 !important;
+        box-shadow: 0 0 0 1px #10b981 !important;
+    }
+    .plan-card.is-active-half {
+        border-color: #f59e0b !important;
+        background: #fffbeb !important;
+        box-shadow: 0 0 0 1px #f59e0b !important;
+    }
+    </style>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const amountInput = document.querySelector('input[name$="[paymentAmount]"]');
+        const paymentUntilInput = document.querySelector('input[name$="[paymentUntil]"]');
+        const startDateInput = document.querySelector('input[name$="[startDate]"]');
+        const isPaidCheckbox = document.querySelector('input[name$="[isPaid]"]');
+        const paidStatusLabel = document.getElementById('paidStatusLabel');
         const subSelect = document.querySelector('[data-subscription-type="select"]');
-        const amountInput = document.getElementById('paymentAmountField');
-        const presetButtons = document.querySelectorAll('.js-amount-preset');
+        const planCards = document.querySelectorAll('.js-plan-card');
         const notice = document.getElementById('halfMonthNotice');
         const taxBadge = document.getElementById('taxBreakdownBadge');
+        const paymentOptionsSection = document.getElementById('paymentOptionsSection');
+        const regularFields = document.getElementById('regularSubscriptionFields');
+        const dailyPassFields = document.getElementById('dailyPassFields');
+
+        function formatDateYmd(d) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
 
         function updateTaxBreakdown() {
             if (!amountInput || !taxBadge) return;
@@ -265,11 +369,13 @@
             if (!isNaN(val) && val > 0) {
                 const base = (val / 1.21).toFixed(2);
                 const iva = (val - base).toFixed(2);
-                taxBadge.textContent = 'Base: ' + base + '€ + IVA: ' + iva + '€';
-                if (Math.abs(val - 30.0) < 0.01) {
-                    if (notice) notice.classList.remove('d-none');
-                } else {
-                    if (notice) notice.classList.add('d-none');
+                taxBadge.textContent = 'Base: ' + base.replace('.', ',') + ' € + IVA (21%): ' + iva.replace('.', ',') + ' €';
+                if (notice) {
+                    if (Math.abs(val - 30.0) < 0.01) {
+                        notice.classList.remove('d-none');
+                    } else {
+                        notice.classList.add('d-none');
+                    }
                 }
             } else {
                 taxBadge.textContent = 'IVA 21% incluido';
@@ -277,51 +383,134 @@
             }
         }
 
-        presetButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const amt = this.dataset.amount;
-                if (amountInput) {
-                    amountInput.value = amt;
-                    presetButtons.forEach(b => {
-                        b.classList.remove('btn-primary', 'btn-warning', 'text-white');
-                        if (b.dataset.amount === '50.00') b.classList.add('btn-outline-primary');
-                        if (b.dataset.amount === '30.00') b.classList.add('btn-outline-warning');
-                    });
-                    if (amt === '50.00') {
-                        this.classList.remove('btn-outline-primary');
-                        this.classList.add('btn-primary', 'text-white');
-                    } else if (amt === '30.00') {
-                        this.classList.remove('btn-outline-warning');
-                        this.classList.add('btn-warning');
+        function selectPlan(planType, triggerDateUpdate = true) {
+            const isFull = (planType === 'full');
+            const targetAmount = isFull ? '50.00' : '30.00';
+
+            if (amountInput) {
+                amountInput.value = targetAmount;
+                updateTaxBreakdown();
+            }
+
+            planCards.forEach(card => {
+                const checkIcon = card.querySelector('.plan-check-icon');
+                if (card.dataset.plan === planType) {
+                    card.classList.remove('is-active-full', 'is-active-half');
+                    card.classList.add(isFull ? 'is-active-full' : 'is-active-half');
+                    if (checkIcon) {
+                        checkIcon.className = 'bi bi-check-circle-fill ' + (isFull ? 'text-success' : 'text-warning') + ' fs-5 plan-check-icon';
                     }
-                    updateTaxBreakdown();
+                } else {
+                    card.classList.remove('is-active-full', 'is-active-half');
+                    if (checkIcon) {
+                        checkIcon.className = 'bi bi-circle text-muted fs-5 plan-check-icon';
+                    }
                 }
+            });
+
+            // Auto-sugerir fecha fin
+            if (triggerDateUpdate && paymentUntilInput) {
+                let baseDate = new Date();
+                if (startDateInput && startDateInput.value) {
+                    const parsed = new Date(startDateInput.value + 'T00:00:00');
+                    if (!isNaN(parsed.getTime())) baseDate = parsed;
+                }
+
+                if (isFull) {
+                    // Día 4 del mes siguiente
+                    const nextMonth = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 4);
+                    paymentUntilInput.value = formatDateYmd(nextMonth);
+                } else {
+                    // +15 días a partir de la fecha de inicio
+                    const halfMonth = new Date(baseDate.getTime() + 15 * 24 * 60 * 60 * 1000);
+                    paymentUntilInput.value = formatDateYmd(halfMonth);
+                }
+            }
+        }
+
+        // Event listeners para las cards interactivas
+        planCards.forEach(card => {
+            card.addEventListener('click', function(e) {
+                e.preventDefault();
+                selectPlan(this.dataset.plan, true);
             });
         });
 
+        // Event listener si el usuario edita el importe a mano
         if (amountInput) {
             amountInput.addEventListener('input', function() {
-                presetButtons.forEach(b => {
-                    b.classList.remove('btn-primary', 'btn-warning', 'text-white');
-                    if (b.dataset.amount === '50.00') b.classList.add('btn-outline-primary');
-                    if (b.dataset.amount === '30.00') b.classList.add('btn-outline-warning');
-                });
-                updateTaxBreakdown();
-            });
-            updateTaxBreakdown();
-        }
-
-        if (subSelect) {
-            subSelect.addEventListener('change', function() {
-                const selectedOpt = subSelect.options[subSelect.selectedIndex];
-                if (selectedOpt && selectedOpt.dataset && selectedOpt.dataset.price) {
-                    if (amountInput && (!amountInput.value || amountInput.value === '50.00' || amountInput.value === '70.00')) {
-                        amountInput.value = selectedOpt.dataset.price;
-                        updateTaxBreakdown();
-                    }
+                const val = parseFloat(this.value);
+                if (Math.abs(val - 50.0) < 0.01) {
+                    selectPlan('full', false);
+                } else if (Math.abs(val - 30.0) < 0.01) {
+                    selectPlan('half', false);
+                } else {
+                    planCards.forEach(card => {
+                        card.classList.remove('is-active-full', 'is-active-half');
+                        const checkIcon = card.querySelector('.plan-check-icon');
+                        if (checkIcon) checkIcon.className = 'bi bi-circle text-muted fs-5 plan-check-icon';
+                    });
+                    updateTaxBreakdown();
                 }
             });
         }
+
+        // Toggle switch de pagado
+        if (isPaidCheckbox && paidStatusLabel) {
+            isPaidCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    paidStatusLabel.textContent = 'Cuota pagada';
+                    paidStatusLabel.className = 'form-check-label small fw-semibold text-success ms-1';
+                } else {
+                    paidStatusLabel.textContent = 'Pendiente de pago';
+                    paidStatusLabel.className = 'form-check-label small fw-semibold text-danger ms-1';
+                }
+            });
+        }
+
+        // Cambio en tipo de suscripción
+        if (subSelect) {
+            function onSubscriptionChange() {
+                const selectedOpt = subSelect.options[subSelect.selectedIndex];
+                if (!selectedOpt) return;
+                const text = selectedOpt.text.toLowerCase();
+
+                if (text.includes('bono') || text.includes('pase')) {
+                    if (regularFields) regularFields.style.display = 'none';
+                    if (dailyPassFields) dailyPassFields.style.display = 'block';
+                    if (paymentOptionsSection) paymentOptionsSection.style.display = 'none';
+                    if (amountInput && selectedOpt.dataset.price) {
+                        amountInput.value = selectedOpt.dataset.price;
+                        updateTaxBreakdown();
+                    }
+                } else {
+                    if (regularFields) regularFields.style.display = 'block';
+                    if (dailyPassFields) dailyPassFields.style.display = 'none';
+                    if (paymentOptionsSection) paymentOptionsSection.style.display = 'block';
+
+                    if (text.includes('medio mes')) {
+                        selectPlan('half', false);
+                    } else {
+                        selectPlan('full', false);
+                    }
+                }
+            }
+
+            subSelect.addEventListener('change', onSubscriptionChange);
+        }
+
+        // Inicialización según valor actual del input
+        if (amountInput) {
+            const initialVal = parseFloat(amountInput.value);
+            if (Math.abs(initialVal - 30.0) < 0.01) {
+                selectPlan('half', false);
+            } else {
+                selectPlan('full', false);
+            }
+        } else {
+            selectPlan('full', false);
+        }
+        updateTaxBreakdown();
     });
     </script>
 {% endblock %}
