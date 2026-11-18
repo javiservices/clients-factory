@@ -196,27 +196,344 @@
             }
         }
 
-        /* ─── Kiosco Mostrador Fullscreen ─── */
-        :fullscreen #liveClientCardContainer,
-        #liveClientCardContainer:fullscreen {
+        /* ─── Kiosco Mostrador Fullscreen Profesional ─── */
+        #gymKioskWrapper:fullscreen,
+        #gymKioskWrapper:-webkit-full-screen,
+        #gymKioskWrapper.is-kiosk-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
             width: 100vw !important;
             height: 100vh !important;
+            background: #0B0F19 !important;
+            background: radial-gradient(circle at 80% 20%, rgba(220, 38, 38, 0.15) 0%, rgba(11, 15, 25, 0.98) 70%) !important;
+            z-index: 99999 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+            color: #F8FAFC !important;
+        }
+
+        #gymKioskWrapper:fullscreen .kiosk-fullscreen-topbar,
+        #gymKioskWrapper:-webkit-full-screen .kiosk-fullscreen-topbar,
+        #gymKioskWrapper.is-kiosk-fullscreen .kiosk-fullscreen-topbar {
+            display: flex !important;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.9rem 2.25rem;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .kiosk-brand-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            color: #FFFFFF;
+            line-height: 1.1;
+        }
+        .kiosk-brand-sub {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #94A3B8;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+        }
+        .kiosk-aforo-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.45rem 1.25rem;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 999px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: #E2E8F0;
+        }
+        .kiosk-clock-digits {
+            font-size: 1.55rem;
+            font-weight: 800;
+            font-family: monospace;
+            color: #FFFFFF;
+            line-height: 1;
+            letter-spacing: 0.02em;
+        }
+        .kiosk-clock-date {
+            font-size: 0.72rem;
+            color: #94A3B8;
+            text-transform: capitalize;
+            margin-top: 2px;
+        }
+
+        #gymKioskWrapper:fullscreen .torno-card-header:not(.kiosk-recent-header),
+        #gymKioskWrapper:-webkit-full-screen .torno-card-header:not(.kiosk-recent-header),
+        #gymKioskWrapper.is-kiosk-fullscreen .torno-card-header:not(.kiosk-recent-header) {
+            display: none !important;
+        }
+
+        #gymKioskWrapper:fullscreen .kiosk-grid-row,
+        #gymKioskWrapper:-webkit-full-screen .kiosk-grid-row,
+        #gymKioskWrapper.is-kiosk-fullscreen .kiosk-grid-row {
+            display: grid !important;
+            grid-template-columns: 1fr 390px !important;
+            gap: 1.75rem !important;
+            flex: 1 1 auto !important;
+            padding: 1.5rem 2.25rem 2rem 2.25rem !important;
+            margin: 0 !important;
+            height: calc(100vh - 85px) !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+        }
+
+        #gymKioskWrapper:fullscreen .kiosk-hero-col,
+        #gymKioskWrapper:-webkit-full-screen .kiosk-hero-col,
+        #gymKioskWrapper.is-kiosk-fullscreen .kiosk-hero-col {
+            height: 100% !important;
+            width: 100% !important;
+            max-width: none !important;
+            padding: 0 !important;
+        }
+
+        #gymKioskWrapper:fullscreen .kiosk-recent-col,
+        #gymKioskWrapper:-webkit-full-screen .kiosk-recent-col,
+        #gymKioskWrapper.is-kiosk-fullscreen .kiosk-recent-col {
+            height: 100% !important;
+            width: 100% !important;
+            max-width: none !important;
+            padding: 0 !important;
+        }
+
+        #gymKioskWrapper:fullscreen .torno-card,
+        #gymKioskWrapper:-webkit-full-screen .torno-card,
+        #gymKioskWrapper.is-kiosk-fullscreen .torno-card {
+            height: 100% !important;
+            background: rgba(15, 23, 42, 0.75) !important;
+            backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 24px !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
             display: flex !important;
             flex-direction: column !important;
             justify-content: center !important;
-            background: #ffffff !important;
-            border-radius: 0 !important;
-            border: none !important;
-            padding: 2.5rem !important;
-            box-sizing: border-box !important;
+            position: relative !important;
         }
-        :fullscreen .client-avatar-img,
-        #liveClientCardContainer:fullscreen .client-avatar-img,
-        :fullscreen .client-avatar-placeholder,
-        #liveClientCardContainer:fullscreen .client-avatar-placeholder {
-            width: 130px !important;
-            height: 130px !important;
-            font-size: 4rem !important;
+        #gymKioskWrapper:fullscreen .torno-card.is-allowed,
+        #gymKioskWrapper:-webkit-full-screen .torno-card.is-allowed,
+        #gymKioskWrapper.is-kiosk-fullscreen .torno-card.is-allowed {
+            border-top: 6px solid #10B981 !important;
+            box-shadow: 0 0 50px rgba(16, 185, 129, 0.2), 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+        }
+        #gymKioskWrapper:fullscreen .torno-card.is-denied,
+        #gymKioskWrapper:-webkit-full-screen .torno-card.is-denied,
+        #gymKioskWrapper.is-kiosk-fullscreen .torno-card.is-denied {
+            border-top: 6px solid #EF4444 !important;
+            box-shadow: 0 0 50px rgba(239, 68, 68, 0.2), 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+        }
+
+        #gymKioskWrapper:fullscreen #liveClientContent,
+        #gymKioskWrapper:-webkit-full-screen #liveClientContent,
+        #gymKioskWrapper.is-kiosk-fullscreen #liveClientContent {
+            height: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 3rem !important;
+            text-align: center !important;
+        }
+
+        #gymKioskWrapper:fullscreen .kiosk-hero-wrapper,
+        #gymKioskWrapper:-webkit-full-screen .kiosk-hero-wrapper,
+        #gymKioskWrapper.is-kiosk-fullscreen .kiosk-hero-wrapper {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 1.5rem !important;
+            max-width: 800px !important;
+            width: 100% !important;
+        }
+
+        #gymKioskWrapper:fullscreen .client-avatar-img,
+        #gymKioskWrapper:-webkit-full-screen .client-avatar-img,
+        #gymKioskWrapper.is-kiosk-fullscreen .client-avatar-img {
+            width: 190px !important;
+            height: 190px !important;
+            border-radius: 50% !important;
+            border: 5px solid #ffffff !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+        }
+        #gymKioskWrapper:fullscreen .torno-card.is-allowed .client-avatar-img,
+        #gymKioskWrapper:-webkit-full-screen .torno-card.is-allowed .client-avatar-img,
+        #gymKioskWrapper.is-kiosk-fullscreen .torno-card.is-allowed .client-avatar-img {
+            border-color: #10B981 !important;
+            box-shadow: 0 0 40px rgba(16, 185, 129, 0.6) !important;
+        }
+        #gymKioskWrapper:fullscreen .torno-card.is-denied .client-avatar-img,
+        #gymKioskWrapper:-webkit-full-screen .torno-card.is-denied .client-avatar-img,
+        #gymKioskWrapper.is-kiosk-fullscreen .torno-card.is-denied .client-avatar-img {
+            border-color: #EF4444 !important;
+            box-shadow: 0 0 40px rgba(239, 68, 68, 0.6) !important;
+        }
+        #gymKioskWrapper:fullscreen .client-avatar-placeholder,
+        #gymKioskWrapper:-webkit-full-screen .client-avatar-placeholder,
+        #gymKioskWrapper.is-kiosk-fullscreen .client-avatar-placeholder {
+            width: 190px !important;
+            height: 190px !important;
+            font-size: 6rem !important;
+            border-radius: 50% !important;
+            background: #1E293B !important;
+            color: #94A3B8 !important;
+            border: 5px solid #334155 !important;
+        }
+        #gymKioskWrapper:fullscreen .avatar-status-dot,
+        #gymKioskWrapper:-webkit-full-screen .avatar-status-dot,
+        #gymKioskWrapper.is-kiosk-fullscreen .avatar-status-dot {
+            width: 36px !important;
+            height: 36px !important;
+            border-width: 4px !important;
+            bottom: 6px !important;
+            right: 6px !important;
+        }
+
+        #gymKioskWrapper:fullscreen h3 a,
+        #gymKioskWrapper:-webkit-full-screen h3 a,
+        #gymKioskWrapper.is-kiosk-fullscreen h3 a {
+            font-size: 2.8rem !important;
+            font-weight: 800 !important;
+            color: #FFFFFF !important;
+            letter-spacing: -0.02em !important;
+        }
+
+        #gymKioskWrapper:fullscreen .meta-pill,
+        #gymKioskWrapper:-webkit-full-screen .meta-pill,
+        #gymKioskWrapper.is-kiosk-fullscreen .meta-pill {
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: #E2E8F0 !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            font-size: 1rem !important;
+            padding: 0.5rem 1rem !important;
+            border-radius: 12px !important;
+        }
+
+        #gymKioskWrapper:fullscreen .kiosk-welcome-alert,
+        #gymKioskWrapper:-webkit-full-screen .kiosk-welcome-alert,
+        #gymKioskWrapper.is-kiosk-fullscreen .kiosk-welcome-alert {
+            background: rgba(220, 38, 38, 0.15) !important;
+            border: 1px solid rgba(220, 38, 38, 0.3) !important;
+            border-left: 5px solid var(--c-primary, #DC2626) !important;
+            color: #F8FAFC !important;
+            font-size: 1.15rem !important;
+            padding: 0.75rem 1.5rem !important;
+            border-radius: 14px !important;
+        }
+        #gymKioskWrapper:fullscreen .kiosk-welcome-alert .text-dark,
+        #gymKioskWrapper:-webkit-full-screen .kiosk-welcome-alert .text-dark,
+        #gymKioskWrapper.is-kiosk-fullscreen .kiosk-welcome-alert .text-dark {
+            color: #FFFFFF !important;
+        }
+
+        #gymKioskWrapper:fullscreen .recent-card,
+        #gymKioskWrapper:-webkit-full-screen .recent-card,
+        #gymKioskWrapper.is-kiosk-fullscreen .recent-card {
+            height: 100% !important;
+            background: rgba(15, 23, 42, 0.75) !important;
+            backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 24px !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+        }
+        #gymKioskWrapper:fullscreen .kiosk-recent-header,
+        #gymKioskWrapper:-webkit-full-screen .kiosk-recent-header,
+        #gymKioskWrapper.is-kiosk-fullscreen .kiosk-recent-header {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+            padding: 1.1rem 1.5rem !important;
+        }
+        #gymKioskWrapper:fullscreen .kiosk-recent-title,
+        #gymKioskWrapper:-webkit-full-screen .kiosk-recent-title,
+        #gymKioskWrapper.is-kiosk-fullscreen .kiosk-recent-title {
+            color: #FFFFFF !important;
+            font-size: 1.05rem !important;
+        }
+        #gymKioskWrapper:fullscreen .kiosk-recent-icon,
+        #gymKioskWrapper:-webkit-full-screen .kiosk-recent-icon,
+        #gymKioskWrapper.is-kiosk-fullscreen .kiosk-recent-icon {
+            color: var(--c-primary, #DC2626) !important;
+        }
+        #gymKioskWrapper:fullscreen .kiosk-recent-link,
+        #gymKioskWrapper:-webkit-full-screen .kiosk-recent-link,
+        #gymKioskWrapper.is-kiosk-fullscreen .kiosk-recent-link {
+            color: #94A3B8 !important;
+        }
+        #gymKioskWrapper:fullscreen .recent-card-body,
+        #gymKioskWrapper:-webkit-full-screen .recent-card-body,
+        #gymKioskWrapper.is-kiosk-fullscreen .recent-card-body {
+            max-height: none !important;
+            flex: 1 1 auto !important;
+            overflow-y: auto !important;
+            padding: 1rem 1.25rem !important;
+        }
+        #gymKioskWrapper:fullscreen .recent-item,
+        #gymKioskWrapper:-webkit-full-screen .recent-item,
+        #gymKioskWrapper.is-kiosk-fullscreen .recent-item {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.06) !important;
+            border-radius: 12px !important;
+            margin-bottom: 0.65rem !important;
+            padding: 0.75rem 1rem !important;
+            transition: background 0.15s ease !important;
+        }
+        #gymKioskWrapper:fullscreen .recent-item:hover,
+        #gymKioskWrapper:-webkit-full-screen .recent-item:hover,
+        #gymKioskWrapper.is-kiosk-fullscreen .recent-item:hover {
+            background: rgba(255, 255, 255, 0.08) !important;
+        }
+        #gymKioskWrapper:fullscreen .recent-item a,
+        #gymKioskWrapper:-webkit-full-screen .recent-item a,
+        #gymKioskWrapper.is-kiosk-fullscreen .recent-item a {
+            color: #FFFFFF !important;
+            font-size: 0.95rem !important;
+        }
+        #gymKioskWrapper:fullscreen .recent-item .text-muted,
+        #gymKioskWrapper:-webkit-full-screen .recent-item .text-muted,
+        #gymKioskWrapper.is-kiosk-fullscreen .recent-item .text-muted {
+            color: #94A3B8 !important;
+        }
+
+        #gymKioskWrapper:fullscreen .kiosk-idle-state,
+        #gymKioskWrapper:-webkit-full-screen .kiosk-idle-state,
+        #gymKioskWrapper.is-kiosk-fullscreen .kiosk-idle-state {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            padding: 3rem !important;
+        }
+        #gymKioskWrapper:fullscreen .kiosk-idle-title,
+        #gymKioskWrapper:-webkit-full-screen .kiosk-idle-title,
+        #gymKioskWrapper.is-kiosk-fullscreen .kiosk-idle-title {
+            color: #FFFFFF !important;
+            font-size: 2.2rem !important;
+            font-weight: 800 !important;
+        }
+        #gymKioskWrapper:fullscreen .kiosk-idle-sub,
+        #gymKioskWrapper:-webkit-full-screen .kiosk-idle-sub,
+        #gymKioskWrapper.is-kiosk-fullscreen .kiosk-idle-sub {
+            color: #94A3B8 !important;
+            font-size: 1.15rem !important;
         }
     </style>
 {% endblock %}
@@ -276,161 +593,201 @@
 </div>
 {% endif %}
 
-{# ─── Acceso en tiempo real (Torno) ─── #}
-<div class="row g-3 mb-4">
-    {# Tarjeta Principal del Torno (Último acceso) #}
-    <div class="col-12 col-lg-8">
-        <div id="liveClientCardContainer" class="torno-card {{ initialClient ? (initialClient.status == 'success' ? 'is-allowed' : 'is-denied') : '' }}">
-            <div class="torno-card-header flex-wrap gap-2">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-broadcast text-danger fs-5"></i>
-                    <span class="fw-bold text-dark">Lector del Torno</span>
-                    <span class="badge bg-light text-secondary border ms-1">En vivo</span>
-                </div>
-                <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
-                    <span class="badge bg-light text-dark border px-2 py-1 d-inline-flex align-items-center gap-1.5" title="Socios en sala (accesos en los últimos 90 minutos)">
-                        <i class="bi bi-people-fill text-primary"></i>Aforo: <strong id="liveOccupancyVal">{{ currentOccupancy|default(0) }}</strong> en sala
-                    </span>
-                    <button type="button" class="btn btn-sm btn-light border py-1 px-2" id="toggleAudioBtn" title="Activar/Silenciar sonido de accesos">
-                        <i class="bi bi-volume-up text-secondary" id="audioIcon"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-light border py-1 px-2" id="toggleKioskBtn" title="Pantalla completa (Modo mostrador)">
-                        <i class="bi bi-arrows-fullscreen text-secondary"></i>
-                    </button>
-                    <div id="liveAccessTimeTag" class="text-secondary small ms-1">
-                        {% if initialClient %}
-                            Último acceso: <strong class="text-dark">{{ initialClient.accessTimeFormatted }}</strong>
-                        {% else %}
-                            En espera de lectura...
-                        {% endif %}
-                    </div>
+{# ─── Acceso en tiempo real (Torno) & Kiosco Mostrador ─── #}
+<div id="gymKioskWrapper" class="gym-kiosk-wrapper mb-4">
+    {# Barra superior exclusiva para Modo Pantalla Completa (Kiosco) #}
+    <div class="kiosk-fullscreen-topbar d-none">
+        <div class="d-flex align-items-center gap-3">
+            <div class="kiosk-brand-icon">
+                <i class="bi bi-shield-fill-check text-danger fs-2"></i>
+            </div>
+            <div>
+                <div class="kiosk-brand-title">SANTAMARÍA GYM</div>
+                <div class="kiosk-brand-sub">
+                    <span class="pulse-live me-1"></span>TORNO DE ACCESO EN VIVO
                 </div>
             </div>
+        </div>
 
-            <div id="liveClientContent" class="p-3 p-md-4">
-                {% if initialClient %}
-                    <div class="d-flex flex-column flex-sm-row align-items-center align-items-sm-start gap-4">
-                        <div class="client-avatar-wrap">
-                            {% if initialClient.photoUrl %}
-                                <img src="{{ initialClient.photoUrl }}" alt="{{ initialClient.name }}" class="client-avatar-img">
-                            {% else %}
-                                <div class="client-avatar-placeholder">
-                                    <i class="bi bi-person"></i>
-                                </div>
-                            {% endif %}
-                            <span class="avatar-status-dot {{ initialClient.status == 'success' ? 'bg-success' : 'bg-danger' }}" title="{{ initialClient.status == 'success' ? 'Autorizado' : 'Denegado' }}"></span>
-                        </div>
+        <div class="kiosk-aforo-badge">
+            <i class="bi bi-people-fill text-warning me-2 fs-5"></i>
+            <span>AFORO EN SALA: <strong id="kioskOccupancyVal" class="text-white fs-4 ms-1">{{ currentOccupancy|default(0) }}</strong> PERSONAS</span>
+        </div>
 
-                        <div class="flex-grow-1 text-center text-sm-start">
-                            <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start gap-2 mb-1">
-                                <h3 class="fw-bold mb-0 text-dark">
-                                    <a href="{{ path('app_client_show', {'id': initialClient.id}) }}" class="text-dark text-decoration-none">
-                                        {{ initialClient.name }} {{ initialClient.surname }}
-                                    </a>
-                                </h3>
-                                {% if initialClient.status == 'success' %}
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
-                                        <i class="bi bi-check-circle-fill me-1"></i>Paso Autorizado
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-danger text-white px-2 py-1">
-                                        <i class="bi bi-x-circle-fill me-1"></i>Acceso Denegado
-                                    </span>
-                                {% endif %}
-                            </div>
-
-                            <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start gap-2 mb-3">
-                                <span class="meta-pill"><i class="bi bi-hash me-1"></i>{{ initialClient.clientNumber|default(initialClient.id) }}</span>
-                                <span class="meta-pill"><i class="bi bi-credit-card-2-front me-1"></i>{{ initialClient.cardCode|default('Sin tarjeta física') }}</span>
-                                <span class="meta-pill">
-                                    <i class="bi bi-calendar-check me-1"></i>{{ initialClient.subType }}
-                                    {% if initialClient.endDate %}
-                                        · Vence: <strong class="ms-1">{{ initialClient.endDate }}</strong>
-                                    {% endif %}
-                                </span>
-                                {% if initialClient.hasPaid %}
-                                    <span class="badge bg-success-subtle text-success"><i class="bi bi-check-lg me-1"></i>Cuota Activa</span>
-                                {% else %}
-                                    <span class="badge bg-danger-subtle text-danger"><i class="bi bi-exclamation-octagon me-1"></i>Cuota Inactiva</span>
-                                {% endif %}
-                            </div>
-
-                            {% if initialClient.welcomeMessage %}
-                                <div class="alert py-2 px-3 mb-3 rounded-3 border-0 d-inline-flex align-items-center gap-2" style="background: rgba(220, 38, 38, 0.08); border-left: 4px solid var(--c-primary,#DC2626) !important;">
-                                    <i class="bi bi-chat-quote-fill text-danger fs-5"></i>
-                                    <span class="fw-semibold text-dark">{{ initialClient.welcomeMessage }}</span>
-                                </div>
-                            {% endif %}
-
-                            <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start gap-2 pt-2">
-                                <form method="post" action="{{ path('app_client_renew', {'id': initialClient.id}) }}" class="d-inline js-renew-form">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('renew' ~ initialClient.id) }}">
-                                    <input type="hidden" name="return_to" value="dashboard">
-                                    <button type="submit" class="btn btn-success fw-semibold shadow-sm js-renew-btn" data-client-id="{{ initialClient.id }}">
-                                        <i class="bi bi-arrow-repeat me-1"></i>Renovar Cuota
-                                    </button>
-                                </form>
-                                <a href="{{ path('app_client_edit', {'id': initialClient.id}) }}?return_to=dashboard" class="btn btn-outline-secondary">
-                                    <i class="bi bi-pencil-square me-1"></i>Editar
-                                </a>
-                                <a href="{{ path('app_client_show', {'id': initialClient.id}) }}" class="btn btn-outline-dark">
-                                    <i class="bi bi-person-lines-fill me-1"></i>Ficha
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="text-center py-4 text-muted">
-                        <i class="bi bi-person-bounding-box fs-1 d-block mb-2 text-secondary"></i>
-                        <h5 class="fw-semibold text-dark">Esperando lectura en el torno...</h5>
-                        <p class="small text-secondary mb-0">Cuando un socio pase su tarjeta o código, aparecerá aquí al instante sin recargar la página.</p>
-                    </div>
-                {% endif %}
+        <div class="d-flex align-items-center gap-3">
+            <div class="text-end d-none d-md-block">
+                <div id="kioskClock" class="kiosk-clock-digits">--:--:--</div>
+                <div id="kioskDate" class="kiosk-clock-date">Cargando fecha...</div>
             </div>
+            <button type="button" class="btn btn-outline-light btn-sm rounded-circle p-2" id="kioskAudioBtn" title="Sonido de accesos">
+                <i class="bi bi-volume-up" id="kioskAudioIcon"></i>
+            </button>
+            <button type="button" class="btn btn-danger btn-sm px-3 py-1.5 rounded-pill fw-bold d-inline-flex align-items-center gap-1 shadow-sm" id="exitKioskBtn" title="Salir de pantalla completa (Esc)">
+                <i class="bi bi-fullscreen-exit"></i>
+                <span>Salir (Esc)</span>
+            </button>
         </div>
     </div>
 
-    {# Mini Historial de Accesos Recientes #}
-    <div class="col-12 col-lg-4">
-        <div class="recent-card">
-            <div class="torno-card-header">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-clock-history text-secondary fs-5"></i>
-                    <span class="fw-bold text-dark">Últimos Accesos</span>
+    {# Grid Principal: En modo normal es row g-3, en :fullscreen se expande al 100% de la pantalla #}
+    <div class="row g-3 kiosk-grid-row">
+        {# Tarjeta Principal del Torno (Último acceso) #}
+        <div class="col-12 col-lg-8 kiosk-hero-col">
+            <div id="liveClientCardContainer" class="torno-card {{ initialClient ? (initialClient.status == 'success' ? 'is-allowed' : 'is-denied') : '' }}">
+                <div class="torno-card-header flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-broadcast text-danger fs-5"></i>
+                        <span class="fw-bold text-dark">Lector del Torno</span>
+                        <span class="badge bg-light text-secondary border ms-1">En vivo</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
+                        <span class="badge bg-light text-dark border px-2 py-1 d-inline-flex align-items-center gap-1.5" title="Socios en sala (accesos en los últimos 90 minutos)">
+                            <i class="bi bi-people-fill text-primary"></i>Aforo: <strong id="liveOccupancyVal">{{ currentOccupancy|default(0) }}</strong> en sala
+                        </span>
+                        <button type="button" class="btn btn-sm btn-light border py-1 px-2" id="toggleAudioBtn" title="Activar/Silenciar sonido de accesos">
+                            <i class="bi bi-volume-up text-secondary" id="audioIcon"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger text-white border-0 py-1 px-2.5 fw-semibold d-inline-flex align-items-center gap-1 shadow-sm" id="toggleKioskBtn" title="Pantalla completa (Modo mostrador)">
+                            <i class="bi bi-arrows-fullscreen"></i>
+                            <span class="d-none d-sm-inline">Pantalla Completa</span>
+                        </button>
+                        <div id="liveAccessTimeTag" class="text-secondary small ms-1">
+                            {% if initialClient %}
+                                Último acceso: <strong class="text-dark">{{ initialClient.accessTimeFormatted }}</strong>
+                            {% else %}
+                                En espera de lectura...
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
-                <a href="{{ path('logs_view') }}" class="small text-decoration-none text-muted">Ver todos</a>
-            </div>
-            <div class="recent-card-body" id="recentAccessesList">
-                {% if initialRecent|length > 0 %}
-                    {% for item in initialRecent %}
-                        <div class="recent-item">
-                            <div class="d-flex align-items-center gap-2 min-w-0">
-                                {% if item.photoUrl %}
-                                    <img src="{{ item.photoUrl }}" alt="{{ item.name }}" class="rounded-circle object-fit-cover" style="width:32px;height:32px;">
+
+                <div id="liveClientContent" class="p-3 p-md-4 kiosk-hero-content">
+                    {% if initialClient %}
+                        <div class="d-flex flex-column flex-sm-row align-items-center align-items-sm-start gap-4 kiosk-hero-wrapper" style="animation: fadeIn 0.3s ease;">
+                            <div class="client-avatar-wrap">
+                                {% if initialClient.photoUrl %}
+                                    <img src="{{ initialClient.photoUrl }}" alt="{{ initialClient.name }}" class="client-avatar-img">
                                 {% else %}
-                                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-secondary" style="width:32px;height:32px;font-size:0.9rem;">
+                                    <div class="client-avatar-placeholder">
                                         <i class="bi bi-person"></i>
                                     </div>
                                 {% endif %}
-                                <div class="min-w-0">
-                                    <a href="{{ path('app_client_show', {'id': item.clientId}) }}" class="text-dark fw-semibold text-truncate d-block small text-decoration-none">
-                                        {{ item.name }}
+                                <span class="avatar-status-dot {{ initialClient.status == 'success' ? 'bg-success' : 'bg-danger' }}" title="{{ initialClient.status == 'success' ? 'Autorizado' : 'Denegado' }}"></span>
+                            </div>
+
+                            <div class="flex-grow-1 text-center text-sm-start">
+                                <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start gap-2 mb-2">
+                                    <h3 class="fw-bold mb-0 text-dark">
+                                        <a href="{{ path('app_client_show', {'id': initialClient.id}) }}" target="_blank" class="text-dark text-decoration-none">
+                                            {{ initialClient.name }} {{ initialClient.surname }}
+                                        </a>
+                                    </h3>
+                                    {% if initialClient.status == 'success' %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1.5 rounded-pill fw-bold fs-6">
+                                            <i class="bi bi-check-circle-fill me-1"></i>Paso Autorizado
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger text-white px-3 py-1.5 rounded-pill fw-bold fs-6">
+                                            <i class="bi bi-x-circle-fill me-1"></i>Acceso Denegado
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start gap-2 mb-3">
+                                    <span class="meta-pill"><i class="bi bi-hash me-1"></i>{{ initialClient.clientNumber|default(initialClient.id) }}</span>
+                                    <span class="meta-pill"><i class="bi bi-credit-card-2-front me-1"></i>{{ initialClient.cardCode|default('Sin tarjeta física') }}</span>
+                                    <span class="meta-pill">
+                                        <i class="bi bi-calendar-check me-1"></i>{{ initialClient.subType }}
+                                        {% if initialClient.endDate %}
+                                            · Vence: <strong class="ms-1">{{ initialClient.endDate }}</strong>
+                                        {% endif %}
+                                    </span>
+                                    {% if initialClient.hasPaid %}
+                                        <span class="badge bg-success-subtle text-success px-2.5 py-1 rounded-pill"><i class="bi bi-check-lg me-1"></i>Cuota Activa</span>
+                                    {% else %}
+                                        <span class="badge bg-danger-subtle text-danger px-2.5 py-1 rounded-pill"><i class="bi bi-exclamation-octagon me-1"></i>Cuota Inactiva</span>
+                                    {% endif %}
+                                </div>
+
+                                {% if initialClient.welcomeMessage %}
+                                    <div class="alert py-2.5 px-3.5 mb-3 rounded-3 border-0 d-inline-flex align-items-center gap-2 kiosk-welcome-alert" style="background: rgba(220, 38, 38, 0.08); border-left: 4px solid var(--c-primary,#DC2626) !important;">
+                                        <i class="bi bi-chat-quote-fill text-danger fs-4"></i>
+                                        <span class="fw-semibold text-dark fs-6">{{ initialClient.welcomeMessage }}</span>
+                                    </div>
+                                {% endif %}
+
+                                <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start gap-2 pt-2">
+                                    <form method="post" action="{{ path('app_client_renew', {'id': initialClient.id}) }}" class="d-inline js-renew-form">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('renew' ~ initialClient.id) }}">
+                                        <input type="hidden" name="return_to" value="dashboard">
+                                        <button type="submit" class="btn btn-success fw-bold shadow-sm js-renew-btn px-3 py-1.5" data-client-id="{{ initialClient.id }}">
+                                            <i class="bi bi-arrow-repeat me-1"></i>Renovar Cuota
+                                        </button>
+                                    </form>
+                                    <a href="{{ path('app_client_edit', {'id': initialClient.id}) }}?return_to=dashboard" target="_blank" class="btn btn-outline-secondary px-3 py-1.5">
+                                        <i class="bi bi-pencil-square me-1"></i>Editar
                                     </a>
-                                    <span class="text-muted" style="font-size:0.75rem;">{{ item.accessTime }}</span>
+                                    <a href="{{ path('app_client_show', {'id': initialClient.id}) }}" target="_blank" class="btn btn-outline-dark px-3 py-1.5">
+                                        <i class="bi bi-person-lines-fill me-1"></i>Ficha
+                                    </a>
                                 </div>
                             </div>
-                            <div>
-                                {% if item.status == 'success' %}
-                                    <span class="badge bg-success-subtle text-success rounded-pill" style="font-size:0.72rem;">OK</span>
-                                {% else %}
-                                    <span class="badge bg-danger rounded-pill" style="font-size:0.72rem;">Denegado</span>
-                                {% endif %}
-                            </div>
                         </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="text-center py-4 text-muted small">Sin accesos registrados aún hoy.</div>
-                {% endif %}
+                    {% else %}
+                        <div class="kiosk-idle-state text-center py-4 py-md-5">
+                            <div class="mb-3">
+                                <i class="bi bi-broadcast text-danger fs-1"></i>
+                            </div>
+                            <h4 class="fw-bold text-dark kiosk-idle-title mb-2">Esperando lectura en el torno...</h4>
+                            <p class="small text-secondary kiosk-idle-sub mb-0">Cuando un socio pase su tarjeta o código QR, aparecerá aquí al instante sin recargar la página.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# Mini Historial de Accesos Recientes #}
+        <div class="col-12 col-lg-4 kiosk-recent-col">
+            <div class="recent-card">
+                <div class="torno-card-header kiosk-recent-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history text-secondary fs-5 kiosk-recent-icon"></i>
+                        <span class="fw-bold text-dark kiosk-recent-title">Últimos Accesos</span>
+                    </div>
+                    <a href="{{ path('logs_view') }}" class="small text-decoration-none text-muted kiosk-recent-link">Ver todos</a>
+                </div>
+                <div class="recent-card-body" id="recentAccessesList">
+                    {% if initialRecent|length > 0 %}
+                        {% for item in initialRecent %}
+                            <div class="recent-item">
+                                <div class="d-flex align-items-center gap-2 min-w-0">
+                                    {% if item.photoUrl %}
+                                        <img src="{{ item.photoUrl }}" alt="{{ item.name }}" class="rounded-circle object-fit-cover" style="width:36px;height:36px;">
+                                    {% else %}
+                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-secondary" style="width:36px;height:36px;font-size:0.95rem;">
+                                            <i class="bi bi-person"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div class="min-w-0">
+                                        <a href="{{ path('app_client_show', {'id': item.clientId}) }}" target="_blank" class="text-dark fw-semibold text-truncate d-block small text-decoration-none">
+                                            {{ item.name }}
+                                        </a>
+                                        <span class="text-muted" style="font-size:0.75rem;">{{ item.accessTime }}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    {% if item.status == 'success' %}
+                                        <span class="badge bg-success-subtle text-success rounded-pill fw-semibold" style="font-size:0.72rem;">OK</span>
+                                    {% else %}
+                                        <span class="badge bg-danger rounded-pill fw-semibold" style="font-size:0.72rem;">Denegado</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4 text-muted small">Sin accesos registrados aún hoy.</div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -712,10 +1069,12 @@
             container.className = 'torno-card';
             if (timeTag) timeTag.textContent = 'En espera de lectura...';
             content.innerHTML = `
-                <div class="text-center py-4 text-muted">
-                    <i class="bi bi-person-bounding-box fs-1 d-block mb-2 text-secondary"></i>
-                    <h5 class="fw-semibold text-dark">Esperando lectura en el torno...</h5>
-                    <p class="small text-secondary mb-0">Cuando un socio pase su tarjeta o código, aparecerá aquí al instante sin recargar la página.</p>
+                <div class="kiosk-idle-state text-center py-4 py-md-5">
+                    <div class="mb-3">
+                        <i class="bi bi-broadcast text-danger fs-1"></i>
+                    </div>
+                    <h4 class="fw-bold text-dark kiosk-idle-title mb-2">Esperando lectura en el torno...</h4>
+                    <p class="small text-secondary kiosk-idle-sub mb-0">Cuando un socio pase su tarjeta o código QR, aparecerá aquí al instante sin recargar la página.</p>
                 </div>
             `;
             return;
@@ -733,31 +1092,31 @@
             : `<div class="client-avatar-placeholder"><i class="bi bi-person"></i></div>`;
 
         const badgeAccess = isSuccess
-            ? `<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i>Paso Autorizado</span>`
-            : `<span class="badge bg-danger text-white px-2 py-1"><i class="bi bi-x-circle-fill me-1"></i>Acceso Denegado</span>`;
+            ? `<span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1.5 rounded-pill fw-bold fs-6"><i class="bi bi-check-circle-fill me-1"></i>Paso Autorizado</span>`
+            : `<span class="badge bg-danger text-white px-3 py-1.5 rounded-pill fw-bold fs-6"><i class="bi bi-x-circle-fill me-1"></i>Acceso Denegado</span>`;
 
         const subStatusBadge = client.hasPaid
-            ? `<span class="badge bg-success-subtle text-success"><i class="bi bi-check-lg me-1"></i>Cuota Activa</span>`
-            : `<span class="badge bg-danger-subtle text-danger"><i class="bi bi-exclamation-octagon me-1"></i>Cuota Inactiva</span>`;
+            ? `<span class="badge bg-success-subtle text-success px-2.5 py-1 rounded-pill"><i class="bi bi-check-lg me-1"></i>Cuota Activa</span>`
+            : `<span class="badge bg-danger-subtle text-danger px-2.5 py-1 rounded-pill"><i class="bi bi-exclamation-octagon me-1"></i>Cuota Inactiva</span>`;
 
         const welcomeBanner = client.welcomeMessage ? `
-            <div class="alert py-2 px-3 mb-3 rounded-3 border-0 d-inline-flex align-items-center gap-2" style="background: rgba(220, 38, 38, 0.08); border-left: 4px solid var(--c-primary,#DC2626) !important;">
-                <i class="bi bi-chat-quote-fill text-danger fs-5"></i>
-                <span class="fw-semibold text-dark">${escapeHtml(client.welcomeMessage)}</span>
+            <div class="alert py-2.5 px-3.5 mb-3 rounded-3 border-0 d-inline-flex align-items-center gap-2 kiosk-welcome-alert" style="background: rgba(220, 38, 38, 0.08); border-left: 4px solid var(--c-primary,#DC2626) !important;">
+                <i class="bi bi-chat-quote-fill text-danger fs-4"></i>
+                <span class="fw-semibold text-dark fs-6">${escapeHtml(client.welcomeMessage)}</span>
             </div>
         ` : '';
 
         content.innerHTML = `
-            <div class="d-flex flex-column flex-sm-row align-items-center align-items-sm-start gap-4" style="animation: fadeIn 0.3s ease;">
+            <div class="d-flex flex-column flex-sm-row align-items-center align-items-sm-start gap-4 kiosk-hero-wrapper" style="animation: fadeIn 0.3s ease;">
                 <div class="client-avatar-wrap">
                     ${avatarHtml}
                     <span class="avatar-status-dot ${isSuccess ? 'bg-success' : 'bg-danger'}" title="${isSuccess ? 'Autorizado' : 'Denegado'}"></span>
                 </div>
 
                 <div class="flex-grow-1 text-center text-sm-start">
-                    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start gap-2 mb-1">
+                    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start gap-2 mb-2">
                         <h3 class="fw-bold mb-0 text-dark">
-                            <a href="/client/${client.id}" class="text-dark text-decoration-none">
+                            <a href="/client/${client.id}" target="_blank" class="text-dark text-decoration-none">
                                 ${escapeHtml(client.name)} ${escapeHtml(client.surname)}
                             </a>
                         </h3>
@@ -780,14 +1139,14 @@
                         <form method="post" action="/client/${client.id}/renew" class="d-inline js-renew-form">
                             <input type="hidden" name="_token" value="${client.csrfToken || ''}">
                             <input type="hidden" name="return_to" value="dashboard">
-                            <button type="submit" class="btn btn-success fw-semibold shadow-sm js-renew-btn" data-client-id="${client.id}">
+                            <button type="submit" class="btn btn-success fw-bold shadow-sm js-renew-btn px-3 py-1.5" data-client-id="${client.id}">
                                 <i class="bi bi-arrow-repeat me-1"></i>Renovar Cuota
                             </button>
                         </form>
-                        <a href="/client/${client.id}/edit?return_to=dashboard" class="btn btn-outline-secondary">
+                        <a href="/client/${client.id}/edit?return_to=dashboard" target="_blank" class="btn btn-outline-secondary px-3 py-1.5">
                             <i class="bi bi-pencil-square me-1"></i>Editar
                         </a>
-                        <a href="/client/${client.id}" class="btn btn-outline-dark">
+                        <a href="/client/${client.id}" target="_blank" class="btn btn-outline-dark px-3 py-1.5">
                             <i class="bi bi-person-lines-fill me-1"></i>Ficha
                         </a>
                     </div>
@@ -809,11 +1168,11 @@
             <div class="recent-item">
                 <div class="d-flex align-items-center gap-2 min-w-0">
                     ${item.photoUrl
-                        ? `<img src="${item.photoUrl}" alt="${escapeHtml(item.name)}" class="rounded-circle object-fit-cover" style="width:32px;height:32px;">`
-                        : `<div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-secondary" style="width:32px;height:32px;font-size:0.9rem;"><i class="bi bi-person"></i></div>`
+                        ? `<img src="${item.photoUrl}" alt="${escapeHtml(item.name)}" class="rounded-circle object-fit-cover" style="width:36px;height:36px;">`
+                        : `<div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-secondary" style="width:36px;height:36px;font-size:0.95rem;"><i class="bi bi-person"></i></div>`
                     }
                     <div class="min-w-0">
-                        <a href="/client/${item.clientId}" class="text-dark fw-semibold text-truncate d-block small text-decoration-none">
+                        <a href="/client/${item.clientId}" target="_blank" class="text-dark fw-semibold text-truncate d-block small text-decoration-none">
                             ${escapeHtml(item.name)}
                         </a>
                         <span class="text-muted" style="font-size:0.75rem;">${item.accessTime}</span>
@@ -821,8 +1180,8 @@
                 </div>
                 <div>
                     ${item.status === 'success'
-                        ? `<span class="badge bg-success-subtle text-success rounded-pill" style="font-size:0.72rem;">OK</span>`
-                        : `<span class="badge bg-danger rounded-pill" style="font-size:0.72rem;">Denegado</span>`
+                        ? `<span class="badge bg-success-subtle text-success rounded-pill fw-semibold" style="font-size:0.72rem;">OK</span>`
+                        : `<span class="badge bg-danger rounded-pill fw-semibold" style="font-size:0.72rem;">Denegado</span>`
                     }
                 </div>
             </div>
@@ -930,6 +1289,8 @@
             if (data.currentOccupancy !== undefined) {
                 const occEl = document.getElementById('liveOccupancyVal');
                 if (occEl) occEl.textContent = data.currentOccupancy;
+                const kioskOccEl = document.getElementById('kioskOccupancyVal');
+                if (kioskOccEl) kioskOccEl.textContent = data.currentOccupancy;
             }
 
             // Gráfica de barras: accesos por día
@@ -1060,29 +1421,36 @@
     let soundEnabled = localStorage.getItem('gym_sound_enabled') !== 'false';
     const toggleAudioBtn = document.getElementById('toggleAudioBtn');
     const audioIcon = document.getElementById('audioIcon');
+    const kioskAudioBtn = document.getElementById('kioskAudioBtn');
+    const kioskAudioIcon = document.getElementById('kioskAudioIcon');
 
     function updateAudioUI() {
-        if (!audioIcon || !toggleAudioBtn) return;
-        if (soundEnabled) {
-            audioIcon.className = 'bi bi-volume-up text-success';
-            toggleAudioBtn.title = 'Sonido de accesos activado (clic para silenciar)';
-        } else {
-            audioIcon.className = 'bi bi-volume-mute text-secondary';
-            toggleAudioBtn.title = 'Sonido de accesos silenciado (clic para activar)';
+        if (audioIcon) {
+            audioIcon.className = soundEnabled ? 'bi bi-volume-up text-success' : 'bi bi-volume-mute text-secondary';
+        }
+        if (kioskAudioIcon) {
+            kioskAudioIcon.className = soundEnabled ? 'bi bi-volume-up text-success' : 'bi bi-volume-mute text-secondary';
+        }
+        if (toggleAudioBtn) {
+            toggleAudioBtn.title = soundEnabled ? 'Sonido de accesos activado (clic para silenciar)' : 'Sonido de accesos silenciado (clic para activar)';
+        }
+        if (kioskAudioBtn) {
+            kioskAudioBtn.title = soundEnabled ? 'Sonido activado' : 'Sonido silenciado';
         }
     }
     updateAudioUI();
 
-    if (toggleAudioBtn) {
-        toggleAudioBtn.addEventListener('click', () => {
-            soundEnabled = !soundEnabled;
-            localStorage.setItem('gym_sound_enabled', soundEnabled ? 'true' : 'false');
-            updateAudioUI();
-            if (soundEnabled) {
-                playAccessSound(true);
-            }
-        });
+    function handleAudioToggle() {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('gym_sound_enabled', soundEnabled ? 'true' : 'false');
+        updateAudioUI();
+        if (soundEnabled) {
+            playAccessSound(true);
+        }
     }
+
+    if (toggleAudioBtn) toggleAudioBtn.addEventListener('click', handleAudioToggle);
+    if (kioskAudioBtn) kioskAudioBtn.addEventListener('click', handleAudioToggle);
 
     function playAccessSound(isSuccess) {
         if (!soundEnabled) return;
@@ -1123,19 +1491,64 @@
         }
     }
 
+    // ── Kiosco Fullscreen & Reloj en Vivo ─────────────────────────────────
     const toggleKioskBtn = document.getElementById('toggleKioskBtn');
-    const liveContainer = document.getElementById('liveClientCardContainer');
-    if (toggleKioskBtn && liveContainer) {
-        toggleKioskBtn.addEventListener('click', () => {
-            if (!document.fullscreenElement) {
-                liveContainer.requestFullscreen().catch(err => {
-                    console.warn('Error al activar fullscreen:', err);
-                });
-            } else {
-                document.exitFullscreen();
-            }
-        });
+    const exitKioskBtn = document.getElementById('exitKioskBtn');
+    const kioskWrapper = document.getElementById('gymKioskWrapper');
+
+    function enterKioskFullscreen() {
+        if (!kioskWrapper) return;
+        if (kioskWrapper.requestFullscreen) {
+            kioskWrapper.requestFullscreen().catch(err => {
+                console.warn('Fallback a clase fullscreen:', err);
+                kioskWrapper.classList.toggle('is-kiosk-fullscreen');
+            });
+        } else if (kioskWrapper.webkitRequestFullscreen) {
+            kioskWrapper.webkitRequestFullscreen();
+        } else {
+            kioskWrapper.classList.toggle('is-kiosk-fullscreen');
+        }
     }
+
+    function exitKioskFullscreen() {
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            }
+        }
+        if (kioskWrapper) {
+            kioskWrapper.classList.remove('is-kiosk-fullscreen');
+        }
+    }
+
+    if (toggleKioskBtn) toggleKioskBtn.addEventListener('click', enterKioskFullscreen);
+    if (exitKioskBtn) exitKioskBtn.addEventListener('click', exitKioskFullscreen);
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && kioskWrapper?.classList.contains('is-kiosk-fullscreen')) {
+            exitKioskFullscreen();
+        }
+    });
+
+    function updateLiveClocks() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const clockEl = document.getElementById('liveClock');
+        if (clockEl) clockEl.textContent = `(${timeString})`;
+
+        const kioskClock = document.getElementById('kioskClock');
+        if (kioskClock) kioskClock.textContent = timeString;
+
+        const kioskDate = document.getElementById('kioskDate');
+        if (kioskDate) {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            kioskDate.textContent = now.toLocaleDateString('es-ES', options);
+        }
+    }
+    setInterval(updateLiveClocks, 1000);
+    updateLiveClocks();
 
     // Inicializar polling cada 2.5 segundos
     setInterval(checkTurnstile, 2500);
