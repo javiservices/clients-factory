@@ -47,6 +47,17 @@ data class LoginResult(
     val remainingPasses: Int? = null
 )
 
+data class OccupancyResult(
+    val success: Boolean = true,
+    val count: Int = 0,
+    val level: String = "low",
+    val status: String = "Baja afluencia",
+    val statusSub: String = "Momento ideal para entrenar",
+    val color: String = "#10B981",
+    val percentage: Int = 0,
+    val updatedAt: String = ""
+)
+
 class DoorRepository {
 
     init {
@@ -265,6 +276,50 @@ class DoorRepository {
                         success = success,
                         message = msg,
                         clientName = json.optJSONObject("client")?.optString("name")
+                    )
+                )
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun getOccupancy(serverUrl: String): Result<OccupancyResult> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanUrl = serverUrl.trimEnd('/')
+                val endpoint = "$cleanUrl/api/gym/occupancy"
+                val url = URL(endpoint)
+                val conn = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    connectTimeout = 4000
+                    readTimeout = 4000
+                    setRequestProperty("Accept", "application/json")
+                }
+
+                val code = conn.responseCode
+                val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+                val resp = stream?.bufferedReader()?.use(BufferedReader::readText) ?: "{}"
+                val json = JSONObject(resp)
+
+                val success = json.optBoolean("success", code in 200..299)
+                val count = json.optInt("count", 0)
+                val level = json.optString("level", "low")
+                val status = json.optString("status", "Baja afluencia")
+                val statusSub = json.optString("statusSub", "Momento ideal para entrenar")
+                val color = json.optString("color", "#10B981")
+                val percentage = json.optInt("percentage", 10)
+                val updatedAt = json.optString("updatedAt", "")
+
+                Result.success(
+                    OccupancyResult(
+                        success = success,
+                        count = count,
+                        level = level,
+                        status = status,
+                        statusSub = statusSub,
+                        color = color,
+                        percentage = percentage,
+                        updatedAt = updatedAt
                     )
                 )
             } catch (e: Exception) {

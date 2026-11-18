@@ -616,7 +616,13 @@ private fun DoorTab(
             }
         }
 
-        Spacer(modifier = Modifier.height(30.dp))
+        // Tarjeta de aforo en sala en tiempo real
+        if (state.occupancy != null) {
+            Spacer(modifier = Modifier.height(14.dp))
+            OccupancyCard(occupancy = state.occupancy)
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         // ─── BOTÓN CENTRAL DE LUJO CON HALO PULSANTE ───
         CentralUnlockButton(
@@ -716,6 +722,135 @@ private fun DoorTab(
                         color = GymTextMuted,
                         fontSize = 11.sp,
                         lineHeight = 14.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tarjeta de Aforo en Sala en Tiempo Real (Estimación 80 min)
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun OccupancyCard(
+    occupancy: com.example.santadoor.data.OccupancyResult?,
+    modifier: Modifier = Modifier
+) {
+    val occ = occupancy ?: return
+
+    val badgeBg = when (occ.level) {
+        "high" -> Color(0xFF450A0A)
+        "medium" -> Color(0xFF451A03)
+        else -> Color(0xFF064E3B)
+    }
+    val badgeBorder = when (occ.level) {
+        "high" -> Color(0xFFEF4444)
+        "medium" -> GymGold
+        else -> GymGreen
+    }
+    val barColor = when (occ.level) {
+        "high" -> Color(0xFFEF4444)
+        "medium" -> GymGold
+        else -> GymGreen
+    }
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = GymCardBg.copy(alpha = 0.85f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, GymCardBorder)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "👥 AFORO EN SALA",
+                        color = GymTextMuted,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(badgeBg)
+                        .border(1.dp, badgeBorder, RoundedCornerShape(999.dp))
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = "● ${occ.status}",
+                        color = badgeBorder,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "${occ.count}",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Black
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "personas aprox. entrenando",
+                    color = GymTextMuted,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(bottom = 3.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Barra de progreso de aforo
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(Color(0xFF1E293B))
+            ) {
+                val progressFrac = (occ.percentage.coerceIn(5, 100)) / 100f
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction = progressFrac)
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(barColor)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = occ.statusSub,
+                    color = GymTextMuted,
+                    fontSize = 10.sp
+                )
+                if (occ.updatedAt.isNotEmpty()) {
+                    Text(
+                        text = "Actualizado ${occ.updatedAt}",
+                        color = GymTextMuted,
+                        fontSize = 10.sp
                     )
                 }
             }

@@ -200,6 +200,110 @@
             border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
+        /* ─── Occupancy Card ─── */
+        .occupancy-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 0.85rem 1rem;
+            backdrop-filter: blur(8px);
+            margin-bottom: 0.75rem;
+        }
+
+        .occupancy-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .occupancy-title {
+            display: flex;
+            align-items: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .occupancy-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.2rem 0.55rem;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .occupancy-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            display: inline-block;
+        }
+
+        .badge-occupancy-low {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10B981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-occupancy-medium {
+            background: rgba(245, 158, 11, 0.15);
+            color: #F59E0B;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .badge-occupancy-high {
+            background: rgba(239, 68, 68, 0.15);
+            color: #EF4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .occupancy-count-row {
+            display: flex;
+            align-items: baseline;
+            gap: 0.45rem;
+            margin-bottom: 0.45rem;
+        }
+
+        .occupancy-number {
+            font-size: 1.5rem;
+            font-weight: 900;
+            line-height: 1;
+            color: #FFFFFF;
+        }
+
+        .occupancy-limit {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .occupancy-bar-bg {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 0.35rem;
+        }
+
+        .occupancy-bar-fill {
+            height: 100%;
+            border-radius: 999px;
+            transition: width 0.6s ease, background-color 0.6s ease;
+        }
+
+        .occupancy-subtext {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
         /* ─── Unlock Button Hero ─── */
         .unlock-button-wrapper {
             position: relative;
@@ -407,6 +511,33 @@
             </div>
         </div>
 
+        <!-- Tarjeta de Aforo en Sala en Tiempo Real -->
+        <div class="occupancy-card" id="occupancyCard">
+            <div class="occupancy-header">
+                <div class="occupancy-title">
+                    <i class="bi bi-people-fill text-muted me-1"></i>
+                    <span>Aforo en sala</span>
+                </div>
+                <span class="occupancy-badge badge-occupancy-low" id="occBadge">
+                    <span class="occupancy-dot"></span>
+                    <span id="occStatus">Consultando...</span>
+                </span>
+            </div>
+            <div class="occupancy-body">
+                <div class="occupancy-count-row">
+                    <span class="occupancy-number" id="occCount">—</span>
+                    <span class="occupancy-limit" id="occSub">personas aprox. entrenando</span>
+                </div>
+                <div class="occupancy-bar-bg">
+                    <div class="occupancy-bar-fill" id="occBar" style="width: 0%; background: #10B981;"></div>
+                </div>
+                <div class="occupancy-subtext" id="occSubtext">
+                    <span>Sesiones estimadas de 80 min</span>
+                    <span>Actualizando...</span>
+                </div>
+            </div>
+        </div>
+
         <div class="unlock-button-wrapper">
             <div class="pulse-halo"></div>
             <button class="unlock-btn" id="btnUnlock" onclick="triggerUnlock()">
@@ -498,7 +629,37 @@
         const API_KEY = 'S@NT4M@R146YM';
         let currentClient = null;
 
+        async function loadOccupancy() {
+            try {
+                const res = await fetch('/api/gym/occupancy');
+                const data = await res.json();
+                if (data.success) {
+                    const badge = document.getElementById('occBadge');
+                    const statusText = document.getElementById('occStatus');
+                    const countEl = document.getElementById('occCount');
+                    const barEl = document.getElementById('occBar');
+                    const subtextEl = document.getElementById('occSubtext');
+
+                    if (countEl) countEl.textContent = data.count;
+                    if (statusText) statusText.textContent = data.status;
+                    if (barEl) {
+                        barEl.style.width = data.percentage + '%';
+                        barEl.style.backgroundColor = data.color;
+                    }
+                    if (badge) {
+                        badge.className = `occupancy-badge badge-occupancy-${data.level}`;
+                    }
+                    if (subtextEl) {
+                        subtextEl.innerHTML = `<span>${data.statusSub}</span><span>Actualizado ${data.updatedAt}</span>`;
+                    }
+                }
+            } catch (e) {
+                console.warn('No se pudo cargar el aforo:', e);
+            }
+        }
+
         function checkAuth() {
+            loadOccupancy();
             const stored = localStorage.getItem('santadoor_client');
             if (stored) {
                 try {
@@ -806,6 +967,7 @@
                 if (doorView) doorView.classList.add('active');
                 const btn = document.querySelector('.nav-item[data-tab="door"]');
                 if (btn) btn.classList.add('active');
+                loadOccupancy();
             } else if (tab === 'qr') {
                 const qrView = document.getElementById('qrView');
                 if (qrView) qrView.classList.add('active');
@@ -828,7 +990,10 @@
             document.getElementById('iosInstallBanner').style.display = 'flex';
         }
 
-        document.addEventListener('DOMContentLoaded', checkAuth);
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            setInterval(loadOccupancy, 30000);
+        });
     </script>
 </body>
 </html>

@@ -109,4 +109,93 @@ class AccessLogRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Calcula el aforo en sala teniendo en cuenta sesiones de entrenamiento estimadas (80 minutos).
+     * Si un mismo socio sale y vuelve a entrar dentro de esos 80 minutos, se considera
+     * la misma sesión de entrenamiento: no se suma como un segundo socio ni se alarga
+     * artificialmente el tiempo de la sesión original.
+     */
+    public function calculateCurrentOccupancy(int $sessionMinutes = 80): int
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $now = new \DateTime();
+        $lookback = (clone $now)->modify('-' . ($sessionMinutes * 2) . ' minutes');
+
+        $rows = $conn->fetchAllAssociative('
+            SELECT client_id, access_time 
+            FROM access_log 
+            WHERE status = \'success\' 
+              AND access_time >= :lookback
+            ORDER BY client_id ASC, access_time ASC
+        ', ['lookback' => $lookback->format('Y-m-d H:i:s')]);
+
+        if (empty($rows)) {
+            return 0;
+        }
+
+        $clientAccesses = [];
+        foreach ($rows as $row) {
+            $clientAccesses[$row['client_id']][] = new \DateTime($row['access_time']);
+        }
+
+        $activeCount = 0;
+
+        foreach ($clientAccesses as $clientId => $times) {
+            $currentSessionStart = null;
+            $currentSessionEnd = null;
+
+            foreach ($times as $accessTime) {
+                if ($currentSessionStart === null || $accessTime > $currentSessionEnd) {
+                    $currentSessionStart = $accessTime;
+                    $currentSessionEnd = (clone $accessTime)->modify("+{$sessionMinutes} minutes");
+                }
+            }
+
+            if ($currentSessionEnd !== null && $now >= $currentSessionStart && $now <= $currentSessionEnd) {
+                $activeCount++;
+            }
+        }
+
+        return $activeCount;
+    }
+
+    /**
+     * Devuelve el aforo con estado cualitativo (bajo, medio, alto), porcentaje y textos informativos.
+     */
+    public function getOccupancyDetails(int $sessionMinutes = 80, int $capacityLimit = 45): array
+    {
+        $count = $this->calculateCurrentOccupancy($sessionMinutes);
+
+        $level = 'low';
+        $status = 'Baja afluencia';
+        $statusSub = 'Momento ideal para entrenar';
+        $color = '#10B981'; // Verde
+
+        if ($count >= 30) {
+            $level = 'high';
+            $status = 'Sala concurrida';
+            $statusSub = 'Afluencia alta en este momento';
+            $color = '#EF4444'; // Rojo
+        } elseif ($count >= 15) {
+            $level = 'medium';
+            $status = 'Afluencia moderada';
+            $statusSub = 'Buen ambiente y máquinas libres';
+            $color = '#F59E0B'; // Ámbar
+        }
+
+        $percentage = min(100, max(6, (int) round(($count / $capacityLimit) * 100)));
+
+        return [
+            'count'          => $count,
+            'level'          => $level,
+            'status'         => $status,
+            'statusSub'      => $statusSub,
+            'color'          => $color,
+            'percentage'     => $percentage,
+            'sessionMinutes' => $sessionMinutes,
+            'capacityLimit'  => $capacityLimit,
+            'updatedAt'      => (new \DateTime())->format('H:i'),
+        ];
+    }
 }

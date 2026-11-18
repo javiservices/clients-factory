@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.santadoor.data.DoorPreferences
 import com.example.santadoor.data.DoorRepository
+import com.example.santadoor.data.OccupancyResult
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,7 +37,8 @@ data class MainUiState(
     val loginError: String? = null,
     val unlockStatus: UnlockStatus = UnlockStatus.Idle,
     val hapticEnabled: Boolean = true,
-    val selectedTab: Int = 0 // 0: Torno, 1: Mi Perfil
+    val selectedTab: Int = 0, // 0: Torno, 1: Mi Perfil
+    val occupancy: OccupancyResult? = null
 )
 
 class MainScreenViewModel(application: Application) : AndroidViewModel(application) {
@@ -64,10 +66,24 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
         if (prefs.isLoggedIn) {
             checkStatus()
         }
+        loadOccupancy()
     }
 
     fun selectTab(index: Int) {
         _uiState.update { it.copy(selectedTab = index) }
+        if (index == 0) {
+            loadOccupancy()
+        }
+    }
+
+    fun loadOccupancy() {
+        viewModelScope.launch {
+            val server = _uiState.value.serverUrl
+            val result = repository.getOccupancy(server)
+            result.onSuccess { occ ->
+                _uiState.update { it.copy(occupancy = occ) }
+            }
+        }
     }
 
     fun login(dni: String, code: String) {
@@ -111,6 +127,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
                         selectedTab = 0
                     )
                 }
+                loadOccupancy()
             }.onFailure { err ->
                 _uiState.update {
                     it.copy(
@@ -142,6 +159,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
 
     fun checkStatus() {
         val currentCard = prefs.cardId
+        loadOccupancy()
         if (currentCard.isEmpty()) return
 
         viewModelScope.launch {

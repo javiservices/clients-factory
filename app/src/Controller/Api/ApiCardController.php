@@ -3,6 +3,7 @@ namespace App\Controller\Api;
 
 use App\Entity\AccessLog;
 use App\Entity\Client;
+use App\Repository\AccessLogRepository;
 use App\Repository\ClientRepository;
 use App\Repository\ProcessedLogRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -268,8 +269,11 @@ class ApiCardController extends AbstractController
     // ─────────────────────────────────────────────────────────────────────────
 
     #[Route('/client/verify-login', name: 'client_verify_login', methods: ['POST'])]
-    public function verifyLogin(Request $request, ClientRepository $clientRepository): JsonResponse
-    {
+    public function verifyLogin(
+        Request $request,
+        ClientRepository $clientRepository,
+        AccessLogRepository $accessLogRepo
+    ): JsonResponse {
         $data = [];
         if ($request->getContent()) {
             $data = json_decode($request->getContent(), true) ?? [];
@@ -343,8 +347,20 @@ class ApiCardController extends AbstractController
                 'warningMessage'  => $warningMessage,
                 'isDailyPass'     => $activeSub?->getSubscriptionType()?->isDailyPass() ?? false,
                 'remainingPasses' => $activeSub?->getRemainingPasses(),
-            ]
+            ],
+            'occupancy' => $accessLogRepo->getOccupancyDetails(80, 45),
         ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Consulta de Aforo en Tiempo Real para Apps (PWA y Android)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    #[Route('/gym/occupancy', name: 'gym_occupancy', methods: ['GET'])]
+    public function getGymOccupancy(AccessLogRepository $accessLogRepo): JsonResponse
+    {
+        $details = $accessLogRepo->getOccupancyDetails(80, 45);
+        return $this->json(array_merge(['success' => true], $details));
     }
 
     // ─────────────────────────────────────────────────────────────────────────

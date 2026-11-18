@@ -399,50 +399,9 @@ class DashboardController extends AbstractController
      */
     private function calculateCurrentOccupancy(Connection $conn, int $sessionMinutes = 80): int
     {
-        $now = new \DateTime();
-        $lookback = (clone $now)->modify('-' . ($sessionMinutes * 2) . ' minutes');
-
-        $rows = $conn->fetchAllAssociative('
-            SELECT client_id, access_time 
-            FROM access_log 
-            WHERE status = \'success\' 
-              AND access_time >= :lookback
-            ORDER BY client_id ASC, access_time ASC
-        ', ['lookback' => $lookback->format('Y-m-d H:i:s')]);
-
-        if (empty($rows)) {
-            return 0;
-        }
-
-        $clientAccesses = [];
-        foreach ($rows as $row) {
-            $clientAccesses[$row['client_id']][] = new \DateTime($row['access_time']);
-        }
-
-        $activeCount = 0;
-
-        foreach ($clientAccesses as $clientId => $times) {
-            $currentSessionStart = null;
-            $currentSessionEnd = null;
-
-            foreach ($times as $accessTime) {
-                if ($currentSessionStart === null || $accessTime > $currentSessionEnd) {
-                    // Inicio de una nueva sesión de entrenamiento
-                    $currentSessionStart = $accessTime;
-                    $currentSessionEnd = (clone $accessTime)->modify("+{$sessionMinutes} minutes");
-                } else {
-                    // Re-entrada dentro de la misma ventana de 80 minutos:
-                    // Es la misma sesión; no duplica socio ni extiende indebidamente el bloque.
-                }
-            }
-
-            // Comprobamos si la última sesión del cliente sigue activa en el momento actual
-            if ($currentSessionEnd !== null && $now >= $currentSessionStart && $now <= $currentSessionEnd) {
-                $activeCount++;
-            }
-        }
-
-        return $activeCount;
+        /** @var AccessLogRepository $repo */
+        $repo = $this->container->get('doctrine')->getRepository(\App\Entity\AccessLog::class);
+        return $repo->calculateCurrentOccupancy($sessionMinutes);
     }
 }
 
