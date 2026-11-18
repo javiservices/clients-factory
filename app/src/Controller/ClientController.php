@@ -692,6 +692,15 @@ final class ClientController extends AbstractController
         $postedAmount = $request->request->get('amount');
         $isHalfMonth = $request->request->get('half_month') === '1' || ($postedAmount !== null && is_numeric($postedAmount) && abs((float)$postedAmount - 30.0) < 0.01);
 
+        // Si no se pide explícitamente medio mes, la renovación regular es siempre a mes completo (50 €)
+        if (!$isHalfMonth && str_contains($subscriptionType->getName(), 'Medio mes')) {
+            $fullType = $entityManager->getRepository(SubscriptionType::class)->findOneBy(['name' => 'SALA-FITNESS']);
+            if ($fullType) {
+                $subscriptionType = $fullType;
+                $lastSubscription->setSubscriptionType($fullType);
+            }
+        }
+
         $finalAmount = ($postedAmount !== null && is_numeric($postedAmount) && (float)$postedAmount > 0)
             ? (float) $postedAmount
             : ($isHalfMonth ? 30.0 : (float) $subscriptionType->getPrice());
