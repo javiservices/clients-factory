@@ -42,7 +42,7 @@ docker exec "$CONTAINER_NAME" php bin/console doctrine:migrations:migrate --no-i
 
 # 5. Limpiar caché de Symfony en producción
 echo "🧹 Limpiando caché de producción..."
-docker exec "$CONTAINER_NAME" sh -c "rm -rf /var/www/html/var/cache/pro* && php bin/console cache:clear && chown -R www-data:www-data /var/www/html/var"
+docker exec "$CONTAINER_NAME" sh -c "(rm -rf /var/www/html/var/cache/* 2>/dev/null || true) && php bin/console cache:clear && chown -R www-data:www-data /var/www/html/var"
 
 echo "=================================================="
 echo "✅ Despliegue completado con éxito en: $(date)"
