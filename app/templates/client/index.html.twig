@@ -12,12 +12,36 @@
             border: 1px solid var(--c-gray-200, #E2E8F0) !important;
             border-radius: 16px !important;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.02);
-            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease;
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
             overflow: hidden;
+            position: relative;
+        }
+        .client-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #CBD5E1;
+            transition: height 0.15s ease;
+            z-index: 1;
+        }
+        .client-card:hover::before {
+            height: 4px;
+        }
+        .client-card.is-paid::before {
+            background: linear-gradient(90deg, #10B981, #059669);
+        }
+        .client-card.is-expiring-soon::before {
+            background: linear-gradient(90deg, #F59E0B, #D97706);
+        }
+        .client-card.is-unpaid::before {
+            background: linear-gradient(90deg, #EF4444, #DC2626);
         }
         .client-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.08), 0 4px 8px -2px rgba(0, 0, 0, 0.03);
+            box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.08), 0 4px 8px -2px rgba(0, 0, 0, 0.03);
             border-color: #CBD5E1 !important;
         }
         .client-card .card-body {
@@ -34,13 +58,18 @@
             font-weight: 800;
             font-size: 1rem;
             letter-spacing: 0.5px;
-            background: linear-gradient(135deg, #FFE4E6 0%, #FECDD3 100%);
-            color: #BE123C;
             border: 2px solid #FFFFFF;
-            box-shadow: 0 2px 8px rgba(225, 29, 56, 0.12);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             flex-shrink: 0;
             text-decoration: none;
         }
+        .avatar-palette-0 { background: linear-gradient(135deg, #FFE4E6 0%, #FECDD3 100%) !important; color: #BE123C !important; }
+        .avatar-palette-1 { background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%) !important; color: #15803D !important; }
+        .avatar-palette-2 { background: linear-gradient(135deg, #E0E7FF 0%, #C7D2FE 100%) !important; color: #4338CA !important; }
+        .avatar-palette-3 { background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%) !important; color: #B45309 !important; }
+        .avatar-palette-4 { background: linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%) !important; color: #7E22CE !important; }
+        .avatar-palette-5 { background: linear-gradient(135deg, #CCFBF1 0%, #99F6E4 100%) !important; color: #0F766E !important; }
+        
         .client-avatar-img {
             width: 48px;
             height: 48px;
@@ -53,13 +82,14 @@
         }
         .client-name-clamp {
             display: -webkit-box;
-            -webkit-line-clamp: 2;
+            -webkit-line-clamp: 1;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            line-height: 1.3;
+            line-height: 1.35;
             font-size: 0.98rem;
             font-weight: 700;
             color: var(--c-gray-900, #0F172A);
+            letter-spacing: -0.01em;
             word-break: break-word;
             transition: color 0.15s ease;
         }
@@ -121,6 +151,54 @@
             border-color: #86EFAC;
             color: #166534;
             transform: translateY(-1px);
+        }
+        .client-avatar-wrapper {
+            position: relative;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .avatar-status-dot {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            border: 2.5px solid #FFFFFF;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+        .avatar-status-dot.dot-paid {
+            background-color: #10B981;
+        }
+        .avatar-status-dot.dot-warning {
+            background-color: #F59E0B;
+        }
+        .avatar-status-dot.dot-unpaid {
+            background-color: #EF4444;
+        }
+        .badge-expiring {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+        .badge-expiring .dot {
+            background: #F59E0B;
+        }
+        .hover-primary:hover {
+            color: var(--c-primary, #D72638) !important;
+        }
+        .hover-scale {
+            transition: transform 0.15s ease;
+            display: inline-block;
+        }
+        .hover-scale:hover {
+            transform: scale(1.18);
+        }
+        .hover-shadow {
+            transition: all 0.18s ease;
+        }
+        .hover-shadow:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.06);
         }
     </style>
 {% endblock %}
@@ -190,22 +268,24 @@
     <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 mb-4">
         {% for clientData in clients %}
             <div class="col">
-                <div class="card h-100 client-card">
+                <div class="card h-100 client-card {% if clientData.hasPaid %}{% if clientData.daysRemaining is not null and clientData.daysRemaining <= 5 and clientData.daysRemaining >= 0 %}is-expiring-soon{% else %}is-paid{% endif %}{% else %}is-unpaid{% endif %}">
                     <div class="card-body d-flex flex-column justify-content-between">
                         <div>
-                            {# Header row: Avatar + Name + Phone + Status Badge #}
+                            {# Header row: Avatar + Name + ID/Badges + Status Badge #}
                             <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
                                 <div class="d-flex align-items-center" style="min-width: 0; flex: 1 1 auto;">
-                                    <a href="{{ path('app_client_show', {'id': clientData.client.id}) }}" class="flex-shrink-0" style="margin-right: 1rem !important;">
+                                    <a href="{{ path('app_client_show', {'id': clientData.client.id}) }}" class="client-avatar-wrapper flex-shrink-0" style="margin-right: 0.85rem !important;">
                                         {% if clientData.client.photo %}
                                             <img src="{{ asset('uploads/clients/' ~ clientData.client.photo) }}"
                                                  alt="Foto de {{ clientData.client.name }}"
                                                  class="client-avatar-img">
                                         {% else %}
-                                            <span class="client-avatar-circle" aria-hidden="true">
+                                            <span class="client-avatar-circle avatar-palette-{{ clientData.client.id % 6 }}" aria-hidden="true">
                                                 {{ clientData.client.name|slice(0,1)|upper }}{{ clientData.client.surname|slice(0,1)|upper }}
                                             </span>
                                         {% endif %}
+                                        <span class="avatar-status-dot {% if clientData.hasPaid %}{% if clientData.daysRemaining is not null and clientData.daysRemaining <= 5 and clientData.daysRemaining >= 0 %}dot-warning{% else %}dot-paid{% endif %}{% else %}dot-unpaid{% endif %}"
+                                              title="{% if clientData.hasPaid %}{% if clientData.daysRemaining is not null and clientData.daysRemaining <= 5 and clientData.daysRemaining >= 0 %}Próximo a vencer{% else %}Al corriente de pago{% endif %}{% else %}Pendiente de pago{% endif %}"></span>
                                     </a>
                                     <div style="min-width: 0; flex: 1 1 auto; overflow: hidden;">
                                         <a href="{{ path('app_client_show', {'id': clientData.client.id}) }}" class="text-decoration-none">
@@ -213,21 +293,39 @@
                                                 {{ clientData.client.name }} {{ clientData.client.surname }}
                                             </h3>
                                         </a>
-                                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                                            <span class="client-id-badge">#{{ clientData.client.effectiveClientNumber }}</span>
-                                            {% if clientData.client.phone %}
-                                                <span class="text-muted d-inline-flex align-items-center" style="font-size: 0.78rem;">
-                                                    <i class="bi bi-telephone text-secondary me-1" style="font-size: 0.72rem;"></i>{{ clientData.client.phone }}
+                                        <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                            <span class="client-id-badge" title="Número de cliente">#{{ clientData.client.effectiveClientNumber }}</span>
+                                            {% if clientData.client.cardCode %}
+                                                <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.7rem;" title="Tarjeta RFID asignada: {{ clientData.client.cardCode }}">
+                                                    <i class="bi bi-credit-card-2-front text-primary me-0.5"></i>RFID
+                                                </span>
+                                            {% endif %}
+                                            {% if clientData.client.billable %}
+                                                <span class="badge bg-light text-primary border px-1.5 py-0.5" style="font-size: 0.7rem;" title="Cobro por domiciliación bancaria (SEPA)">
+                                                    <i class="bi bi-bank me-0.5"></i>SEPA
                                                 </span>
                                             {% endif %}
                                         </div>
                                     </div>
                                 </div>
-                                <span class="badge-status flex-shrink-0 {% if clientData.hasPaid %}badge-paid{% else %}badge-pending{% endif %}"
-                                      aria-label="{{ clientData.hasPaid ? 'Pagado' : 'Pendiente' }}" style="margin-top: 2px;">
-                                    <span class="dot" aria-hidden="true"></span>
-                                    {{ clientData.hasPaid ? 'Pagado' : 'Pendiente' }}
-                                </span>
+                                {% if clientData.hasPaid %}
+                                    {% if clientData.daysRemaining is not null and clientData.daysRemaining <= 5 and clientData.daysRemaining >= 0 %}
+                                        <span class="badge-status flex-shrink-0 badge-expiring" title="Vence en {{ clientData.daysRemaining }} días" style="margin-top: 2px;">
+                                            <span class="dot" aria-hidden="true"></span>
+                                            {{ clientData.daysRemaining == 0 ? 'Vence hoy' : clientData.daysRemaining ~ 'd restantes' }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge-status flex-shrink-0 badge-paid" aria-label="Pagado" style="margin-top: 2px;">
+                                            <span class="dot" aria-hidden="true"></span>
+                                            Pagado
+                                        </span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge-status flex-shrink-0 badge-pending" aria-label="Pendiente" style="margin-top: 2px;">
+                                        <span class="dot" aria-hidden="true"></span>
+                                        Pendiente
+                                    </span>
+                                {% endif %}
                             </div>
 
                             {# Franja intermedia: Tarifa / Suscripción + DNI #}
@@ -235,39 +333,74 @@
                                 <div class="d-flex align-items-center gap-1.5 text-truncate" style="min-width: 0;" title="{{ clientData.subscriptionType ?: 'Sin cuota' }}">
                                     <i class="bi bi-tag-fill me-1" style="color:var(--c-primary,#D72638); font-size: 0.78rem;"></i>
                                     <span class="fw-semibold text-dark text-truncate">{{ clientData.subscriptionType ?: 'Sin cuota' }}</span>
+                                    {% if clientData.isDailyPass and clientData.remainingPasses is not null %}
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1" style="font-size: 0.7rem;">
+                                            {{ clientData.remainingPasses }} {{ clientData.remainingPasses == 1 ? 'pase' : 'pases' }}
+                                        </span>
+                                    {% endif %}
                                 </div>
                                 {% if clientData.client.idNumber %}
-                                    <div class="text-secondary font-monospace flex-shrink-0 ms-2" style="font-size: 0.76rem;" title="DNI / NIE">
+                                    <div class="text-secondary font-monospace flex-shrink-0 ms-1" style="font-size: 0.76rem;" title="DNI / NIE">
                                         <i class="bi bi-person-vcard text-muted me-1"></i>{{ clientData.client.idNumber }}
                                     </div>
                                 {% endif %}
                             </div>
 
-                            {# Información de último mes pagado y vencimiento #}
-                            <div class="d-flex align-items-center justify-content-between gap-2 mb-3" style="font-size: 0.76rem; color: var(--c-gray-500, #64748B);">
-                                <div class="d-inline-flex align-items-center text-truncate" title="Último mes abonado">
-                                    <i class="bi bi-calendar-check text-secondary me-1.5" style="font-size: 0.74rem;"></i>
-                                    {% if clientData.lastPaidMonth %}
-                                        <span>Último mes: <strong class="text-dark">{{ clientData.lastPaidMonth }}</strong></span>
+                            {# Contacto (teléfono + WhatsApp) y último mes abonado #}
+                            <div class="d-flex align-items-center justify-content-between gap-2 mb-2" style="font-size: 0.78rem;">
+                                <div class="d-flex align-items-center text-truncate">
+                                    {% if clientData.client.phone %}
+                                        <a href="tel:{{ clientData.client.phone }}" class="text-decoration-none text-secondary hover-primary d-inline-flex align-items-center me-1.5" title="Llamar a {{ clientData.client.name }}">
+                                            <i class="bi bi-telephone text-muted me-1" style="font-size: 0.72rem;"></i>{{ clientData.client.phone }}
+                                        </a>
+                                        {% set cleanPhone = clientData.client.phone|replace({' ': '', '-': '', '+': '', '.': ''}) %}
+                                        {% if cleanPhone|length >= 9 %}
+                                            <a href="https://wa.me/34{{ cleanPhone }}" target="_blank" rel="noopener noreferrer" class="text-success hover-scale text-decoration-none" title="Enviar WhatsApp a {{ clientData.client.name }}">
+                                                <i class="bi bi-whatsapp"></i>
+                                            </a>
+                                        {% endif %}
                                     {% else %}
-                                        <span class="text-muted">Sin pagos</span>
+                                        <span class="text-muted fst-italic" style="font-size: 0.75rem;"><i class="bi bi-telephone-x me-1"></i>Sin teléfono</span>
                                     {% endif %}
                                 </div>
+                                {% if clientData.lastPaidMonth %}
+                                    <div class="text-muted text-truncate" title="Último mes abonado: {{ clientData.lastPaidMonth }}">
+                                        <i class="bi bi-calendar-check text-muted me-1" style="font-size: 0.72rem;"></i><span class="fw-medium text-dark">{{ clientData.lastPaidMonth }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            {# Información de vencimiento de acceso #}
+                            <div class="d-flex align-items-center justify-content-between gap-2 mb-3 pt-1 border-top" style="font-size: 0.76rem; border-color: #F8FAFC !important;">
+                                <span class="text-muted">Acceso hasta:</span>
                                 {% if clientData.paymentUntil %}
-                                    <span class="flex-shrink-0" title="Pagado hasta el {{ clientData.paymentUntil|date('d/m/Y') }}">
-                                        Hasta: <strong class="text-dark">{{ clientData.paymentUntil|date('d/m/Y') }}</strong>
-                                    </span>
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <strong class="{% if clientData.daysRemaining is not null and clientData.daysRemaining < 0 %}text-danger{% elseif clientData.daysRemaining is not null and clientData.daysRemaining <= 5 %}text-warning-emphasis{% else %}text-dark{% endif %}">
+                                            {{ clientData.paymentUntil|date('d/m/Y') }}
+                                        </strong>
+                                        {% if clientData.daysRemaining is not null %}
+                                            {% if clientData.daysRemaining < 0 %}
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 0.68rem;">Expiró hace {{ clientData.daysRemaining|abs }}d</span>
+                                            {% elseif clientData.daysRemaining == 0 %}
+                                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size: 0.68rem;">Expira hoy</span>
+                                            {% elseif clientData.daysRemaining <= 5 %}
+                                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size: 0.68rem;">{{ clientData.daysRemaining }}d</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted fst-italic">Sin fecha fin</span>
                                 {% endif %}
                             </div>
                         </div>
 
                         {# Fila inferior: Acciones #}
-                        <div class="d-flex align-items-center justify-content-between pt-2.5 mt-2" style="border-top: 1px solid var(--c-gray-100, #F1F5F9);">
+                        <div class="d-flex align-items-center justify-content-between pt-2 mt-auto" style="border-top: 1px solid var(--c-gray-100, #F1F5F9);">
                             <button type="button"
                                     class="btn-action-renew"
                                     data-bs-toggle="modal"
                                     data-bs-target="#renewModal{{ clientData.client.id }}"
-                                    title="Renovar suscripción"
+                                    title="Renovar suscripción de {{ clientData.client.name }}"
                                     aria-label="Renovar suscripción de {{ clientData.client.name }}">
                                 <i class="bi bi-arrow-repeat"></i>
                                 <span>Renovar</span>
@@ -280,7 +413,7 @@
                                     <i class="bi bi-eye" aria-hidden="true"></i>
                                 </a>
                                 <a href="{{ path('app_client_edit', {'id': clientData.client.id}) }}"
-                                   class="btn btn-sm btn-primary btn-action-icon"
+                                   class="btn btn-sm btn-outline-primary btn-action-icon"
                                    title="Editar cliente"
                                    aria-label="Editar {{ clientData.client.name }}">
                                     <i class="bi bi-pencil" aria-hidden="true"></i>
@@ -294,29 +427,80 @@
             {# Renew modal #}
             <div class="modal fade" id="renewModal{{ clientData.client.id }}" tabindex="-1"
                  aria-labelledby="renewModalLabel{{ clientData.client.id }}" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-sm">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h2 class="modal-title fs-6" id="renewModalLabel{{ clientData.client.id }}">
-                                Confirmar renovación
-                            </h2>
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-lg" style="border-radius: 18px; overflow: hidden;">
+                        <div class="modal-header border-0 pb-0 pt-3 px-3.5">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <div class="client-avatar-circle avatar-palette-{{ clientData.client.id % 6 }}" style="width: 40px; height: 40px; min-width: 40px; font-size: 0.9rem;">
+                                    {{ clientData.client.name|slice(0,1)|upper }}{{ clientData.client.surname|slice(0,1)|upper }}
+                                </div>
+                                <div>
+                                    <h2 class="modal-title fs-6 fw-bold mb-0" id="renewModalLabel{{ clientData.client.id }}">
+                                        Renovar suscripción
+                                    </h2>
+                                    <span class="text-muted small">{{ clientData.client.name }} {{ clientData.client.surname }} · #{{ clientData.client.effectiveClientNumber }}</span>
+                                </div>
+                            </div>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                         </div>
-                        <div class="modal-body">
-                            <p class="mb-1 fw-semibold">{{ clientData.client.name }} {{ clientData.client.surname }}</p>
-                            <p class="small mb-2" style="color:var(--c-gray-500)">
-                                {{ clientData.subscriptionType ?: 'Sin suscripción asignada' }}
-                            </p>
-                            <p class="small mb-0">¿Renovar la suscripción por un mes más?</p>
+                        <div class="modal-body px-3.5 py-3">
+                            <div class="p-2.5 rounded-3 mb-3" style="background: #F8FAFC; border: 1px solid #E2E8F0; font-size: 0.82rem;">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted">Cuota actual:</span>
+                                    <span class="fw-semibold text-dark">{{ clientData.subscriptionType ?: 'Sin cuota' }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">Acceso actual hasta:</span>
+                                    <span class="fw-semibold text-dark">{{ clientData.paymentUntil ? clientData.paymentUntil|date('d/m/Y') : 'Sin fecha' }}</span>
+                                </div>
+                            </div>
+
+                            {% if clientData.isDailyPass %}
+                                <p class="small text-muted mb-2">Selecciona la recarga del bono de sesiones:</p>
+                                <form method="post" action="{{ path('app_client_renew', {'id': clientData.client.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('renew' ~ clientData.client.id) }}">
+                                    <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-between p-2.5 text-start hover-shadow mb-2">
+                                        <div>
+                                            <div class="fw-bold"><i class="bi bi-ticket-perforated me-1.5"></i>Recargar Bono (20 sesiones)</div>
+                                            <div class="small text-white-50">+20 accesos al torno</div>
+                                        </div>
+                                        <span class="badge bg-white text-dark fs-6 px-2.5 py-1.5">70,00 €</span>
+                                    </button>
+                                </form>
+                            {% else %}
+                                <p class="small text-muted mb-2">Elige el periodo a renovar:</p>
+                                <div class="d-flex flex-column gap-2">
+                                    {# Opción Mes completo #}
+                                    <form method="post" action="{{ path('app_client_renew', {'id': clientData.client.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('renew' ~ clientData.client.id) }}">
+                                        <input type="hidden" name="amount" value="50.00">
+                                        <button type="submit" class="btn btn-outline-success w-100 d-flex align-items-center justify-content-between p-2.5 text-start hover-shadow" style="border-width: 1.5px;">
+                                            <div>
+                                                <div class="fw-bold text-dark"><i class="bi bi-calendar-check text-success me-1.5"></i>Mes completo</div>
+                                                <div class="small text-muted">Acceso estándar durante 30 días</div>
+                                            </div>
+                                            <span class="badge bg-success text-white fs-6 px-2.5 py-1.5">50,00 €</span>
+                                        </button>
+                                    </form>
+
+                                    {# Opción Medio mes #}
+                                    <form method="post" action="{{ path('app_client_renew', {'id': clientData.client.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('renew' ~ clientData.client.id) }}">
+                                        <input type="hidden" name="half_month" value="1">
+                                        <input type="hidden" name="amount" value="30.00">
+                                        <button type="submit" class="btn btn-outline-warning w-100 d-flex align-items-center justify-content-between p-2.5 text-start hover-shadow" style="border-width: 1.5px;">
+                                            <div>
+                                                <div class="fw-bold text-dark"><i class="bi bi-pie-chart text-warning me-1.5"></i>Medio mes</div>
+                                                <div class="small text-muted">Acceso reducido durante 15 días</div>
+                                            </div>
+                                            <span class="badge bg-warning text-dark fs-6 px-2.5 py-1.5">30,00 €</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            {% endif %}
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <form method="post" action="{{ path('app_client_renew', {'id': clientData.client.id}) }}" class="d-inline">
-                                <input type="hidden" name="_token" value="{{ csrf_token('renew' ~ clientData.client.id) }}">
-                                <button type="submit" class="btn btn-sm btn-success">
-                                    <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Renovar
-                                </button>
-                            </form>
+                        <div class="modal-footer border-0 pt-0 px-3.5 pb-3">
+                            <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-dismiss="modal">Cerrar</button>
                         </div>
                     </div>
                 </div>

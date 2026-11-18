@@ -182,12 +182,17 @@ final class ClientController extends AbstractController
 
         // 5. Mapear únicamente los clientes de la página actual
         $clientsWithPaymentStatus = [];
+        $today = new \DateTime('today');
+
         foreach ($clients as $client) {
             $sub = $client->getSubscriptions()->last() ?: null;
             $hasPaid = false;
             $subscriptionTypeName = $sub ? $sub->getSubscriptionType()?->getName() : '—';
             $lastPaidMonth = null;
             $paymentUntil = null;
+            $daysRemaining = null;
+            $remainingPasses = null;
+            $isDailyPass = false;
 
             if ($sub) {
                 $lastPaymentDate = $sub->getLastPaymentDate();
@@ -198,15 +203,35 @@ final class ClientController extends AbstractController
                 }
                 $paymentUntil = $sub->getEndDate();
 
-                if ($sub->isActive() && $lastPaymentDate && $lastPaymentDate->format('Y-m') === $currentDate->format('Y-m')) {
-                    $hasPaid = true;
+                if ($sub->isActive()) {
+                    if ($paymentUntil && $paymentUntil >= $today) {
+                        $hasPaid = true;
+                    } elseif ($lastPaymentDate && $lastPaymentDate->format('Y-m') === $currentDate->format('Y-m')) {
+                        $hasPaid = true;
+                    }
+                }
+
+                if ($sub->getSubscriptionType()?->isDailyPass()) {
+                    $isDailyPass = true;
+                    $remainingPasses = $sub->getRemainingPasses();
+                }
+
+                if ($paymentUntil) {
+                    $untilDate = clone $paymentUntil;
+                    $untilDate->setTime(0, 0, 0);
+                    $diff = $today->diff($untilDate);
+                    $daysRemaining = (int) $diff->format('%r%a');
                 }
             }
 
             $clientsWithPaymentStatus[] = [
                 'client' => $client,
                 'hasPaid' => $hasPaid,
+                'subscription' => $sub,
                 'subscriptionType' => $subscriptionTypeName,
+                'isDailyPass' => $isDailyPass,
+                'remainingPasses' => $remainingPasses,
+                'daysRemaining' => $daysRemaining,
                 'lastPaidMonth' => $lastPaidMonth,
                 'paymentUntil' => $paymentUntil,
             ];
