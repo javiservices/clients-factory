@@ -425,13 +425,20 @@
         </div>
     </main>
 
-    <!-- ─── Vista 2: Pase QR (Oculto temporalmente) ─── -->
-    <main id="qrView" class="view-container" style="display: none !important;">
+    <!-- ─── Vista 2: Pase QR Dinámico Antifraude ─── -->
+    <main id="qrView" class="view-container">
         <h2 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.25rem;">Pase Digital de Acceso</h2>
         <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center;">Muestra este código al escáner óptico del torno</p>
 
         <div class="qr-card">
             <div id="qrContainer"></div>
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 1rem; font-size: 0.75rem; color: #64748B;">
+                <span><i class="bi bi-shield-check text-success me-1"></i>QR Dinámico Seguro</span>
+                <span>Renovación: <strong id="qrTimer" style="color: var(--gym-red);">30s</strong></span>
+            </div>
+            <div style="width: 100%; height: 4px; background: #E2E8F0; border-radius: 999px; overflow: hidden; margin-top: 0.4rem;">
+                <div id="qrProgressBar" style="width: 100%; height: 100%; background: #10B981; transition: width 0.9s linear;"></div>
+            </div>
         </div>
 
         <div style="text-align: center;">
@@ -476,6 +483,10 @@
         <div class="nav-item active" data-tab="door" onclick="switchTab('door')">
             <i class="bi bi-door-open-fill"></i>
             <span>Torno</span>
+        </div>
+        <div class="nav-item" data-tab="qr" onclick="switchTab('qr')">
+            <i class="bi bi-qr-code"></i>
+            <span>Pase QR</span>
         </div>
         <div class="nav-item" data-tab="settings" onclick="switchTab('settings')">
             <i class="bi bi-person-fill"></i>
@@ -589,7 +600,7 @@
             document.getElementById('qrClientName').textContent = currentClient.name;
             document.getElementById('qrClientCode').textContent = `Código: ${currentClient.code}`;
 
-            renderQr(currentClient.code);
+            updateDynamicQr();
         }
 
         async function refreshStatus() {
@@ -609,8 +620,62 @@
         }
 
         let qrCodeInstance = null;
+        let qrTimerInterval = null;
+        let currentStep = -1;
+
+        async function computeDynamicQrCode(code) {
+            const now = Math.floor(Date.now() / 1000);
+            const step = Math.floor(now / 30);
+            const msg = code + ':' + step + ':SantamariaGym2026';
+            
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(msg);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 8);
+                return `DYN:${code}:${step}:${hashHex}`;
+            } catch(e) {
+                // Fallback directo si no hay subtle crypto
+                return code;
+            }
+        }
+
+        async function updateDynamicQr() {
+            if (!currentClient || !currentClient.code) return;
+            const now = Math.floor(Date.now() / 1000);
+            const step = Math.floor(now / 30);
+            const secondsLeft = 30 - (now % 30);
+
+            const timerEl = document.getElementById('qrTimer');
+            const progressEl = document.getElementById('qrProgressBar');
+            if (timerEl) timerEl.textContent = `${secondsLeft}s`;
+            if (progressEl) progressEl.style.width = `${(secondsLeft / 30) * 100}%`;
+
+            if (step !== currentStep) {
+                currentStep = step;
+                const dynamicCode = await computeDynamicQrCode(currentClient.code);
+                renderQr(dynamicCode);
+            }
+        }
+
+        function startQrRotation() {
+            if (qrTimerInterval) clearInterval(qrTimerInterval);
+            currentStep = -1;
+            updateDynamicQr();
+            qrTimerInterval = setInterval(updateDynamicQr, 1000);
+        }
+
+        function stopQrRotation() {
+            if (qrTimerInterval) {
+                clearInterval(qrTimerInterval);
+                qrTimerInterval = null;
+            }
+        }
+
         function renderQr(code) {
             const container = document.getElementById('qrContainer');
+            if (!container) return;
             container.innerHTML = '';
             qrCodeInstance = new QRCode(container, {
                 text: code,
@@ -618,7 +683,7 @@
                 height: 240,
                 colorDark: "#0F172A",
                 colorLight: "#FFFFFF",
-                correctLevel: QRCode.CorrectLevel.H
+                correctLevel: QRCode.CorrectLevel.M
             });
         }
 
@@ -736,11 +801,19 @@
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
 
             if (tab === 'door') {
+                stopQrRotation();
                 const doorView = document.getElementById('doorView');
                 if (doorView) doorView.classList.add('active');
                 const btn = document.querySelector('.nav-item[data-tab="door"]');
                 if (btn) btn.classList.add('active');
+            } else if (tab === 'qr') {
+                const qrView = document.getElementById('qrView');
+                if (qrView) qrView.classList.add('active');
+                const btn = document.querySelector('.nav-item[data-tab="qr"]');
+                if (btn) btn.classList.add('active');
+                startQrRotation();
             } else if (tab === 'settings') {
+                stopQrRotation();
                 const settingsView = document.getElementById('settingsView');
                 if (settingsView) settingsView.classList.add('active');
                 const btn = document.querySelector('.nav-item[data-tab="settings"]');

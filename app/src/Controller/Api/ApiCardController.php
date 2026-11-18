@@ -119,6 +119,13 @@ class ApiCardController extends AbstractController
             return $this->json(['success' => false, 'message' => 'No se proporcionó ID de tarjeta'], 400);
         }
 
+        // Resolución de QR dinámico antifraude (rotación cada 30s)
+        $resolvedCardId = $this->resolveCardCode($cardId);
+        if ($resolvedCardId === null) {
+            return $this->json(['success' => false, 'message' => 'Código QR dinámico caducado o inválido. Abre tu app SantaDoor de nuevo.'], 403);
+        }
+        $cardId = $resolvedCardId;
+
         if (!$this->checkAntiPassback($cardId)) {
             return $this->json(['success' => false, 'message' => 'Acceso muy frecuente, espera unos segundos'], 429);
         }
@@ -363,6 +370,12 @@ class ApiCardController extends AbstractController
         if (!$cardId) {
             return $this->json(['success' => false, 'message' => 'No se proporcionó ID de tarjeta o socio'], 400);
         }
+
+        $resolvedCardId = $this->resolveCardCode($cardId);
+        if ($resolvedCardId === null) {
+            return $this->json(['success' => false, 'message' => 'Código QR dinámico caducado o inválido'], 403);
+        }
+        $cardId = $resolvedCardId;
 
         $client = $clientRepository->findOneByCardCode($cardId);
         if (!$client) {
@@ -662,6 +675,29 @@ class ApiCardController extends AbstractController
     // ─────────────────────────────────────────────────────────────────────────
     // Helper privado
     // ─────────────────────────────────────────────────────────────────────────
+
+    private function resolveCardCode(string $rawCardId): ?string
+    {
+        if (str_starts_with($rawCardId, 'DYN:')) {
+            $parts = explode(':', substr($rawCardId, 4));
+            if (count($parts) >= 3) {
+                [$realCardCode, $step, $hash] = $parts;
+                $currentStep = (int) floor(time() / 30);
+                $providedStep = (int) $step;
+                // Tolerancia de ±1 intervalo de 30s
+                if (abs($currentStep - $providedStep) > 1) {
+                    return null;
+                }
+                $expectedHash = substr(hash('sha256', $realCardCode . ':' . $providedStep . ':SantamariaGym2026'), 0, 8);
+                if (!hash_equals($expectedHash, $hash)) {
+                    return null;
+                }
+                return $realCardCode;
+            }
+            return null;
+        }
+        return $rawCardId;
+    }
 
     private function logAccess(Client $client, string $status): void
     {

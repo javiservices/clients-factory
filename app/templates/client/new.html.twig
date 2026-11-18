@@ -271,12 +271,31 @@
                     </div>
                 </div>
 
-                {# Fila 3: Foto del cliente #}
+                {# Fila 3: Foto del cliente con captura de webcam integrada #}
                 <div class="col-12">
                     <div class="p-3 rounded-3" style="background:var(--c-gray-50);border:1px solid var(--c-gray-200)">
-                        <label class="form-label small fw-semibold" for="{{ form.photo.vars.id }}">
-                            <i class="bi bi-camera me-1"></i>Foto del cliente <span class="opt-badge">(opcional)</span>
-                        </label>
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                            <label class="form-label small fw-semibold mb-0" for="{{ form.photo.vars.id }}">
+                                <i class="bi bi-camera me-1"></i>Foto del cliente <span class="opt-badge">(opcional)</span>
+                            </label>
+                            <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5" id="btnOpenWebcam">
+                                <i class="bi bi-camera-fill"></i>
+                                <span>Tomar foto con cámara</span>
+                            </button>
+                        </div>
+
+                        {# Previsualización de foto capturada con cámara #}
+                        <div id="photoPreviewContainer" class="d-none align-items-center gap-3 p-2 mb-2 bg-white rounded-3 border">
+                            <img id="photoPreviewImg" src="" alt="Previsualización" class="rounded-circle object-fit-cover border" style="width:60px;height:60px;border-width:2px!important;border-color:var(--c-primary,#D72638)!important">
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="small fw-semibold text-success text-truncate"><i class="bi bi-check-circle-fill me-1"></i>Foto capturada con cámara</div>
+                                <div class="text-muted" style="font-size:0.75rem;">Se guardará al enviar el formulario</div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="btnRemoveCapturedPhoto" title="Eliminar foto capturada">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+
                         {{ form_widget(form.photo) }}
                         {{ form_errors(form.photo) }}
                     </div>
@@ -309,6 +328,44 @@
             </div>
 
         {{ form_end(form) }}
+    </div>
+</div>
+
+{# ─── Modal de Captura de Foto con Cámara Web / Móvil ─── #}
+<div class="modal fade" id="webcamModal" tabindex="-1" aria-labelledby="webcamModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-dark text-white border-0 py-2.5 px-3">
+                <h5 class="modal-title fs-6 fw-bold mb-0" id="webcamModalLabel">
+                    <i class="bi bi-camera me-2 text-warning"></i>Tomar foto del socio
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar" id="btnCloseWebcamX"></button>
+            </div>
+            <div class="modal-body p-0 bg-black position-relative text-center overflow-hidden" style="min-height: 320px; max-height: 420px;">
+                <video id="webcamVideo" autoplay playsinline class="w-100 h-100 object-fit-cover" style="max-height: 400px; transform: scaleX(-1);"></video>
+                <canvas id="webcamCanvas" class="d-none"></canvas>
+
+                {# Marco guía circular centrado #}
+                <div class="position-absolute top-50 start-50 translate-middle rounded-circle border border-2 border-white pointer-events-none"
+                     style="width: 210px; height: 210px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45); pointer-events: none;">
+                    <div class="position-absolute top-100 start-50 translate-middle-x mt-2 text-white small fw-medium text-nowrap" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8); font-size: 0.78rem;">
+                        Centra el rostro en el círculo
+                    </div>
+                </div>
+
+                {# Mensaje de error si la cámara falla #}
+                <div id="webcamError" class="position-absolute top-50 start-50 translate-middle text-white p-3 d-none w-75 rounded-3 bg-dark bg-opacity-75">
+                    <i class="bi bi-exclamation-triangle-fill text-warning fs-3 mb-2 d-block"></i>
+                    <p class="small mb-0" id="webcamErrorMsg">No se pudo acceder a la cámara. Concede permisos en tu navegador.</p>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0 d-flex justify-content-between p-3">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" id="btnCancelWebcam">Cancelar</button>
+                <button type="button" class="btn btn-primary px-4 fw-bold" id="btnCaptureFrame">
+                    <i class="bi bi-camera-fill me-1.5"></i>Capturar foto
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -511,6 +568,118 @@
             selectPlan('full', false);
         }
         updateTaxBreakdown();
+
+        // ── Lógica de Captura con Cámara Web / Móvil ──
+        let webcamStream = null;
+        const webcamModalEl = document.getElementById('webcamModal');
+        const webcamModal = webcamModalEl && window.bootstrap ? new bootstrap.Modal(webcamModalEl) : null;
+        const video = document.getElementById('webcamVideo');
+        const canvas = document.getElementById('webcamCanvas');
+        const photoInput = document.getElementById('{{ form.photo.vars.id }}');
+        const previewContainer = document.getElementById('photoPreviewContainer');
+        const previewImg = document.getElementById('photoPreviewImg');
+        const btnOpenWebcam = document.getElementById('btnOpenWebcam');
+        const btnCaptureFrame = document.getElementById('btnCaptureFrame');
+        const btnRemoveCapturedPhoto = document.getElementById('btnRemoveCapturedPhoto');
+        const webcamError = document.getElementById('webcamError');
+        const webcamErrorMsg = document.getElementById('webcamErrorMsg');
+
+        async function startWebcam() {
+            if (webcamError) webcamError.classList.add('d-none');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 720 },
+                        height: { ideal: 720 },
+                        facingMode: 'user'
+                    },
+                    audio: false
+                });
+                webcamStream = stream;
+                if (video) {
+                    video.srcObject = stream;
+                    await video.play();
+                }
+            } catch (err) {
+                if (webcamError) {
+                    webcamError.classList.remove('d-none');
+                    webcamErrorMsg.textContent = 'No se pudo acceder a la cámara (' + err.message + '). Concede permisos al navegador.';
+                }
+            }
+        }
+
+        function stopWebcam() {
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+            if (video) video.srcObject = null;
+        }
+
+        if (btnOpenWebcam && webcamModal) {
+            btnOpenWebcam.addEventListener('click', () => {
+                webcamModal.show();
+                startWebcam();
+            });
+        }
+
+        if (webcamModalEl) {
+            webcamModalEl.addEventListener('hidden.bs.modal', stopWebcam);
+        }
+
+        if (btnCaptureFrame) {
+            btnCaptureFrame.addEventListener('click', () => {
+                if (!video || !video.videoWidth) return;
+
+                const size = Math.min(video.videoWidth, video.videoHeight);
+                const startX = (video.videoWidth - size) / 2;
+                const startY = (video.videoHeight - size) / 2;
+
+                canvas.width = 480;
+                canvas.height = 480;
+                const ctx = canvas.getContext('2d');
+
+                // Espejado horizontal idéntico al video en vivo
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+                ctx.drawImage(video, startX, startY, size, size, 0, 0, 480, 480);
+
+                canvas.toBlob((blob) => {
+                    if (!blob) return;
+                    const file = new File([blob], 'foto_socio_' + Date.now() + '.jpg', { type: 'image/jpeg' });
+
+                    if (photoInput) {
+                        try {
+                            const dataTransfer = new DataTransfer();
+                            dataTransfer.items.add(file);
+                            photoInput.files = dataTransfer.files;
+                        } catch (e) {
+                            console.warn('DataTransfer no soportado directamente', e);
+                        }
+                    }
+
+                    if (previewImg && previewContainer) {
+                        previewImg.src = URL.createObjectURL(blob);
+                        previewContainer.classList.remove('d-none');
+                        previewContainer.classList.add('d-flex');
+                    }
+
+                    stopWebcam();
+                    if (webcamModal) webcamModal.hide();
+                }, 'image/jpeg', 0.92);
+            });
+        }
+
+        if (btnRemoveCapturedPhoto) {
+            btnRemoveCapturedPhoto.addEventListener('click', () => {
+                if (photoInput) photoInput.value = '';
+                if (previewImg) previewImg.src = '';
+                if (previewContainer) {
+                    previewContainer.classList.add('d-none');
+                    previewContainer.classList.remove('d-flex');
+                }
+            });
+        }
     });
     </script>
 {% endblock %}

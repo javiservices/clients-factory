@@ -238,18 +238,33 @@
     color: inherit;
 }
 .search-avatar {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: #fee2e2;
     color: #b91c1c;
-    font-size: 0.75rem;
+    font-size: 0.78rem;
     font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
     object-fit: cover;
+}
+.search-avatar.avatar-palette-0 { background: linear-gradient(135deg, #FFE4E6 0%, #FECDD3 100%) !important; color: #BE123C !important; }
+.search-avatar.avatar-palette-1 { background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%) !important; color: #15803D !important; }
+.search-avatar.avatar-palette-2 { background: linear-gradient(135deg, #E0E7FF 0%, #C7D2FE 100%) !important; color: #4338CA !important; }
+.search-avatar.avatar-palette-3 { background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%) !important; color: #B45309 !important; }
+.search-avatar.avatar-palette-4 { background: linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%) !important; color: #7E22CE !important; }
+.search-avatar.avatar-palette-5 { background: linear-gradient(135deg, #CCFBF1 0%, #99F6E4 100%) !important; color: #0F766E !important; }
+.search-badge-warning {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    background: #fef3c7;
+    color: #92400e;
+    flex-shrink: 0;
 }
 .search-info {
     min-width: 0;
@@ -351,28 +366,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let html = '';
             data.forEach((client, idx) => {
+                const paletteClass = `avatar-palette-${client.paletteIndex || 0}`;
                 const avatar = client.photoUrl 
                     ? `<img src="${client.photoUrl}" alt="${escapeHtml(client.name)}" class="search-avatar">`
-                    : `<div class="search-avatar">${escapeHtml(client.initials)}</div>`;
+                    : `<div class="search-avatar ${paletteClass}">${escapeHtml(client.initials)}</div>`;
                 
                 const meta = [`#${client.clientNumber || client.id}`];
                 if (client.phone) meta.push(client.phone);
-                if (client.idNumber) meta.push(client.idNumber);
+                if (client.cardCode) meta.push(`RFID: ${client.cardCode}`);
                 meta.push(client.subscriptionType);
 
-                const statusBadge = client.hasPaid 
-                    ? '<span class="search-badge-paid"><i class="bi bi-check me-1"></i>Pagado</span>'
-                    : '<span class="search-badge-pending"><i class="bi bi-clock me-1"></i>Pendiente</span>';
+                let statusBadge = '';
+                if (client.hasPaid) {
+                    if (client.daysRemaining !== null && client.daysRemaining <= 3 && client.daysRemaining >= 0) {
+                        statusBadge = `<span class="search-badge-warning"><i class="bi bi-hourglass-split me-0.5"></i>${client.daysRemaining === 0 ? 'Vence hoy' : client.daysRemaining + 'd'}</span>`;
+                    } else {
+                        statusBadge = '<span class="search-badge-paid"><i class="bi bi-check me-1"></i>Pagado</span>';
+                    }
+                } else {
+                    if (client.daysRemaining !== null && client.daysRemaining < 0) {
+                        statusBadge = '<span class="search-badge-pending"><i class="bi bi-exclamation-triangle me-1"></i>Expirado</span>';
+                    } else {
+                        statusBadge = '<span class="search-badge-pending"><i class="bi bi-clock me-1"></i>Pendiente</span>';
+                    }
+                }
+
+                const waBtn = (client.cleanPhone && client.cleanPhone.length >= 9)
+                    ? `<a href="https://wa.me/34${client.cleanPhone}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-light border text-success p-1 px-2 ms-1" title="Enviar WhatsApp" onclick="event.stopPropagation()"><i class="bi bi-whatsapp"></i></a>`
+                    : '';
 
                 html += `
-                    <a href="${client.url}" class="search-result-item" data-index="${idx}">
-                        ${avatar}
-                        <div class="search-info">
-                            <div class="search-name">${escapeHtml(client.name)}</div>
-                            <div class="search-meta">${escapeHtml(meta.join(' · '))}</div>
+                    <div class="d-flex align-items-center justify-content-between search-result-item" data-index="${idx}">
+                        <a href="${client.url}" class="d-flex align-items-center gap-2.5 text-decoration-none text-dark flex-grow-1 min-w-0">
+                            ${avatar}
+                            <div class="search-info">
+                                <div class="search-name">${escapeHtml(client.name)}</div>
+                                <div class="search-meta">${escapeHtml(meta.join(' · '))}</div>
+                            </div>
+                        </a>
+                        <div class="d-flex align-items-center gap-1.5 flex-shrink-0 ms-2">
+                            ${statusBadge}
+                            ${waBtn}
                         </div>
-                        ${statusBadge}
-                    </a>
+                    </div>
                 `;
             });
 
@@ -406,7 +442,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (e.key === 'Enter') {
             if (selectedIndex >= 0 && items[selectedIndex]) {
                 e.preventDefault();
-                items[selectedIndex].click();
+                const link = items[selectedIndex].querySelector('a') || items[selectedIndex];
+                link.click();
             }
         } else if (e.key === 'Escape') {
             results.classList.add('d-none');

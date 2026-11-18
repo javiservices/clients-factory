@@ -7,6 +7,7 @@ use App\Repository\AccessLogRepository;
 use App\Repository\ClientRepository;
 use App\Repository\InvoiceRepository;
 use App\Repository\SubscriptionRepository;
+use App\Service\EncryptionService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -158,12 +159,112 @@ class DashboardController extends AbstractController
             ];
         }
 
+        // Aforo estimado en los últimos 90 minutos
+        $ninetyMinutesAgo = (new \DateTime())->modify('-90 minutes');
+        $currentOccupancy = (int) $conn->fetchOne("
+            SELECT COUNT(DISTINCT client_id) 
+            FROM access_log 
+            WHERE access_time >= :since AND status = 'success'
+        ", ['since' => $ninetyMinutesAgo->format('Y-m-d H:i:s')]);
+
+        // Suscripciones que vencen en los próximos 3 días (Aviso preventivo WhatsApp)
+        $expiringIn3Days = $em->getRepository(Subscription::class)->findExpiringSoon(3);
+        $expiringList = [];
+        $today = new \DateTime('today');
+        foreach ($expiringIn3Days as $sub) {
+            $client = $sub->getClient();
+            if (!$client) continue;
+            $endDate = $sub->getEndDate();
+            $daysRemaining = 0;
+            if ($endDate) {
+                $until = (clone $endDate)->setTime(0, 0, 0);
+                $daysRemaining = (int) $today->diff($until)->format('%r%a');
+            }
+            $cleanPhone = preg_replace('/[^0-9]/', '', (string)$client->getPhone());
+            $expiringList[] = [
+                'clientId'      => $client->getId(),
+                'clientNumber'  => $client->getEffectiveClientNumber(),
+                'name'          => $client->getName() . ' ' . $client->getSurname(),
+                'firstName'     => $client->getName(),
+                'phone'         => $client->getPhone(),
+                'cleanPhone'    => $cleanPhone,
+                'subType'       => $sub->getSubscriptionType()?->getName() ?? 'Suscripción',
+                'endDate'       => $endDate?->format('d/m/Y'),
+                'daysRemaining' => $daysRemaining,
+            ];
+        }
+
+        // Cumpleaños de hoy
+        $birthdayRows = $conn->fetchAllAssociative("
+            SELECT id, name, surname, phone, birth_date
+            FROM client
+            WHERE birth_date IS NOT NULL 
+              AND MONTH(birth_date) = :m 
+              AND DAY(birth_date) = :d
+        ", ['m' => (int)$now->format('m'), 'd' => (int)$now->format('d')]);
+
+        $birthdayList = [];
+        foreach ($birthdayRows as $bRow) {
+            $bName = (string) EncryptionService::decryptValue($bRow['name']);
+            $bSurname = (string) EncryptionService::decryptValue($bRow['surname']);
+            $bPhone = (string) EncryptionService::decryptValue($bRow['phone']);
+            $cleanPhone = preg_replace('/[^0-9]/', '', $bPhone);
+            $birthDate = new \DateTime($bRow['birth_date']);
+            $age = $now->diff($birthDate)->y;
+
+            $birthdayList[] = [
+                'id'         => (int)$bRow['id'],
+                'name'       => $bName . ' ' . $bSurname,
+                'firstName'  => $bName,
+                'phone'      => $bPhone,
+                'cleanPhone' => $cleanPhone,
+                'age'        => $age,
+            ];
+        }
+
+        // Socios en riesgo de abandono / ausentes (>15 días sin registrar acceso con cuota activa)
+        $fifteenDaysAgo = (new \DateTime())->modify('-15 days');
+        $inactiveSubs = $em->getRepository(Subscription::class)->createQueryBuilder('s')
+            ->join('s.client', 'c')
+            ->where('s.isActive = true')
+            ->andWhere('s.endDate >= :today')
+            ->andWhere('(c.lastAccess < :fifteenDaysAgo OR c.lastAccess IS NULL)')
+            ->setParameter('today', $today)
+            ->setParameter('fifteenDaysAgo', $fifteenDaysAgo)
+            ->setMaxResults(8)
+            ->getQuery()
+            ->getResult();
+
+        $inactiveList = [];
+        foreach ($inactiveSubs as $sub) {
+            $client = $sub->getClient();
+            if (!$client) continue;
+            $lastAccess = $client->getLastAccess();
+            $daysSince = $lastAccess ? (int) $today->diff((clone $lastAccess)->setTime(0, 0, 0))->format('%a') : null;
+            $cleanPhone = preg_replace('/[^0-9]/', '', (string)$client->getPhone());
+            $inactiveList[] = [
+                'clientId'     => $client->getId(),
+                'clientNumber' => $client->getEffectiveClientNumber(),
+                'name'         => $client->getName() . ' ' . $client->getSurname(),
+                'firstName'    => $client->getName(),
+                'phone'        => $client->getPhone(),
+                'cleanPhone'   => $cleanPhone,
+                'lastAccess'   => $lastAccess ? $lastAccess->format('d/m/Y') : 'Nunca',
+                'daysSince'    => $daysSince,
+                'subType'      => $sub->getSubscriptionType()?->getName() ?? 'Cuota',
+            ];
+        }
+
         return $this->render('dashboard.html.twig', [
             'initialClient'      => $initialClient,
             'initialRecent'      => $initialRecent,
             'latestAccessId'     => $latestLog?->getId() ?? 0,
             'topProfitableMonth' => $topProfitableMonth,
             'currentMonthName'   => $currentMonthName,
+            'currentOccupancy'   => $currentOccupancy,
+            'expiringIn3Days'    => $expiringList,
+            'birthdayClients'    => $birthdayList,
+            'inactiveClients'    => $inactiveList,
         ]);
     }
 
@@ -252,7 +353,8 @@ class DashboardController extends AbstractController
     public function apiStats(
         AccessLogRepository   $accessLogRepo,
         SubscriptionRepository $subscriptionRepo,
-        ClientRepository       $clientRepo
+        ClientRepository       $clientRepo,
+        EntityManagerInterface $em
     ): Response {
         $from30Days = (new \DateTime())->modify('-30 days');
 
@@ -263,6 +365,14 @@ class DashboardController extends AbstractController
         $expiring      = $subscriptionRepo->findExpiringSoon(7);
         $totalActiveClients = $subscriptionRepo->count(['isActive' => true]);
         $totalClients  = $clientRepo->count([]);
+
+        $conn = $em->getConnection();
+        $ninetyMinutesAgo = (new \DateTime())->modify('-90 minutes');
+        $currentOccupancy = (int) $conn->fetchOne("
+            SELECT COUNT(DISTINCT client_id) 
+            FROM access_log 
+            WHERE access_time >= :since AND status = 'success'
+        ", ['since' => $ninetyMinutesAgo->format('Y-m-d H:i:s')]);
 
         $expiringData = [];
         foreach ($expiring as $sub) {
@@ -279,6 +389,7 @@ class DashboardController extends AbstractController
             'byHour'             => $byHour,
             'byStatus'           => $byStatus,
             'todayCount'         => $todayCount,
+            'currentOccupancy'   => $currentOccupancy,
             'expiring'           => $expiringData,
             'totalActiveClients' => $totalActiveClients,
             'totalClients'       => $totalClients,

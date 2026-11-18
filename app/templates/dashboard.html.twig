@@ -195,6 +195,29 @@
                 height: 200px;
             }
         }
+
+        /* ─── Kiosco Mostrador Fullscreen ─── */
+        :fullscreen #liveClientCardContainer,
+        #liveClientCardContainer:fullscreen {
+            width: 100vw !important;
+            height: 100vh !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            background: #ffffff !important;
+            border-radius: 0 !important;
+            border: none !important;
+            padding: 2.5rem !important;
+            box-sizing: border-box !important;
+        }
+        :fullscreen .client-avatar-img,
+        #liveClientCardContainer:fullscreen .client-avatar-img,
+        :fullscreen .client-avatar-placeholder,
+        #liveClientCardContainer:fullscreen .client-avatar-placeholder {
+            width: 130px !important;
+            height: 130px !important;
+            font-size: 4rem !important;
+        }
     </style>
 {% endblock %}
 
@@ -258,18 +281,29 @@
     {# Tarjeta Principal del Torno (Último acceso) #}
     <div class="col-12 col-lg-8">
         <div id="liveClientCardContainer" class="torno-card {{ initialClient ? (initialClient.status == 'success' ? 'is-allowed' : 'is-denied') : '' }}">
-            <div class="torno-card-header">
+            <div class="torno-card-header flex-wrap gap-2">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-broadcast text-danger fs-5"></i>
                     <span class="fw-bold text-dark">Lector del Torno</span>
                     <span class="badge bg-light text-secondary border ms-1">En vivo</span>
                 </div>
-                <div id="liveAccessTimeTag" class="text-secondary small">
-                    {% if initialClient %}
-                        Último acceso: <strong class="text-dark">{{ initialClient.accessTimeFormatted }}</strong>
-                    {% else %}
-                        En espera de lectura...
-                    {% endif %}
+                <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
+                    <span class="badge bg-light text-dark border px-2 py-1 d-inline-flex align-items-center gap-1.5" title="Socios en sala (accesos en los últimos 90 minutos)">
+                        <i class="bi bi-people-fill text-primary"></i>Aforo: <strong id="liveOccupancyVal">{{ currentOccupancy|default(0) }}</strong> en sala
+                    </span>
+                    <button type="button" class="btn btn-sm btn-light border py-1 px-2" id="toggleAudioBtn" title="Activar/Silenciar sonido de accesos">
+                        <i class="bi bi-volume-up text-secondary" id="audioIcon"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light border py-1 px-2" id="toggleKioskBtn" title="Pantalla completa (Modo mostrador)">
+                        <i class="bi bi-arrows-fullscreen text-secondary"></i>
+                    </button>
+                    <div id="liveAccessTimeTag" class="text-secondary small ms-1">
+                        {% if initialClient %}
+                            Último acceso: <strong class="text-dark">{{ initialClient.accessTimeFormatted }}</strong>
+                        {% else %}
+                            En espera de lectura...
+                        {% endif %}
+                    </div>
                 </div>
             </div>
 
@@ -401,6 +435,123 @@
         </div>
     </div>
 </div>
+
+{# ─── Sección Inteligente de Retención, Cumpleaños y WhatsApp ─── #}
+{% if (birthdayClients is defined and birthdayClients|length > 0) or (expiringIn3Days is defined and expiringIn3Days|length > 0) or (inactiveClients is defined and inactiveClients|length > 0) %}
+<div class="row g-3 mb-4">
+    {# Cumpleaños del día #}
+    {% if birthdayClients is defined and birthdayClients|length > 0 %}
+    <div class="col-12 col-md-4">
+        <div class="card h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border-left: 4px solid #F59E0B !important;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fw-bold text-dark small text-uppercase" style="letter-spacing:0.05em;">
+                        🎉 Cumpleaños de hoy
+                    </span>
+                    <span class="badge bg-warning text-dark">{{ birthdayClients|length }}</span>
+                </div>
+                <div class="d-flex flex-column gap-2">
+                    {% for bClient in birthdayClients %}
+                        <div class="d-flex align-items-center justify-content-between bg-white bg-opacity-75 p-2 rounded-2 border">
+                            <div class="min-w-0">
+                                <a href="{{ path('app_client_show', {'id': bClient.id}) }}" class="fw-bold text-dark text-truncate d-block text-decoration-none small">
+                                    {{ bClient.name }}
+                                </a>
+                                <span class="text-muted" style="font-size:0.72rem;">¡Cumple {{ bClient.age }} años hoy!</span>
+                            </div>
+                            {% if bClient.cleanPhone %}
+                                <a href="https://wa.me/34{{ bClient.cleanPhone }}?text=¡Felicidades%20{{ bClient.firstName }}!%20🎉🎂%20Desde%20todo%20el%20equipo%20de%20Santamaría%20Gym%20te%20deseamos%20un%20muy%20feliz%20cumpleaños.%20¡Que%20lo%20disfrutes%20a%20tope!"
+                                   target="_blank" rel="noopener noreferrer"
+                                   class="btn btn-sm btn-success d-inline-flex align-items-center gap-1 py-1 px-2"
+                                   title="Felicitar por WhatsApp">
+                                    <i class="bi bi-whatsapp"></i><span style="font-size:0.75rem;">Felicitar</span>
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Vencen en ≤ 3 días #}
+    {% if expiringIn3Days is defined and expiringIn3Days|length > 0 %}
+    <div class="col-12 col-md-{{ (birthdayClients is defined and birthdayClients|length > 0) ? '4' : '6' }}">
+        <div class="card h-100 border-0 shadow-sm" style="background: #FFFFFF; border-left: 4px solid #E11D48 !important; border: 1px solid #E2E8F0;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fw-bold text-dark small text-uppercase" style="letter-spacing:0.05em;">
+                        <i class="bi bi-bell-fill text-danger me-1"></i>Vencen en ≤ 3 días
+                    </span>
+                    <span class="badge bg-danger-subtle text-danger">{{ expiringIn3Days|length }}</span>
+                </div>
+                <div class="d-flex flex-column gap-2" style="max-height: 220px; overflow-y: auto;">
+                    {% for expClient in expiringIn3Days %}
+                        <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border">
+                            <div class="min-w-0">
+                                <a href="{{ path('app_client_show', {'id': expClient.clientId}) }}" class="fw-semibold text-dark text-truncate d-block text-decoration-none small">
+                                    {{ expClient.name }}
+                                </a>
+                                <span class="badge bg-warning-subtle text-warning-emphasis" style="font-size:0.68rem;">
+                                    {{ expClient.daysRemaining == 0 ? 'Vence hoy' : 'En ' ~ expClient.daysRemaining ~ 'd (' ~ expClient.endDate ~ ')' }}
+                                </span>
+                            </div>
+                            {% if expClient.cleanPhone %}
+                                <a href="https://wa.me/34{{ expClient.cleanPhone }}?text=Hola%20{{ expClient.firstName }}!%20👋%20Te%20recordamos%20desde%20Santamaría%20Gym%20que%20tu%20cuota%20vence%20el%20{{ expClient.endDate }}.%20Pásate%20por%20recepción%20para%20renovarla%20cuando%20quieras%20y%20seguir%20entrenando.%20¡Te%20esperamos!%20💪"
+                                   target="_blank" rel="noopener noreferrer"
+                                   class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1 py-1 px-2 ms-1"
+                                   title="Avisar por WhatsApp">
+                                    <i class="bi bi-whatsapp"></i><span style="font-size:0.75rem;">Avisar</span>
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Socios ausentes (>15 días sin entrenar) #}
+    {% if inactiveClients is defined and inactiveClients|length > 0 %}
+    <div class="col-12 col-md-{{ (birthdayClients is defined and birthdayClients|length > 0 and expiringIn3Days is defined and expiringIn3Days|length > 0) ? '4' : '6' }}">
+        <div class="card h-100 border-0 shadow-sm" style="background: #FFFFFF; border-left: 4px solid #6366F1 !important; border: 1px solid #E2E8F0;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fw-bold text-dark small text-uppercase" style="letter-spacing:0.05em;">
+                        <i class="bi bi-person-dash-fill text-primary me-1"></i>Socios ausentes (>15d)
+                    </span>
+                    <span class="badge bg-primary-subtle text-primary">{{ inactiveClients|length }}</span>
+                </div>
+                <div class="d-flex flex-column gap-2" style="max-height: 220px; overflow-y: auto;">
+                    {% for inClient in inactiveClients %}
+                        <div class="d-flex align-items-center justify-content-between bg-light p-2 rounded-2 border">
+                            <div class="min-w-0">
+                                <a href="{{ path('app_client_show', {'id': inClient.clientId}) }}" class="fw-semibold text-dark text-truncate d-block text-decoration-none small">
+                                    {{ inClient.name }}
+                                </a>
+                                <span class="text-muted" style="font-size:0.7rem;">
+                                    Último acceso: {{ inClient.lastAccess }} {% if inClient.daysSince %}(hace {{ inClient.daysSince }}d){% endif %}
+                                </span>
+                            </div>
+                            {% if inClient.cleanPhone %}
+                                <a href="https://wa.me/34{{ inClient.cleanPhone }}?text=Hola%20{{ inClient.firstName }}!%20👋%20Hace%20días%20que%20no%20te%20vemos%20por%20Santamaría%20Gym.%20¿Todo%20bien?%20¡Te%20esperamos%20para%20seguir%20con%20tus%20entrenamientos!%20💪🏋️"
+                                   target="_blank" rel="noopener noreferrer"
+                                   class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 py-1 px-2 ms-1"
+                                   title="Reactivar por WhatsApp">
+                                    <i class="bi bi-whatsapp"></i><span style="font-size:0.75rem;">Reactivar</span>
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
 
 {# ─── Estadísticas principales ─── #}
 <div class="row g-2 g-md-3 mb-4" id="statsCards">
@@ -701,6 +852,10 @@
             renderTornoClient(data.client);
             renderRecentList(data.recent);
 
+            if (data.client) {
+                playAccessSound(data.client.status === 'success');
+            }
+
             // Refrescamos las estadísticas suavemente
             loadStats();
 
@@ -771,6 +926,11 @@
             document.getElementById('statExpiring').textContent = data.expiring?.length ?? 0;
             const denied = data.byStatus?.denied ?? 0;
             document.getElementById('statDenied').textContent   = denied;
+
+            if (data.currentOccupancy !== undefined) {
+                const occEl = document.getElementById('liveOccupancyVal');
+                if (occEl) occEl.textContent = data.currentOccupancy;
+            }
 
             // Gráfica de barras: accesos por día
             const days   = Object.keys(data.accessesByDay || {});
@@ -893,6 +1053,88 @@
         } catch (e) {
             console.error('Error cargando estadísticas:', e);
         }
+    }
+
+    // ── Sonidos de Acceso & Kiosco Fullscreen ─────────────────────────────
+    let audioCtx = null;
+    let soundEnabled = localStorage.getItem('gym_sound_enabled') !== 'false';
+    const toggleAudioBtn = document.getElementById('toggleAudioBtn');
+    const audioIcon = document.getElementById('audioIcon');
+
+    function updateAudioUI() {
+        if (!audioIcon || !toggleAudioBtn) return;
+        if (soundEnabled) {
+            audioIcon.className = 'bi bi-volume-up text-success';
+            toggleAudioBtn.title = 'Sonido de accesos activado (clic para silenciar)';
+        } else {
+            audioIcon.className = 'bi bi-volume-mute text-secondary';
+            toggleAudioBtn.title = 'Sonido de accesos silenciado (clic para activar)';
+        }
+    }
+    updateAudioUI();
+
+    if (toggleAudioBtn) {
+        toggleAudioBtn.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            localStorage.setItem('gym_sound_enabled', soundEnabled ? 'true' : 'false');
+            updateAudioUI();
+            if (soundEnabled) {
+                playAccessSound(true);
+            }
+        });
+    }
+
+    function playAccessSound(isSuccess) {
+        if (!soundEnabled) return;
+        try {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+            if (isSuccess) {
+                // Doble tono ascendente agradable (Re5 -> La5)
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, now);
+                osc.frequency.setValueAtTime(880.00, now + 0.12);
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+                osc.start(now);
+                osc.stop(now + 0.45);
+            } else {
+                // Tono de aviso grave (Mi4 -> Do4)
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(329.63, now);
+                osc.frequency.setValueAtTime(261.63, now + 0.15);
+                gain.gain.setValueAtTime(0.22, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+                osc.start(now);
+                osc.stop(now + 0.55);
+            }
+        } catch (e) {
+            console.warn('Audio no disponible:', e);
+        }
+    }
+
+    const toggleKioskBtn = document.getElementById('toggleKioskBtn');
+    const liveContainer = document.getElementById('liveClientCardContainer');
+    if (toggleKioskBtn && liveContainer) {
+        toggleKioskBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                liveContainer.requestFullscreen().catch(err => {
+                    console.warn('Error al activar fullscreen:', err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
     }
 
     // Inicializar polling cada 2.5 segundos

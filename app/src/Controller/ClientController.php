@@ -20,6 +20,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
 #[Route('/client')]
 final class ClientController extends AbstractController
@@ -1081,7 +1082,8 @@ final class ClientController extends AbstractController
     public function quickSearch(
         Request $request,
         EntityManagerInterface $em,
-        ClientRepository $clientRepository
+        ClientRepository $clientRepository,
+        CsrfTokenManagerInterface $csrfTokenManager
     ): JsonResponse {
         $q = trim((string) $request->query->get('q', ''));
         if (mb_strlen($q) < 2) {
@@ -1095,7 +1097,7 @@ final class ClientController extends AbstractController
         $tokens = preg_split('/[\s,]+/', $normalizedQuery, -1, PREG_SPLIT_NO_EMPTY);
 
         $conn = $em->getConnection();
-        $rows = $conn->fetchAllAssociative('SELECT id, client_number, name, surname, id_number, phone, photo FROM client');
+        $rows = $conn->fetchAllAssociative('SELECT id, client_number, name, surname, id_number, phone, photo, card_code FROM client');
 
         $matchedIds = [];
         $priorityIds = [];
@@ -1114,13 +1116,15 @@ final class ClientController extends AbstractController
             $cleanDni = str_replace(['.', '-', ' '], '', $dni);
             $phone = (string) EncryptionService::decryptValue($row['phone']);
             $cleanPhone = str_replace(['.', '-', ' ', '+34'], '', $phone);
+            $cardCode = (string) ($row['card_code'] ?? '');
 
             $haystack = $this->normalizeSearchText(
                 $id . ' #' . $id . ' ' .
                 $clientNumber . ' #' . $clientNumber . ' ' .
                 $name . ' ' . $surname . ' ' .
                 $dni . ' ' . $cleanDni . ' ' .
-                $phone . ' ' . $cleanPhone
+                $phone . ' ' . $cleanPhone . ' ' .
+                $cardCode
             );
 
             $matches = true;
@@ -1154,6 +1158,8 @@ final class ClientController extends AbstractController
 
         $currentDate = new \DateTime();
         $results = [];
+        $today = new \DateTime('today');
+
         foreach ($allIds as $cid) {
             if (!isset($clientsById[$cid])) {
                 continue;
@@ -1171,17 +1177,36 @@ final class ClientController extends AbstractController
 
             $hasPaid = false;
             $subType = '—';
+            $daysRemaining = null;
+            $paymentUntilStr = null;
+
             if ($activeSubscription && $activeSubscription->isActive()) {
                 $lastPaymentDate = $activeSubscription->getLastPaymentDate();
-                if ($lastPaymentDate && $lastPaymentDate->format('Y-m') === $currentDate->format('Y-m')) {
+                $paymentUntil = $activeSubscription->getEndDate();
+
+                if ($paymentUntil) {
+                    $untilDate = clone $paymentUntil;
+                    $untilDate->setTime(0, 0, 0);
+                    $diff = $today->diff($untilDate);
+                    $daysRemaining = (int) $diff->format('%r%a');
+                    $paymentUntilStr = $paymentUntil->format('d/m/Y');
+
+                    if ($untilDate >= $today) {
+                        $hasPaid = true;
+                    }
+                }
+
+                if (!$hasPaid && $lastPaymentDate && $lastPaymentDate->format('Y-m') === $currentDate->format('Y-m')) {
                     $hasPaid = true;
                 }
+
                 $subType = $activeSubscription->getSubscriptionType()?->getName() ?? 'Activa';
             }
 
             $firstInitial = mb_substr((string) $client->getName(), 0, 1, 'UTF-8');
             $secondInitial = mb_substr((string) $client->getSurname(), 0, 1, 'UTF-8');
             $initials = mb_strtoupper($firstInitial . $secondInitial, 'UTF-8');
+            $cleanPhone = preg_replace('/[^0-9]/', '', (string)$client->getPhone());
 
             $results[] = [
                 'id'               => $client->getId(),
@@ -1189,10 +1214,16 @@ final class ClientController extends AbstractController
                 'name'             => trim($client->getName() . ' ' . $client->getSurname()),
                 'idNumber'         => $client->getIdNumber(),
                 'phone'            => $client->getPhone(),
+                'cleanPhone'       => $cleanPhone,
+                'cardCode'         => $client->getCardCode(),
                 'photoUrl'         => $client->getPhoto() ? '/uploads/clients/' . $client->getPhoto() : null,
                 'initials'         => $initials ?: 'C',
+                'paletteIndex'     => $client->getId() % 6,
                 'hasPaid'          => $hasPaid,
+                'daysRemaining'    => $daysRemaining,
+                'paymentUntil'     => $paymentUntilStr,
                 'subscriptionType' => $subType,
+                'csrfToken'        => $csrfTokenManager->getToken('renew' . $client->getId())->getValue(),
                 'url'              => $this->generateUrl('app_client_show', ['id' => $client->getId()]),
             ];
         }
