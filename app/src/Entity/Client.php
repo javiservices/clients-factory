@@ -149,9 +149,9 @@ class Client
         return $this->name;
     }
 
-    public function setName(string $name): static
+    public function setName(?string $name): static
     {
-        $this->name = $name;
+        $this->name = $name ?? '';
 
         return $this;
     }
@@ -161,9 +161,9 @@ class Client
         return $this->surname;
     }
 
-    public function setSurname(string $surname): static
+    public function setSurname(?string $surname): static
     {
-        $this->surname = $surname;
+        $this->surname = $surname ?? '';
 
         return $this;
     }

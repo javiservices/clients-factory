@@ -49,6 +49,7 @@ class ClientType extends AbstractType
                     'class' => 'form-label small required'
                 ],
                 'required' => true,
+                'empty_data' => '',
             ])
             ->add('surname', TextType::class, [
                 'attr' => [
@@ -57,9 +58,10 @@ class ClientType extends AbstractType
                 ],
                 'label' => 'Apellidos',
                 'label_attr' => [
-                    'class' => 'form-label small required'
+                    'class' => 'form-label small'
                 ],
-                'required' => true,
+                'required' => false,
+                'empty_data' => '',
             ])
             ->add('address', TextType::class, [
                 'attr' => [
