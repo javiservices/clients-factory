@@ -28,6 +28,7 @@ docker cp "$PROJECT_DIR/app/assets/." "$CONTAINER_NAME:/var/www/html/assets/"
 docker cp "$PROJECT_DIR/app/migrations/." "$CONTAINER_NAME:/var/www/html/migrations/"
 docker cp "$PROJECT_DIR/app/config/." "$CONTAINER_NAME:/var/www/html/config/"
 docker cp "$PROJECT_DIR/app/public/." "$CONTAINER_NAME:/var/www/html/public/"
+docker cp "$PROJECT_DIR/.docker/php/php.ini" "$CONTAINER_NAME:/usr/local/etc/php/conf.d/custom.ini"
 
 # 3. Recompilar assets frontend si hay cambios en assets/
 if [ "$2" == "--build" ] || [ "$2" == "--full" ]; then
