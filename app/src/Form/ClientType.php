@@ -291,6 +291,23 @@ class ClientType extends AbstractType
                     'class' => 'form-check-label small'
                 ]
             ])
+            ->add('isUnlimited', CheckboxType::class, [
+                'mapped' => false,
+                'required' => false,
+                'label' => 'Acceso ilimitado / Permanente (sin fecha de fin)',
+                'attr' => [
+                    'class' => 'form-check-input',
+                    'id' => 'isUnlimitedCheckbox',
+                    'role' => 'switch',
+                ],
+                'label_attr' => [
+                    'class' => 'form-check-label small fw-semibold text-primary',
+                ],
+                'help' => 'Si se activa, el socio tendrá acceso permanente sin fecha de caducidad.',
+                'help_attr' => [
+                    'class' => 'form-text text-muted small',
+                ],
+            ])
             ->add('paymentUntil', DateType::class, [
                 'mapped' => false,
                 'widget' => 'single_text',

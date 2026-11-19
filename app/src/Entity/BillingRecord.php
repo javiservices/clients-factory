@@ -28,7 +28,7 @@ class BillingRecord
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     private ?\DateTimeInterface $periodStart = null;
 
-    #[ORM\Column(type: Types::DATE_MUTABLE)]
+    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $periodEnd = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
@@ -101,7 +101,7 @@ class BillingRecord
         return $this->periodEnd;
     }
 
-    public function setPeriodEnd(\DateTimeInterface $periodEnd): static
+    public function setPeriodEnd(?\DateTimeInterface $periodEnd): static
     {
         $this->periodEnd = $periodEnd;
 

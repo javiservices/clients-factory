@@ -197,12 +197,22 @@
                                     </div>
                                 </div>
                                 <div id="regularSubscriptionFields">
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-white text-muted small"><i class="bi bi-calendar-check"></i></span>
-                                        {{ form_widget(form.paymentUntil) }}
+                                    <div class="mb-2 p-2 rounded-2" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                                        <div class="form-check form-switch mb-0">
+                                            {{ form_widget(form.isUnlimited, {'attr': {'class': 'form-check-input', 'role': 'switch', 'id': 'isUnlimitedSwitch'}}) }}
+                                            <label class="form-check-label small fw-semibold text-primary ms-1" for="{{ form.isUnlimited.vars.id }}">
+                                                <i class="bi bi-infinity me-1"></i>Acceso ilimitado (sin fecha de fin)
+                                            </label>
+                                        </div>
                                     </div>
-                                    <div class="form-text small"><i class="bi bi-clock-history me-1"></i>Acceso activo al torno hasta esta fecha.</div>
-                                    {{ form_errors(form.paymentUntil) }}
+                                    <div id="paymentUntilWrapper">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white text-muted small"><i class="bi bi-calendar-check"></i></span>
+                                            {{ form_widget(form.paymentUntil) }}
+                                        </div>
+                                        <div class="form-text small"><i class="bi bi-clock-history me-1"></i>Acceso activo al torno hasta esta fecha.</div>
+                                        {{ form_errors(form.paymentUntil) }}
+                                    </div>
                                 </div>
                                 <div id="dailyPassFields" style="display:none">
                                     <div class="input-group">
@@ -498,8 +508,8 @@
                 }
             });
 
-            // Auto-sugerir fecha fin
-            if (triggerDateUpdate && paymentUntilInput) {
+            // Auto-sugerir fecha fin si no es ilimitado
+            if (triggerDateUpdate && paymentUntilInput && (!isUnlimitedSwitch || !isUnlimitedSwitch.checked)) {
                 let baseDate = new Date();
                 if (startDateInput && startDateInput.value) {
                     const parsed = new Date(startDateInput.value + 'T00:00:00');
@@ -587,6 +597,30 @@
             }
 
             subSelect.addEventListener('change', onSubscriptionChange);
+        }
+
+        // Manejo de Acceso Ilimitado
+        const isUnlimitedSwitch = document.querySelector('input[name$="[isUnlimited]"]');
+        const paymentUntilWrapper = document.getElementById('paymentUntilWrapper');
+
+        function updateUnlimitedState() {
+            if (!isUnlimitedSwitch) return;
+            if (isUnlimitedSwitch.checked) {
+                if (paymentUntilWrapper) paymentUntilWrapper.style.display = 'none';
+                if (paymentUntilInput) paymentUntilInput.value = '';
+            } else {
+                if (paymentUntilWrapper) paymentUntilWrapper.style.display = 'block';
+            }
+        }
+
+        if (isUnlimitedSwitch) {
+            isUnlimitedSwitch.addEventListener('change', function() {
+                updateUnlimitedState();
+                if (!this.checked) {
+                    selectPlan('full', true);
+                }
+            });
+            updateUnlimitedState();
         }
 
         // Inicialización según valor actual del input

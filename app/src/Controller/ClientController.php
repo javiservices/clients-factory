@@ -124,10 +124,11 @@ final class ClientController extends AbstractController
         }
 
         // 2. Construir la consulta DQL con eager join de suscripciones activas
+        $today = new \DateTime('today');
         $qb = $clientRepository->createQueryBuilder('c');
-        $qb->leftJoin('c.subscriptions', 's', 'WITH', 's.isActive = true AND s.lastPaymentDate >= :startOfMonth')
+        $qb->leftJoin('c.subscriptions', 's', 'WITH', 's.isActive = true AND (s.endDate >= :today OR s.endDate IS NULL)')
            ->leftJoin('s.subscriptionType', 'st')
-           ->setParameter('startOfMonth', $startOfMonth);
+           ->setParameter('today', $today);
 
         if ($systemMode === 'hidden') {
             $qb->andWhere('c.billable = :billable')
@@ -205,7 +206,9 @@ final class ClientController extends AbstractController
                 $paymentUntil = $sub->getEndDate();
 
                 if ($sub->isActive()) {
-                    if ($paymentUntil && $paymentUntil >= $today) {
+                    if ($paymentUntil === null) {
+                        $hasPaid = true;
+                    } elseif ($paymentUntil >= $today) {
                         $hasPaid = true;
                     } elseif ($lastPaymentDate && $lastPaymentDate->format('Y-m') === $currentDate->format('Y-m')) {
                         $hasPaid = true;
@@ -268,6 +271,10 @@ final class ClientController extends AbstractController
             if ($lastSubscription->getRemainingPasses() !== null) {
                 $form->get('remainingPasses')->setData($lastSubscription->getRemainingPasses());
             }
+            $isUnlimited = $lastSubscription->isActive() && $lastSubscription->getEndDate() === null && !$lastSubscription->getSubscriptionType()?->isDailyPass();
+            if ($form->has('isUnlimited')) {
+                $form->get('isUnlimited')->setData($isUnlimited);
+            }
             $form->get('isPaid')->setData($lastSubscription->isActive());
             $form->get('paymentUntil')->setData($lastSubscription->getEndDate());
             $form->get('subscriptionType')->setData($lastSubscription->getSubscriptionType());
@@ -322,7 +329,8 @@ final class ClientController extends AbstractController
             $lastSubscription->setSubscriptionType($subscriptionType);
     
             // Actualizar la suscripción existente
-            $isPaid = $form->get('isPaid')->getData();
+            $isPaid = (bool) $form->get('isPaid')->getData();
+            $isUnlimited = $form->has('isUnlimited') ? (bool) $form->get('isUnlimited')->getData() : false;
     
             if ($isPaid) {
                 $lastSubscription->setLastPaymentDate(new \DateTime());
@@ -330,28 +338,32 @@ final class ClientController extends AbstractController
 
                 $startDate = new \DateTime();
 
-                // Si el usuario especificó una fecha fin en el formulario, respetarla
-                $formEndDate = $form->get('paymentUntil')->getData();
-                if ($formEndDate instanceof \DateTimeInterface) {
-                    $endDate = \DateTime::createFromInterface($formEndDate);
-                    $endDate->setTime(23, 59, 59);
+                if ($isUnlimited) {
+                    $endDate = null;
                 } else {
-                    $endDate = clone $startDate;
-                    if ($subscriptionType->getMonths()) {
-                        $endDate->modify('first day of +' . $subscriptionType->getMonths() . ' month');
-                        $endDate->setDate(
-                            (int)$endDate->format('Y'),
-                            (int)$endDate->format('m'),
-                            4
-                        );
-                        $endDate->setTime(23, 59, 59);
-                    } elseif ($subscriptionType->getDays()) {
-                        $endDate->modify('+' . $subscriptionType->getDays() . ' days');
+                    // Si el usuario especificó una fecha fin en el formulario, respetarla
+                    $formEndDate = $form->get('paymentUntil')->getData();
+                    if ($formEndDate instanceof \DateTimeInterface) {
+                        $endDate = \DateTime::createFromInterface($formEndDate);
                         $endDate->setTime(23, 59, 59);
                     } else {
-                        $endDate->modify('first day of +1 month');
-                        $endDate->setDate((int)$endDate->format('Y'), (int)$endDate->format('m'), 4);
-                        $endDate->setTime(23, 59, 59);
+                        $endDate = clone $startDate;
+                        if ($subscriptionType->getMonths()) {
+                            $endDate->modify('first day of +' . $subscriptionType->getMonths() . ' month');
+                            $endDate->setDate(
+                                (int)$endDate->format('Y'),
+                                (int)$endDate->format('m'),
+                                4
+                            );
+                            $endDate->setTime(23, 59, 59);
+                        } elseif ($subscriptionType->getDays()) {
+                            $endDate->modify('+' . $subscriptionType->getDays() . ' days');
+                            $endDate->setTime(23, 59, 59);
+                        } else {
+                            $endDate->modify('first day of +1 month');
+                            $endDate->setDate((int)$endDate->format('Y'), (int)$endDate->format('m'), 4);
+                            $endDate->setTime(23, 59, 59);
+                        }
                     }
                 }
 
@@ -362,6 +374,7 @@ final class ClientController extends AbstractController
                 if ($subscriptionType->isDailyPass()) {
                     $remainingPasses = $form->get('remainingPasses')->getData() ?? $subscriptionType->getDays();
                     $lastSubscription->setRemainingPasses($remainingPasses);
+                    $lastSubscription->setEndDate(null);
                 } else {
                     $lastSubscription->setRemainingPasses(null);
                 }
@@ -372,7 +385,9 @@ final class ClientController extends AbstractController
                     : (float) $subscriptionType->getPrice();
 
                 $description = 'Pago de suscripción ' . $subscriptionType->getName();
-                if (abs($finalAmount - 30.0) < 0.01 && str_contains($subscriptionType->getName(), 'SALA-FITNESS')) {
+                if ($isUnlimited) {
+                    $description = 'Pago de suscripción ' . $subscriptionType->getName() . ' (Acceso Ilimitado / Permanente)';
+                } elseif (abs($finalAmount - 30.0) < 0.01 && str_contains($subscriptionType->getName(), 'SALA-FITNESS')) {
                     $description = 'Pago de suscripción SALA-FITNESS (Medio mes)';
                 } elseif (abs($finalAmount - (float)$subscriptionType->getPrice()) > 0.01) {
                     $description = sprintf('Pago de suscripción %s (Importe ajustado: %.2f €)', $subscriptionType->getName(), $finalAmount);
@@ -394,7 +409,8 @@ final class ClientController extends AbstractController
                 // Generar factura inmediatamente para este registro de facturación
                 try {
                     $invoice = $invoiceService->generateInvoiceForBillingRecord($billingRecord, $this->getUser());
-                    $this->addFlash('success', 'Cliente actualizado y factura generada correctamente hasta el ' . $endDate->format('d/m/Y') . '. Factura: ' . $invoice->getInvoiceNumber() . ' (' . number_format($finalAmount, 2, ',', '.') . ' €)');
+                    $formattedEnd = $endDate ? ' hasta el ' . $endDate->format('d/m/Y') : ' con acceso ilimitado';
+                    $this->addFlash('success', 'Cliente actualizado y factura generada correctamente' . $formattedEnd . '. Factura: ' . $invoice->getInvoiceNumber() . ' (' . number_format($finalAmount, 2, ',', '.') . ' €)');
                 } catch (\Exception $e) {
                     $this->addFlash('warning', 'Cliente actualizado correctamente, pero no se pudo generar la factura: ' . $e->getMessage());
                 }
@@ -497,6 +513,7 @@ final class ClientController extends AbstractController
                 // Obtener el SubscriptionType seleccionado del formulario
                 $subscriptionType = $form->get('subscriptionType')->getData();
                 $isPaid = (bool) $form->get('isPaid')->getData();
+                $isUnlimited = $form->has('isUnlimited') ? (bool) $form->get('isUnlimited')->getData() : false;
 
                 $customAmount = $form->get('paymentAmount')->getData();
                 $finalAmount = ($customAmount !== null && $customAmount > 0)
@@ -510,28 +527,32 @@ final class ClientController extends AbstractController
                 
                 $startDate = $client->getStartDate() ?? new \DateTime();
 
-                // Si el usuario especificó una fecha fin en el formulario, respetarla
-                $formEndDate = $form->get('paymentUntil')->getData();
-                if ($formEndDate instanceof \DateTimeInterface) {
-                    $endDate = \DateTime::createFromInterface($formEndDate);
-                    $endDate->setTime(23, 59, 59);
+                if ($isUnlimited) {
+                    $endDate = null;
                 } else {
-                    $endDate = clone $startDate;
-                    if ($subscriptionType->getMonths()) {
-                        $endDate->modify('first day of +' . $subscriptionType->getMonths() . ' month');
-                        $endDate->setDate(
-                            (int)$endDate->format('Y'),
-                            (int)$endDate->format('m'),
-                            4
-                        );
-                        $endDate->setTime(23, 59, 59);
-                    } elseif ($subscriptionType->getDays()) {
-                        $endDate->modify('+' . $subscriptionType->getDays() . ' days');
+                    // Si el usuario especificó una fecha fin en el formulario, respetarla
+                    $formEndDate = $form->get('paymentUntil')->getData();
+                    if ($formEndDate instanceof \DateTimeInterface) {
+                        $endDate = \DateTime::createFromInterface($formEndDate);
                         $endDate->setTime(23, 59, 59);
                     } else {
-                        $endDate->modify('first day of +1 month');
-                        $endDate->setDate((int)$endDate->format('Y'), (int)$endDate->format('m'), 4);
-                        $endDate->setTime(23, 59, 59);
+                        $endDate = clone $startDate;
+                        if ($subscriptionType->getMonths()) {
+                            $endDate->modify('first day of +' . $subscriptionType->getMonths() . ' month');
+                            $endDate->setDate(
+                                (int)$endDate->format('Y'),
+                                (int)$endDate->format('m'),
+                                4
+                            );
+                            $endDate->setTime(23, 59, 59);
+                        } elseif ($subscriptionType->getDays()) {
+                            $endDate->modify('+' . $subscriptionType->getDays() . ' days');
+                            $endDate->setTime(23, 59, 59);
+                        } else {
+                            $endDate->modify('first day of +1 month');
+                            $endDate->setDate((int)$endDate->format('Y'), (int)$endDate->format('m'), 4);
+                            $endDate->setTime(23, 59, 59);
+                        }
                     }
                 }
     
@@ -543,6 +564,7 @@ final class ClientController extends AbstractController
                 if ($subscriptionType->isDailyPass()) {
                     $remainingPasses = $form->get('remainingPasses')->getData() ?? $subscriptionType->getDays();
                     $subscription->setRemainingPasses($remainingPasses);
+                    $subscription->setEndDate(null);
                 } else {
                     $subscription->setRemainingPasses(null);
                 }
@@ -553,7 +575,9 @@ final class ClientController extends AbstractController
                 if ($isPaid) {
                     // Determinar descripción clara de facturación
                     $description = 'Pago inicial de suscripción ' . $subscriptionType->getName();
-                    if (abs($finalAmount - 30.0) < 0.01 && str_contains($subscriptionType->getName(), 'SALA-FITNESS')) {
+                    if ($isUnlimited) {
+                        $description = 'Pago inicial de suscripción ' . $subscriptionType->getName() . ' (Acceso Ilimitado / Permanente)';
+                    } elseif (abs($finalAmount - 30.0) < 0.01 && str_contains($subscriptionType->getName(), 'SALA-FITNESS')) {
                         $description = 'Pago inicial de suscripción SALA-FITNESS (Medio mes)';
                     } elseif (abs($finalAmount - (float)$subscriptionType->getPrice()) > 0.01) {
                         $description = sprintf('Pago inicial de suscripción %s (Importe ajustado: %.2f €)', $subscriptionType->getName(), $finalAmount);
@@ -576,7 +600,8 @@ final class ClientController extends AbstractController
                     // Generar factura inmediatamente para este registro de facturación
                     try {
                         $invoice = $invoiceService->generateInvoiceForBillingRecord($billingRecord, $this->getUser());
-                        $this->addFlash('success', 'Cliente creado y factura generada correctamente hasta el ' . $endDate->format('d/m/Y') . '. Factura: ' . $invoice->getInvoiceNumber() . ' (' . number_format($finalAmount, 2, ',', '.') . ' €)');
+                        $formattedEnd = $endDate ? ' hasta el ' . $endDate->format('d/m/Y') : ' con acceso ilimitado';
+                        $this->addFlash('success', 'Cliente creado y factura generada correctamente' . $formattedEnd . '. Factura: ' . $invoice->getInvoiceNumber() . ' (' . number_format($finalAmount, 2, ',', '.') . ' €)');
                     } catch (\Exception $e) {
                         $this->addFlash('warning', 'Cliente creado correctamente, pero no se pudo generar la factura: ' . $e->getMessage());
                     }
@@ -624,7 +649,11 @@ final class ClientController extends AbstractController
             if ($lastSubscription->isActive()) {
                 $currentDate = new \DateTime();
 
-                if ($lastPaymentDate && $lastPaymentDate->format('Y-m') === $currentDate->format('Y-m')) {
+                if ($paymentUntil === null) {
+                    $hasPaid = true;
+                } elseif ($paymentUntil >= new \DateTime('today')) {
+                    $hasPaid = true;
+                } elseif ($lastPaymentDate && $lastPaymentDate->format('Y-m') === $currentDate->format('Y-m')) {
                     $hasPaid = true;
                 }
             }
@@ -701,25 +730,40 @@ final class ClientController extends AbstractController
         }
 
         $subscriptions = $client->getSubscriptions();
-        $lastSubscription = $subscriptions->last();
+        $lastSubscription = $subscriptions->last() ?: null;
 
         if (!$lastSubscription) {
-            if ($isAjax) {
-                return $this->json(['success' => false, 'message' => 'Este cliente no tiene ninguna suscripción que renovar.'], 400);
+            $defaultType = $entityManager->getRepository(SubscriptionType::class)->findOneBy(['name' => 'SALA-FITNESS'])
+                ?? $entityManager->getRepository(SubscriptionType::class)->findOneBy([]);
+            if ($defaultType) {
+                $lastSubscription = new Subscription();
+                $lastSubscription->setClient($client);
+                $lastSubscription->setSubscriptionType($defaultType);
+                $lastSubscription->setStartDate(new \DateTime());
+                $lastSubscription->setIsActive(true);
+                $entityManager->persist($lastSubscription);
+            } else {
+                if ($isAjax) {
+                    return $this->json(['success' => false, 'message' => 'No hay tipos de cuota configurados.'], 400);
+                }
+                $this->addFlash('error', 'No hay tipos de cuota configurados.');
+                return $this->redirectAfterRenew($request, $client);
             }
-            $this->addFlash('error', 'Este cliente no tiene ninguna suscripción que renovar.');
-            return $this->redirectAfterRenew($request, $client);
         }
 
         $subscriptionType = $lastSubscription->getSubscriptionType();
+        $now = new \DateTime();
         $startDate = new \DateTime();
-        $endDate = clone $startDate;
 
+        $isUnlimited = $request->request->get('unlimited') === '1';
         $postedAmount = $request->request->get('amount');
-        $isHalfMonth = $request->request->get('half_month') === '1' || ($postedAmount !== null && is_numeric($postedAmount) && abs((float)$postedAmount - 30.0) < 0.01);
+        $isHalfMonth = !$isUnlimited && (
+            $request->request->get('half_month') === '1' ||
+            ($postedAmount !== null && is_numeric($postedAmount) && abs((float)$postedAmount - 30.0) < 0.01)
+        );
 
-        // Si no se pide explícitamente medio mes, la renovación regular es siempre a mes completo (50 €)
-        if (!$isHalfMonth && str_contains($subscriptionType->getName(), 'Medio mes')) {
+        // Si no se pide explícitamente medio mes ni ilimitado, la renovación regular es a tipo completo
+        if (!$isHalfMonth && !$isUnlimited && str_contains($subscriptionType->getName(), 'Medio mes')) {
             $fullType = $entityManager->getRepository(SubscriptionType::class)->findOneBy(['name' => 'SALA-FITNESS']);
             if ($fullType) {
                 $subscriptionType = $fullType;
@@ -727,32 +771,51 @@ final class ClientController extends AbstractController
             }
         }
 
-        $finalAmount = ($postedAmount !== null && is_numeric($postedAmount) && (float)$postedAmount > 0)
+        $finalAmount = ($postedAmount !== null && is_numeric($postedAmount) && (float)$postedAmount >= 0)
             ? (float) $postedAmount
             : ($isHalfMonth ? 30.0 : (float) $subscriptionType->getPrice());
 
-        // Calcular la fecha de fin basada en si es medio mes o tipo de suscripción
-        if ($isHalfMonth) {
-            $endDate->modify('+15 days');
-            $endDate->setTime(23, 59, 59);
-        } elseif ($subscriptionType->getMonths()) {
-            $endDate->modify('first day of +' . $subscriptionType->getMonths() . ' month');
-            $endDate->setDate(
-                (int)$endDate->format('Y'),
-                (int)$endDate->format('m'),
-                4
-            );
-            $endDate->setTime(23, 59, 59);
-        } elseif ($subscriptionType->getDays()) {
-            $endDate->modify('+' . $subscriptionType->getDays() . ' days');
-            $endDate->setTime(23, 59, 59);
+        if ($isUnlimited) {
+            $endDate = null;
+        } else {
+            // Si el cliente tiene una suscripción vigente en el futuro (ej. válida hasta el 04/12/2026),
+            // la renovación debe extender el periodo a partir de esa fecha fin, no retroceder ni resetear desde hoy.
+            $currentEndDate = $lastSubscription->getEndDate();
+            $baseDate = ($currentEndDate instanceof \DateTimeInterface && $currentEndDate > $now)
+                ? clone $currentEndDate
+                : clone $now;
+
+            if ($isHalfMonth) {
+                $endDate = clone $baseDate;
+                $endDate->modify('+15 days');
+                $endDate->setTime(23, 59, 59);
+            } elseif ($subscriptionType->getMonths()) {
+                $endDate = clone $baseDate;
+                $endDate->modify('first day of +' . $subscriptionType->getMonths() . ' month');
+                $endDate->setDate(
+                    (int)$endDate->format('Y'),
+                    (int)$endDate->format('m'),
+                    4
+                );
+                $endDate->setTime(23, 59, 59);
+            } elseif ($subscriptionType->getDays()) {
+                $endDate = clone $baseDate;
+                $endDate->modify('+' . $subscriptionType->getDays() . ' days');
+                $endDate->setTime(23, 59, 59);
+            } else {
+                $endDate = clone $baseDate;
+                $endDate->modify('first day of +1 month');
+                $endDate->setDate((int)$endDate->format('Y'), (int)$endDate->format('m'), 4);
+                $endDate->setTime(23, 59, 59);
+            }
         }
 
         // Si es pase diario, sumar los nuevos pases a los existentes
         if ($subscriptionType->isDailyPass()) {
             $currentPasses = $lastSubscription->getRemainingPasses() ?? 0;
-            $newPasses = $subscriptionType->getDays();
+            $newPasses = $subscriptionType->getDays() ?: 20;
             $lastSubscription->setRemainingPasses($currentPasses + $newPasses);
+            $endDate = null;
         }
 
         $lastSubscription->setLastPaymentDate(new \DateTime());
@@ -761,7 +824,9 @@ final class ClientController extends AbstractController
         $lastSubscription->setEndDate($endDate);
 
         $description = 'Renovación de suscripción ' . $subscriptionType->getName();
-        if ($isHalfMonth || (abs($finalAmount - 30.0) < 0.01 && str_contains($subscriptionType->getName(), 'SALA-FITNESS'))) {
+        if ($isUnlimited) {
+            $description = 'Renovación de suscripción ' . $subscriptionType->getName() . ' (Acceso Ilimitado / Permanente)';
+        } elseif ($isHalfMonth || (abs($finalAmount - 30.0) < 0.01 && str_contains($subscriptionType->getName(), 'SALA-FITNESS'))) {
             $description = 'Renovación de suscripción SALA-FITNESS (Medio mes)';
         } elseif (abs($finalAmount - (float)$subscriptionType->getPrice()) > 0.01) {
             $description = sprintf('Renovación de suscripción %s (Importe ajustado: %.2f €)', $subscriptionType->getName(), $finalAmount);
@@ -792,13 +857,14 @@ final class ClientController extends AbstractController
 
         // Generar factura inmediatamente para este registro de facturación
         $invoiceNumber = null;
+        $formattedEnd = $endDate ? ' hasta el ' . $endDate->format('d/m/Y') : ' con acceso ilimitado';
         try {
             $invoice = $invoiceService->generateInvoiceForBillingRecord($billingRecord, $this->getUser());
             $invoiceNumber = $invoice->getInvoiceNumber();
-            $msg = 'Suscripción renovada y factura generada correctamente hasta el ' . $endDate->format('d/m/Y') . '. Factura: ' . $invoiceNumber;
+            $msg = 'Suscripción renovada y factura generada correctamente (' . $formattedEnd . '). Factura: ' . $invoiceNumber;
             $this->addFlash('success', $msg);
         } catch (\Exception $e) {
-            $msg = 'Suscripción renovada correctamente hasta el ' . $endDate->format('d/m/Y') . ', pero no se pudo generar la factura: ' . $e->getMessage();
+            $msg = 'Suscripción renovada correctamente (' . $formattedEnd . '), pero no se pudo generar la factura: ' . $e->getMessage();
             $this->addFlash('warning', $msg);
         }
 
@@ -806,7 +872,7 @@ final class ClientController extends AbstractController
             return $this->json([
                 'success'       => true,
                 'message'       => $msg,
-                'endDate'       => $endDate->format('d/m/Y'),
+                'endDate'       => $endDate?->format('d/m/Y') ?: 'Ilimitado',
                 'invoiceNumber' => $invoiceNumber,
                 'client'        => [
                     'id'   => $client->getId(),
@@ -1204,7 +1270,10 @@ final class ClientController extends AbstractController
                 $lastPaymentDate = $activeSubscription->getLastPaymentDate();
                 $paymentUntil = $activeSubscription->getEndDate();
 
-                if ($paymentUntil) {
+                if ($paymentUntil === null) {
+                    $hasPaid = true;
+                    $paymentUntilStr = 'Ilimitado';
+                } elseif ($paymentUntil) {
                     $untilDate = clone $paymentUntil;
                     $untilDate->setTime(0, 0, 0);
                     $diff = $today->diff($untilDate);

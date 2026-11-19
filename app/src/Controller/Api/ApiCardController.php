@@ -185,7 +185,7 @@ class ApiCardController extends AbstractController
             $this->entityManager->flush();
         } else {
             $now = new \DateTime();
-            if ($now > $activeSubscription->getEndDate()) {
+            if ($activeSubscription->getEndDate() !== null && $now > $activeSubscription->getEndDate()) {
                 $activeSubscription->setIsActive(false);
                 $this->entityManager->flush();
                 $this->logAccess($client, 'denied');
@@ -286,7 +286,7 @@ class ApiCardController extends AbstractController
                 'type'            => $activeSubscription->getSubscriptionType()->getName(),
                 'remainingPasses' => $activeSubscription->getRemainingPasses(),
                 'isDailyPass'     => $activeSubscription->getSubscriptionType()->isDailyPass(),
-                'endDate'         => $activeSubscription->getEndDate()?->format('d/m/Y'),
+                'endDate'         => $activeSubscription->getEndDate()?->format('d/m/Y') ?: 'Ilimitado',
             ],
         ]);
     }
@@ -371,7 +371,7 @@ class ApiCardController extends AbstractController
             'subscription' => [
                 'active'          => $activeSub !== null,
                 'type'            => $activeSub?->getSubscriptionType()?->getName() ?: 'Sin cuota activa',
-                'endDate'         => $activeSub?->getEndDate()?->format('d/m/Y'),
+                'endDate'         => $activeSub?->getEndDate()?->format('d/m/Y') ?: ($activeSub ? 'Ilimitado' : null),
                 'daysRemaining'   => $daysRemaining,
                 'warningMessage'  => $warningMessage,
                 'isDailyPass'     => $activeSub?->getSubscriptionType()?->isDailyPass() ?? false,
@@ -453,6 +453,17 @@ class ApiCardController extends AbstractController
             return $this->json([
                 'success' => false,
                 'message' => 'Suscripción congelada temporalmente',
+                'client'  => ['id' => $client->getId(), 'name' => $client->getName()],
+            ], 403);
+        }
+
+        if ($activeSubscription->getEndDate() !== null && new \DateTime() > $activeSubscription->getEndDate()) {
+            $activeSubscription->setIsActive(false);
+            $this->entityManager->flush();
+            $this->logAccess($client, 'denied');
+            return $this->json([
+                'success' => false,
+                'message' => 'Suscripción expirada',
                 'client'  => ['id' => $client->getId(), 'name' => $client->getName()],
             ], 403);
         }
