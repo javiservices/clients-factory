@@ -854,6 +854,26 @@ final class ClientController extends AbstractController
         return $this->redirectToRoute('app_client_show', ['id' => $client->getId()]);
     }
 
+    #[Route('/{id}/update-daily-limit', name: 'app_client_update_daily_limit', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function updateDailyLimit(Request $request, Client $client, EntityManagerInterface $em): Response
+    {
+        if ($this->isCsrfTokenValid('update_daily_limit' . $client->getId(), $request->request->get('_token'))) {
+            $rawLimit = $request->request->get('daily_access_limit');
+            $limit = ($rawLimit === '' || $rawLimit === null) ? 1 : max(0, (int) $rawLimit);
+            $client->setDailyAccessLimit($limit);
+            $em->flush();
+
+            $msg = $limit === 0
+                ? 'Límite de accesos configurado como Ilimitado.'
+                : sprintf('Límite diario actualizado a %d %s al día.', $limit, $limit === 1 ? 'acceso' : 'accesos');
+            $this->addFlash('success', $msg);
+        } else {
+            $this->addFlash('error', 'Token de seguridad inválido.');
+        }
+
+        return $this->redirectToRoute('app_client_show', ['id' => $client->getId()]);
+    }
+
     #[Route('/system/mode/{action}', name: 'app_client_system_mode', methods: ['GET'], requirements: ['action' => 'normal|hidden'])]
     public function systemMode(Request $request, string $action): Response
     {

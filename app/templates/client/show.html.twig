@@ -272,6 +272,24 @@
                         <div class="fw-semibold mt-1">{{ client.startDate ? client.startDate|date('d/m/Y') : '—' }}</div>
                     </div>
 
+                    {# Límite de accesos diarios #}
+                    <div class="col-6 col-md-3">
+                        <div class="small" style="color:var(--c-gray-500)">Accesos al día</div>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            {% if client.dailyAccessLimit == 0 %}
+                                <span class="badge bg-info-subtle text-info fw-semibold"><i class="bi bi-infinity me-1"></i>Ilimitado</span>
+                            {% elseif client.dailyAccessLimit == 1 %}
+                                <span class="badge bg-secondary-subtle text-secondary fw-semibold">1 al día</span>
+                            {% else %}
+                                <span class="badge bg-primary-subtle text-primary fw-semibold">{{ client.dailyAccessLimit }} al día</span>
+                            {% endif %}
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                    data-bs-toggle="modal" data-bs-target="#limitModal" style="font-size:0.75rem;" title="Modificar accesos diarios permitidos">
+                                <i class="bi bi-pencil me-1"></i>Modificar
+                            </button>
+                        </div>
+                    </div>
+
                     {% if subscription and subscription.frozen %}
                         <div class="col-12">
                             <div class="alert alert-warning d-flex align-items-center gap-2 mb-0 py-2">
@@ -439,6 +457,45 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Guardar tarjeta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# ─── Modal Límite de Accesos Diarios ─── #}
+<div class="modal fade" id="limitModal" tabindex="-1" aria-labelledby="limitModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{{ path('app_client_update_daily_limit', {'id': client.id}) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fs-6" id="limitModalLabel">
+                        <i class="bi bi-door-closed me-1"></i>Accesos al día
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="_token" value="{{ csrf_token('update_daily_limit' ~ client.id) }}">
+                    <p class="small text-muted mb-3">
+                        Número de veces que el socio puede fichar y abrir el torno en el mismo día. Por defecto es 1 para evitar que presten la tarjeta o app a terceros.
+                    </p>
+                    <div class="mb-3">
+                        <label for="dailyLimitInput" class="form-label small fw-semibold">Accesos por día</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-shield-lock"></i></span>
+                            <input type="number" class="form-control" id="dailyLimitInput" name="daily_access_limit"
+                                   min="0" max="99" value="{{ client.dailyAccessLimit }}" required>
+                        </div>
+                        <div class="form-text small mt-1">
+                            <span class="text-primary fw-medium">1</span> = 1 acceso al día (por defecto).<br>
+                            <span class="text-primary fw-medium">2 o más</span> = Socios que entrenan mañana y tarde.<br>
+                            <span class="text-primary fw-medium">0</span> = Sin límite (ilimitado).
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-sm btn-primary">Guardar límite</button>
                 </div>
             </form>
         </div>

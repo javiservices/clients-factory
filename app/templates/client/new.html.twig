@@ -135,8 +135,8 @@
             </p>
 
             <div class="row g-3 mb-4">
-                {# Fila 1: Tarjeta y Fecha de alta #}
-                <div class="col-12 col-md-6">
+                {# Fila 1: Tarjeta, Fecha de alta y Límite de accesos diarios #}
+                <div class="col-12 col-md-4">
                     <label class="form-label small" for="{{ form.cardCode.vars.id }}">
                         Código de tarjeta <span class="opt-badge">(opcional)</span>
                     </label>
@@ -144,16 +144,27 @@
                         <span class="input-group-text bg-white text-muted"><i class="bi bi-upc-scan"></i></span>
                         {{ form_widget(form.cardCode) }}
                     </div>
-                    <div class="form-text"><i class="bi bi-info-circle me-1"></i>Haz clic para escanear en el lector RFID.</div>
+                    <div class="form-text"><i class="bi bi-info-circle me-1"></i>Escanear en lector RFID.</div>
                     {{ form_errors(form.cardCode) }}
                 </div>
-                <div class="col-12 col-md-6">
+                <div class="col-12 col-md-4">
                     <label class="form-label small" for="{{ form.startDate.vars.id }}">
                         Fecha de inscripción <span class="req-star" title="Obligatorio">*</span>
                     </label>
                     {{ form_widget(form.startDate) }}
-                    <div class="form-text"><i class="bi bi-calendar-event me-1"></i>Fecha de alta del socio en el gimnasio.</div>
+                    <div class="form-text"><i class="bi bi-calendar-event me-1"></i>Fecha de alta del socio.</div>
                     {{ form_errors(form.startDate) }}
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label small fw-semibold" for="{{ form.dailyAccessLimit.vars.id }}">
+                        Accesos al día <span class="badge bg-secondary-subtle text-secondary py-0.5 px-1.5" style="font-size:0.7rem;">Defecto: 1</span>
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white text-muted"><i class="bi bi-door-closed"></i></span>
+                        {{ form_widget(form.dailyAccessLimit) }}
+                    </div>
+                    <div class="form-text"><i class="bi bi-shield-lock me-1"></i>1 al día por defecto. 0 = Ilimitado.</div>
+                    {{ form_errors(form.dailyAccessLimit) }}
                 </div>
 
                 {# Fila 2: Panel unificado de Suscripción y Facturación #}

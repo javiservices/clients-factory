@@ -70,6 +70,10 @@ class Client
     #[ORM\Column(type: Types::INTEGER, options: ['default' => 0])]
     private int $totalAccesses = 0;
 
+    /** Número máximo de accesos permitidos por día (por defecto 1). 0 = Sin límite / ilimitado. */
+    #[ORM\Column(name: 'daily_access_limit', type: Types::INTEGER, options: ['default' => 1])]
+    private int $dailyAccessLimit = 1;
+
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => '0.00'])]
     private string $totalPaid = '0.00';
 
@@ -443,6 +447,18 @@ class Client
     public function getTotalAccesses(): int
     {
         return $this->totalAccesses;
+    }
+
+    public function getDailyAccessLimit(): int
+    {
+        return $this->dailyAccessLimit ?? 1;
+    }
+
+    public function setDailyAccessLimit(?int $dailyAccessLimit): static
+    {
+        $this->dailyAccessLimit = $dailyAccessLimit ?? 1;
+
+        return $this;
     }
 
     public function setTotalAccesses(int $totalAccesses): static

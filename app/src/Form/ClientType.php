@@ -186,6 +186,24 @@ class ClientType extends AbstractType
                 ],
                 'required' => false,
             ])
+            ->add('dailyAccessLimit', IntegerType::class, [
+                'label' => 'Accesos al día',
+                'required' => false,
+                'empty_data' => '1',
+                'attr' => [
+                    'class' => 'form-control',
+                    'placeholder' => '1 (Por defecto)',
+                    'min' => 0,
+                    'max' => 99,
+                ],
+                'label_attr' => [
+                    'class' => 'form-label small fw-semibold'
+                ],
+                'help' => 'Por defecto 1. Configura más si el socio entrena varias veces al día. 0 = Ilimitado.',
+                'help_attr' => [
+                    'class' => 'form-text text-muted small'
+                ]
+            ])
             ->add('photo', FileType::class, [
                 'label' => 'Foto del cliente',
                 'mapped' => false,

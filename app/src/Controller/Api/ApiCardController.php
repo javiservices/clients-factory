@@ -104,7 +104,11 @@ class ApiCardController extends AbstractController
     // ─────────────────────────────────────────────────────────────────────────
 
     #[Route('/check-card', name: 'check_card', methods: ['GET'])]
-    public function checkCard(Request $request, ClientRepository $clientRepository): JsonResponse
+    public function checkCard(
+        Request $request,
+        ClientRepository $clientRepository,
+        AccessLogRepository $accessLogRepo
+    ): JsonResponse
     {
         if (!$this->checkApiKey($request)) {
             return $this->json(['success' => false, 'message' => 'Clave de API inválida'], 401);
@@ -193,6 +197,27 @@ class ApiCardController extends AbstractController
             }
         }
 
+        // ─── Validación de Límite Diario de Accesos ───
+        $dailyLimit = $client->getDailyAccessLimit();
+        if ($dailyLimit > 0) {
+            $todayAccessCount = $accessLogRepo->countTodaySuccessByClient($client);
+            if ($todayAccessCount >= $dailyLimit) {
+                $this->logAccess($client, 'denied');
+                return $this->json([
+                    'success' => false,
+                    'message' => sprintf('Límite de accesos diarios alcanzado (%d/%d hoy). Consulta en recepción.', $todayAccessCount, $dailyLimit),
+                    'code'    => 'DAILY_LIMIT_EXCEEDED',
+                    'client'  => [
+                        'id'             => $client->getEffectiveClientNumber(),
+                        'rawId'          => $client->getId(),
+                        'clientNumber'   => $client->getEffectiveClientNumber(),
+                        'name'           => $client->getName(),
+                        'surname'        => $client->getSurname(),
+                    ],
+                ], 403);
+            }
+        }
+
         $this->logAccess($client, 'success');
 
         $warning = false;
@@ -254,6 +279,8 @@ class ApiCardController extends AbstractController
                 'surname'        => $client->getSurname(),
                 'photoUrl'       => $photoUrl,
                 'welcomeMessage' => $welcomeCustom,
+                'dailyAccessLimit' => $dailyLimit,
+                'entriesToday'     => $todayAccessCount + 1,
             ],
             'subscription' => [
                 'type'            => $activeSubscription->getSubscriptionType()->getName(),
@@ -338,6 +365,8 @@ class ApiCardController extends AbstractController
                 'surname'      => $matchedClient->getSurname(),
                 'dni'          => $matchedClient->getIdNumber(),
                 'cardCode'     => $matchedClient->getCardCode() ?: (string)$matchedClient->getEffectiveClientNumber(),
+                'dailyAccessLimit' => $matchedClient->getDailyAccessLimit(),
+                'entriesToday'     => $accessLogRepo->countTodaySuccessByClient($matchedClient),
             ],
             'subscription' => [
                 'active'          => $activeSub !== null,
@@ -368,7 +397,11 @@ class ApiCardController extends AbstractController
     // ─────────────────────────────────────────────────────────────────────────
 
     #[Route('/door/open', name: 'door_open', methods: ['POST', 'GET'])]
-    public function openDoor(Request $request, ClientRepository $clientRepository): JsonResponse
+    public function openDoor(
+        Request $request,
+        ClientRepository $clientRepository,
+        AccessLogRepository $accessLogRepo
+    ): JsonResponse
     {
         if (!$this->checkApiKey($request)) {
             return $this->json(['success' => false, 'message' => 'Clave de API inválida'], 401);
@@ -457,6 +490,27 @@ class ApiCardController extends AbstractController
                 'message' => 'Acabas de abrir el torno recientemente. Espera unos momentos antes de volver a solicitarlo.',
                 'code'    => 'COOLDOWN_ACTIVE',
             ], 429);
+        }
+
+        // ─── 3. Validación de Límite Diario de Accesos ───
+        $dailyLimit = $client->getDailyAccessLimit();
+        if ($dailyLimit > 0) {
+            $todayAccessCount = $accessLogRepo->countTodaySuccessByClient($client);
+            if ($todayAccessCount >= $dailyLimit) {
+                $this->logAccess($client, 'denied');
+                return $this->json([
+                    'success' => false,
+                    'message' => sprintf('Has alcanzado tu límite de accesos diarios (%d/%d hoy). Consulta en recepción si necesitas más accesos.', $todayAccessCount, $dailyLimit),
+                    'code'    => 'DAILY_LIMIT_EXCEEDED',
+                    'client'  => [
+                        'id'             => $client->getEffectiveClientNumber(),
+                        'rawId'          => $client->getId(),
+                        'clientNumber'   => $client->getEffectiveClientNumber(),
+                        'name'           => $client->getName(),
+                        'surname'        => $client->getSurname(),
+                    ],
+                ], 403);
+            }
         }
 
         // Registrar señal en caché para que Raspberry Pi / ESP32 accione el relé

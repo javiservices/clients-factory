@@ -17,6 +17,10 @@ use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
 class DashboardController extends AbstractController
 {
+    public function __construct(
+        private readonly AccessLogRepository $accessLogRepository
+    ) {}
+
     #[Route('/', name: 'dashboard', methods: ['GET'])]
     #[Route('/dashboard', name: 'dashboard_alias', methods: ['GET'])]
     public function dashboard(EntityManagerInterface $em): Response
@@ -161,7 +165,7 @@ class DashboardController extends AbstractController
         }
 
         // Aforo estimado en sala (sesiones activas de 80 minutos por persona, agrupando re-entradas)
-        $currentOccupancy = $this->calculateCurrentOccupancy($conn, 80);
+        $currentOccupancy = $this->calculateCurrentOccupancy(80);
 
         // Suscripciones que vencen en los próximos 3 días (Aviso preventivo WhatsApp)
         $expiringIn3Days = $em->getRepository(Subscription::class)->findExpiringSoon(3);
@@ -337,8 +341,7 @@ class DashboardController extends AbstractController
             ];
         }
 
-        $conn = $em->getConnection();
-        $currentOccupancy = $this->calculateCurrentOccupancy($conn, 80);
+        $currentOccupancy = $this->calculateCurrentOccupancy(80);
 
         return $this->json([
             'latestAccessId'   => $latestLog?->getId() ?? 0,
@@ -366,8 +369,7 @@ class DashboardController extends AbstractController
         $totalActiveClients = $subscriptionRepo->count(['isActive' => true]);
         $totalClients  = $clientRepo->count([]);
 
-        $conn = $em->getConnection();
-        $currentOccupancy = $this->calculateCurrentOccupancy($conn, 80);
+        $currentOccupancy = $this->calculateCurrentOccupancy(80);
 
         $expiringData = [];
         foreach ($expiring as $sub) {
@@ -397,11 +399,9 @@ class DashboardController extends AbstractController
      * la misma sesión de entrenamiento: no se suma como un segundo socio ni se alarga
      * artificialmente el tiempo de la sesión original.
      */
-    private function calculateCurrentOccupancy(Connection $conn, int $sessionMinutes = 80): int
+    private function calculateCurrentOccupancy(int $sessionMinutes = 80): int
     {
-        /** @var AccessLogRepository $repo */
-        $repo = $this->container->get('doctrine')->getRepository(\App\Entity\AccessLog::class);
-        return $repo->calculateCurrentOccupancy($sessionMinutes);
+        return $this->accessLogRepository->calculateCurrentOccupancy($sessionMinutes);
     }
 }
 

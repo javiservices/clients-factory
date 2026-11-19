@@ -111,6 +111,28 @@ class AccessLogRepository extends ServiceEntityRepository
     }
 
     /**
+     * Cuenta cuántos accesos exitosos ha tenido un cliente durante el día actual.
+     */
+    public function countTodaySuccessByClient(\App\Entity\Client $client): int
+    {
+        $todayStart = new \DateTime('today 00:00:00');
+        $todayEnd = new \DateTime('today 23:59:59');
+
+        return (int) $this->createQueryBuilder('a')
+            ->select('COUNT(a.id)')
+            ->where('a.Client = :client')
+            ->andWhere('a.status = :status')
+            ->andWhere('a.accessTime >= :start')
+            ->andWhere('a.accessTime <= :end')
+            ->setParameter('client', $client)
+            ->setParameter('status', 'success')
+            ->setParameter('start', $todayStart)
+            ->setParameter('end', $todayEnd)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
      * Calcula el aforo en sala teniendo en cuenta sesiones de entrenamiento estimadas (80 minutos).
      * Si un mismo socio sale y vuelve a entrar dentro de esos 80 minutos, se considera
      * la misma sesión de entrenamiento: no se suma como un segundo socio ni se alarga

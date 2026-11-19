@@ -305,6 +305,17 @@
                                                     <i class="bi bi-bank me-0.5"></i>SEPA
                                                 </span>
                                             {% endif %}
+                                            {% if clientData.client.dailyAccessLimit is defined and clientData.client.dailyAccessLimit != 1 %}
+                                                {% if clientData.client.dailyAccessLimit == 0 %}
+                                                    <span class="badge bg-info-subtle text-info border border-info-subtle px-1.5 py-0.5" style="font-size: 0.7rem;" title="Accesos ilimitados al día">
+                                                        <i class="bi bi-infinity me-0.5"></i>Ilimitado
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-1.5 py-0.5" style="font-size: 0.7rem;" title="{{ clientData.client.dailyAccessLimit }} accesos permitidos al día">
+                                                        <i class="bi bi-door-closed me-0.5"></i>{{ clientData.client.dailyAccessLimit }}/día
+                                                    </span>
+                                                {% endif %}
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
