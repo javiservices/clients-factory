@@ -37,6 +37,7 @@ final class ClientController extends AbstractController
 
         // Filtros
         $search = trim((string) $request->query->get('search', ''));
+        $clientNumberParam = trim((string) $request->query->get('clientNumber', ''));
         $paid = $request->query->get('paid', null);
         $perPage = (int) $request->query->get('perPage', $session->get('perPage', 12));
         if ($perPage < 1) {
@@ -51,32 +52,80 @@ final class ClientController extends AbstractController
         $startOfMonth = new \DateTime('first day of this month 00:00:00');
         $currentDate = new \DateTime();
 
-        // 1. Si hay búsqueda (texto o numérico), filtrar IDs con scan rápido de SQL + descifrado en memoria (~60ms)
+        // 1. Detección de filtro por Nº de Socio exacto
+        $exactClientNumber = null;
+        if ($clientNumberParam !== '' && ctype_digit($clientNumberParam)) {
+            $exactClientNumber = (int) $clientNumberParam;
+        } elseif ($search !== '') {
+            $cleanHash = ltrim($search, '#');
+            // Si en el buscador general escriben "#1" o un número exacto de socio (hasta 5 dígitos numéricos)
+            if (ctype_digit($cleanHash) && (str_starts_with($search, '#') || strlen($cleanHash) <= 5)) {
+                $exactClientNumber = (int) $cleanHash;
+            }
+        }
+
         $matchedIds = null;
-        $exactId = null;
-        if ($search !== '') {
-            $cleanNumeric = ltrim($search, '#');
-            if (ctype_digit($cleanNumeric)) {
-                $exactId = (int) $cleanNumeric;
+
+        // Caso A: Filtro estricto por Nº de Socio exacto
+        if ($exactClientNumber !== null) {
+            $conn = $em->getConnection();
+            $rows = $conn->fetchAllAssociative(
+                'SELECT id FROM client WHERE client_number = :num OR (client_number IS NULL AND id = :num)',
+                ['num' => $exactClientNumber]
+            );
+            $matchedIds = array_map(fn($r) => (int)$r['id'], $rows);
+
+            // Si además se introdujo texto en $search (que no era solo el número), verificar coincidencia
+            if ($search !== '' && !ctype_digit(ltrim($search, '#'))) {
+                $filteredIds = [];
+                if (!empty($matchedIds)) {
+                    $detailRows = $conn->fetchAllAssociative(
+                        'SELECT id, name, surname, id_number FROM client WHERE id IN (' . implode(',', $matchedIds) . ')'
+                    );
+                    $normalizedSearch = $this->normalizeSearchText($search);
+                    $tokens = preg_split('/[\s,]+/', $normalizedSearch, -1, PREG_SPLIT_NO_EMPTY);
+                    foreach ($detailRows as $r) {
+                        $name = (string) EncryptionService::decryptValue($r['name']);
+                        $surname = (string) EncryptionService::decryptValue($r['surname']);
+                        $haystack = $this->normalizeSearchText($name . ' ' . $surname);
+                        $match = true;
+                        foreach ($tokens as $token) {
+                            if (!str_contains($haystack, $token)) {
+                                $match = false;
+                                break;
+                            }
+                        }
+                        if ($match) {
+                            $filteredIds[] = (int)$r['id'];
+                        }
+                    }
+                }
+                $matchedIds = $filteredIds;
             }
 
-            // Normalizar texto de búsqueda
-            $normalizedSearch = $this->normalizeSearchText($search);
-            $tokens = preg_split('/[\s,]+/', $normalizedSearch, -1, PREG_SPLIT_NO_EMPTY);
-
+            if (empty($matchedIds)) {
+                return $this->render('client/index.html.twig', [
+                    'clients' => [],
+                    'search' => $search,
+                    'clientNumber' => $clientNumberParam,
+                    'paid' => $paid,
+                    'perPage' => $perPage,
+                    'currentPage' => 1,
+                    'totalPages' => 0,
+                    'totalClients' => 0,
+                ]);
+            }
+        } elseif ($search !== '') {
+            // Caso B: Búsqueda general por texto (nombre, apellidos, DNI, teléfono, email)
             $conn = $em->getConnection();
             $rows = $conn->fetchAllAssociative('SELECT id, client_number, name, surname, id_number, phone, email FROM client');
             $matchedIds = [];
+            $normalizedSearch = $this->normalizeSearchText($search);
+            $tokens = preg_split('/[\s,]+/', $normalizedSearch, -1, PREG_SPLIT_NO_EMPTY);
 
             foreach ($rows as $row) {
                 $id = (int) $row['id'];
                 $clientNumber = isset($row['client_number']) && $row['client_number'] !== null ? (int) $row['client_number'] : $id;
-
-                // Si coincide exactamente con el ID numérico o número de socio buscado, incluirlo prioritariamente
-                if ($exactId !== null && ($id === $exactId || $clientNumber === $exactId)) {
-                    $matchedIds[] = $id;
-                    continue;
-                }
 
                 $name = (string) EncryptionService::decryptValue($row['name']);
                 $surname = (string) EncryptionService::decryptValue($row['surname']);
@@ -115,10 +164,12 @@ final class ClientController extends AbstractController
                 return $this->render('client/index.html.twig', [
                     'clients' => [],
                     'search' => $search,
+                    'clientNumber' => $clientNumberParam,
                     'paid' => $paid,
                     'perPage' => $perPage,
                     'currentPage' => 1,
                     'totalPages' => 0,
+                    'totalClients' => 0,
                 ]);
             }
         }
@@ -158,12 +209,12 @@ final class ClientController extends AbstractController
         // 4. Obtener SOLO la página actual (12 a 96 registros) con carga ansiosa
         $qb->select('c', 's', 'st');
 
-        if ($exactId !== null) {
-            $qb->orderBy('CASE WHEN (c.id = :exactId OR c.client_number = :exactId) THEN 1 ELSE 0 END', 'DESC')
+        if ($exactClientNumber !== null) {
+            $qb->orderBy('CASE WHEN (c.id = :exactNum OR c.client_number = :exactNum) THEN 1 ELSE 0 END', 'DESC')
                ->addOrderBy('CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END', 'DESC')
                ->addOrderBy('c.client_number', 'DESC')
                ->addOrderBy('c.id', 'DESC')
-               ->setParameter('exactId', $exactId);
+               ->setParameter('exactNum', $exactClientNumber);
         } else {
             $qb->orderBy('CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END', 'DESC')
                ->addOrderBy('c.client_number', 'DESC')
@@ -244,10 +295,12 @@ final class ClientController extends AbstractController
         return $this->render('client/index.html.twig', [
             'clients' => $clientsWithPaymentStatus,
             'search' => $search,
+            'clientNumber' => $clientNumberParam,
             'paid' => $paid,
             'perPage' => $perPage,
             'currentPage' => $currentPage,
             'totalPages' => $totalPages,
+            'totalClients' => $totalClients,
         ]);
     }
 
@@ -1231,7 +1284,11 @@ final class ClientController extends AbstractController
             }
         }
 
-        $allIds = array_slice(array_merge($priorityIds, $matchedIds), 0, 10);
+        if (str_starts_with($q, '#') && $exactId !== null) {
+            $allIds = array_slice($priorityIds, 0, 10);
+        } else {
+            $allIds = array_slice(array_merge($priorityIds, $matchedIds), 0, 10);
+        }
         if (empty($allIds)) {
             return $this->json([]);
         }

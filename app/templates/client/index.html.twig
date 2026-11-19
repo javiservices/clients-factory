@@ -223,15 +223,25 @@
     <div class="card-body">
         <form method="get" action="{{ path('app_client_index') }}" role="search" aria-label="Filtrar clientes">
             <div class="row g-2 align-items-end">
-                <div class="col-12 col-sm-6 col-lg-4">
+                <div class="col-12 col-md-4 col-lg-3">
                     <label class="form-label" for="search">Buscar</label>
                     <div class="search-wrapper">
                         <i class="bi bi-search search-icon" aria-hidden="true"></i>
                         <input type="search" id="search" name="search" class="form-control"
-                               placeholder="Nombre, apellidos, DNI o ID..." value="{{ search|default('') }}" autocomplete="off">
+                               placeholder="Nombre, apellidos, DNI..." value="{{ search|default('') }}" autocomplete="off">
                     </div>
                 </div>
-                <div class="col-6 col-sm-3 col-lg-2">
+                <div class="col-6 col-md-3 col-lg-2">
+                    <label class="form-label fw-semibold text-primary" for="clientNumber">
+                        <i class="bi bi-hash me-0.5"></i>Nº Socio exacto
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-muted small fw-bold">#</span>
+                        <input type="number" id="clientNumber" name="clientNumber" class="form-control font-monospace fw-bold"
+                               placeholder="Ej: 1" min="1" value="{{ clientNumber|default('') }}" autocomplete="off">
+                    </div>
+                </div>
+                <div class="col-6 col-md-2 col-lg-2">
                     <label class="form-label" for="paid">Estado</label>
                     <select id="paid" name="paid" class="form-select">
                         <option value="" {% if paid is not defined or paid == '' %}selected{% endif %}>Todos</option>
@@ -239,7 +249,7 @@
                         <option value="0" {% if paid == '0' %}selected{% endif %}>Pendiente</option>
                     </select>
                 </div>
-                <div class="col-6 col-sm-3 col-lg-2">
+                <div class="col-6 col-md-3 col-lg-2">
                     <label class="form-label" for="perPage">Por página</label>
                     <select id="perPage" name="perPage" class="form-select">
                         <option value="12" {% if perPage|default(12) == 12 %}selected{% endif %}>12</option>
@@ -248,11 +258,11 @@
                         <option value="96" {% if perPage == 96 %}selected{% endif %}>96</option>
                     </select>
                 </div>
-                <div class="col-12 col-sm-6 col-lg-4 d-flex gap-2">
-                    <button class="btn btn-primary" type="submit">
+                <div class="col-12 col-md-12 col-lg-3 d-flex gap-2">
+                    <button class="btn btn-primary flex-grow-1" type="submit">
                         <i class="bi bi-funnel me-1" aria-hidden="true"></i>Filtrar
                     </button>
-                    {% if search|default('') or (paid is defined and paid != '') or (perPage is defined and perPage != 12) %}
+                    {% if search|default('') or clientNumber|default('') or (paid is defined and paid != '') or (perPage is defined and perPage != 12) %}
                         <a href="{{ path('app_client_index') }}" class="btn btn-outline-secondary">
                             <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpiar
                         </a>
@@ -528,7 +538,11 @@
         <div class="empty-state">
             <i class="bi bi-people empty-state-icon" aria-hidden="true"></i>
             <p class="empty-state-title">No se encontraron clientes</p>
-            <p class="empty-state-desc">Prueba con otros filtros o añade un nuevo cliente.</p>
+            {% if clientNumber|default('') %}
+                <p class="empty-state-desc">No existe ningún socio registrado con el número <strong>#{{ clientNumber }}</strong>.</p>
+            {% else %}
+                <p class="empty-state-desc">Prueba con otros filtros o añade un nuevo cliente.</p>
+            {% endif %}
             <a href="{{ path('app_client_new') }}" class="btn btn-primary">
                 <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Añadir cliente
             </a>
@@ -542,7 +556,7 @@
         <ul class="pagination justify-content-center align-items-center mb-0">
             {# Botón Anterior #}
             <li class="page-item {% if currentPage <= 1 %}disabled{% endif %}">
-                <a class="page-link" href="{{ path('app_client_index', {search: search|default(''), paid: paid|default(''), perPage: perPage|default(12), page: currentPage - 1}) }}" aria-label="Anterior" {% if currentPage <= 1 %}tabindex="-1" aria-disabled="true"{% endif %}>
+                <a class="page-link" href="{{ path('app_client_index', {search: search|default(''), clientNumber: clientNumber|default(''), paid: paid|default(''), perPage: perPage|default(12), page: currentPage - 1}) }}" aria-label="Anterior" {% if currentPage <= 1 %}tabindex="-1" aria-disabled="true"{% endif %}>
                     <i class="bi bi-chevron-left" aria-hidden="true"></i>
                 </a>
             </li>
@@ -554,7 +568,7 @@
 
             {% if startPage > 1 %}
                 <li class="page-item">
-                    <a class="page-link" href="{{ path('app_client_index', {search: search|default(''), paid: paid|default(''), perPage: perPage|default(12), page: 1}) }}">1</a>
+                    <a class="page-link" href="{{ path('app_client_index', {search: search|default(''), clientNumber: clientNumber|default(''), paid: paid|default(''), perPage: perPage|default(12), page: 1}) }}">1</a>
                 </li>
                 {% if startPage > 2 %}
                     <li class="page-item disabled"><span class="page-link border-0">…</span></li>
@@ -563,7 +577,7 @@
 
             {% for page in startPage..endPage %}
                 <li class="page-item {% if page == currentPage %}active{% endif %}">
-                    <a class="page-link" href="{{ path('app_client_index', {search: search|default(''), paid: paid|default(''), perPage: perPage|default(12), page: page}) }}"
+                    <a class="page-link" href="{{ path('app_client_index', {search: search|default(''), clientNumber: clientNumber|default(''), paid: paid|default(''), perPage: perPage|default(12), page: page}) }}"
                        {% if page == currentPage %}aria-current="page"{% endif %}>{{ page }}</a>
                 </li>
             {% endfor %}
@@ -573,13 +587,13 @@
                     <li class="page-item disabled"><span class="page-link border-0">…</span></li>
                 {% endif %}
                 <li class="page-item">
-                    <a class="page-link" href="{{ path('app_client_index', {search: search|default(''), paid: paid|default(''), perPage: perPage|default(12), page: totalPages}) }}">{{ totalPages }}</a>
+                    <a class="page-link" href="{{ path('app_client_index', {search: search|default(''), clientNumber: clientNumber|default(''), paid: paid|default(''), perPage: perPage|default(12), page: totalPages}) }}">{{ totalPages }}</a>
                 </li>
             {% endif %}
 
             {# Botón Siguiente #}
             <li class="page-item {% if currentPage >= totalPages %}disabled{% endif %}">
-                <a class="page-link" href="{{ path('app_client_index', {search: search|default(''), paid: paid|default(''), perPage: perPage|default(12), page: currentPage + 1}) }}" aria-label="Siguiente" {% if currentPage >= totalPages %}tabindex="-1" aria-disabled="true"{% endif %}>
+                <a class="page-link" href="{{ path('app_client_index', {search: search|default(''), clientNumber: clientNumber|default(''), paid: paid|default(''), perPage: perPage|default(12), page: currentPage + 1}) }}" aria-label="Siguiente" {% if currentPage >= totalPages %}tabindex="-1" aria-disabled="true"{% endif %}>
                     <i class="bi bi-chevron-right" aria-hidden="true"></i>
                 </a>
             </li>
