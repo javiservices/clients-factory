@@ -548,16 +548,17 @@
 
         // Cambio en tipo de suscripción
         if (subSelect) {
-            function onSubscriptionChange() {
+            function onSubscriptionChange(isInitial = false) {
                 const selectedOpt = subSelect.options[subSelect.selectedIndex];
                 if (!selectedOpt) return;
                 const text = selectedOpt.text.toLowerCase();
+                const isDaily = text.includes('bono') || text.includes('pase') || selectedOpt.dataset.isDailyPass === '1';
 
-                if (text.includes('bono') || text.includes('pase')) {
+                if (isDaily) {
                     if (regularFields) regularFields.style.display = 'none';
                     if (dailyPassFields) dailyPassFields.style.display = 'block';
                     if (paymentOptionsSection) paymentOptionsSection.style.display = 'none';
-                    if (amountInput && selectedOpt.dataset.price) {
+                    if (amountInput && selectedOpt.dataset.price && (!amountInput.value || parseFloat(amountInput.value) <= 0 || !isInitial)) {
                         amountInput.value = selectedOpt.dataset.price;
                         updateTaxBreakdown();
                     }
@@ -567,14 +568,16 @@
                     if (paymentOptionsSection) paymentOptionsSection.style.display = 'block';
 
                     if (text.includes('medio mes')) {
-                        selectPlan('half', false);
+                        selectPlan('half', !isInitial);
                     } else {
-                        selectPlan('full', false);
+                        selectPlan('full', !isInitial);
                     }
                 }
             }
 
-            subSelect.addEventListener('change', onSubscriptionChange);
+            subSelect.addEventListener('change', () => onSubscriptionChange(false));
+            // Sincronizar estado inicial al cargar
+            onSubscriptionChange(true);
         }
 
         // Manejo de Acceso Ilimitado
@@ -601,16 +604,27 @@
             updateUnlimitedState();
         }
 
-        // Inicialización según valor actual del input
-        if (amountInput) {
+        // Inicialización de tarjetas de plan según el valor ya cargado (solo si NO es bono)
+        if (subSelect) {
+            const currentOpt = subSelect.options[subSelect.selectedIndex];
+            const currentText = currentOpt ? currentOpt.text.toLowerCase() : '';
+            const isDaily = currentText.includes('bono') || currentText.includes('pase') || (currentOpt && currentOpt.dataset.isDailyPass === '1');
+
+            if (!isDaily && amountInput) {
+                const initialVal = parseFloat(amountInput.value);
+                if (Math.abs(initialVal - 30.0) < 0.01) {
+                    selectPlan('half', false);
+                } else {
+                    selectPlan('full', false);
+                }
+            }
+        } else if (amountInput) {
             const initialVal = parseFloat(amountInput.value);
             if (Math.abs(initialVal - 30.0) < 0.01) {
                 selectPlan('half', false);
             } else {
                 selectPlan('full', false);
             }
-        } else {
-            selectPlan('full', false);
         }
         updateTaxBreakdown();
 

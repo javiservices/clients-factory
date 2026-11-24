@@ -84,6 +84,7 @@ class Client
      * @var Collection<int, Subscription>
      */
     #[ORM\OneToMany(targetEntity: Subscription::class, mappedBy: 'client', cascade: ['remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['id' => 'ASC'])]
     private Collection $subscriptions;
 
     /**
@@ -306,6 +307,22 @@ class Client
     public function getSubscriptions(): Collection
     {
         return $this->subscriptions;
+    }
+
+    public function getLastSubscription(): ?Subscription
+    {
+        if ($this->subscriptions->isEmpty()) {
+            return null;
+        }
+
+        $latest = null;
+        foreach ($this->subscriptions as $sub) {
+            if ($latest === null || ($sub->getId() !== null && $sub->getId() > $latest->getId())) {
+                $latest = $sub;
+            }
+        }
+
+        return $latest ?? $this->subscriptions->last() ?: null;
     }
 
     public function addSubscription(Subscription $subscription): static

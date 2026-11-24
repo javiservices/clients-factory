@@ -314,10 +314,11 @@ final class ClientController extends AbstractController
         ClientRepository $clientRepository
     ): Response {
         // Obtener la última suscripción del cliente
-        $subscriptions = $client->getSubscriptions();
-        $lastSubscription = $subscriptions->last();
-        // Crear el formulario
-        $form = $this->createForm(ClientType::class, $client);
+        $lastSubscription = $client->getLastSubscription();
+        // Crear el formulario con el tipo de suscripción actual preseleccionado
+        $form = $this->createForm(ClientType::class, $client, [
+            'default_subscription_type' => $lastSubscription?->getSubscriptionType(),
+        ]);
         
         // Si existe una suscripción, establecer los valores iniciales
         if ($lastSubscription) {
